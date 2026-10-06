@@ -12,7 +12,7 @@ Nền tảng học trực tuyến tích hợp AI Trợ giảng cho học viên.
 - **Media Player:** AndroidX Media3 (ExoPlayer + HLS) 1.2.1
 - **Image Loading:** Coil 2.5.0
 
-## 🛠 Yêu cầu hệ thống
+## Yêu cầu hệ thống
 - Android Studio Iguana / Jellyfish / Koala trở lên
 - JDK 17 hoặc JDK 21 (mặc định đi kèm Android Studio JBR)
 - Android SDK Platform 34 (Android 14)
