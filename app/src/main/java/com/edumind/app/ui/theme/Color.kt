@@ -26,6 +26,10 @@ val NebulaGradient = Brush.linearGradient(
     colors = listOf(NebulaBlue, NebulaPurple, NebulaPink)
 )
 
+val NebulaBrush = Brush.horizontalGradient(
+    colors = listOf(NebulaBlue, NebulaPurple, NebulaPink)
+)
+
 // Dải Gradient khi hover/pressed
 val NebulaGradientHover = Brush.linearGradient(
     colors = listOf(Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFFDB2777))
