@@ -125,4 +125,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("com.google.dagger:hilt-android-testing:2.50")
     kaptTest("com.google.dagger:hilt-android-compiler:2.50")
+
+    // Material Icons Extended (cung cấp đầy đủ icon Outlined & Filled)
+    implementation("androidx.compose.material:material-icons-extended")
 }

@@ -11,6 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.rememberNavController
+import com.edumind.app.ui.navigation.AppNavGraph
 import com.edumind.app.ui.theme.EduMindTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -21,12 +23,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             EduMindTheme() {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "EduMind",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                val navController  = rememberNavController()
+                AppNavGraph(navController = navController)
             }
         }
     }
