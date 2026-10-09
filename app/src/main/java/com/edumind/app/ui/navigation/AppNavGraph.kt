@@ -15,12 +15,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.edumind.app.ui.auth.LoginScreen
-import com.edumind.app.ui.auth.SplashScreen
 import com.edumind.app.ui.explore.ExploreScreen
 import com.edumind.app.ui.home.HomeScreen
 import com.edumind.app.ui.library.MyCoursesScreen
 import com.edumind.app.ui.profile.ProfileScreen
 import com.edumind.app.ui.progress.ProgressScreen
+import com.edumind.app.ui.splash.SplashDestination
+import com.edumind.app.ui.splash.SplashScreen
 
 @Composable
 fun AppNavGraph(
@@ -78,9 +79,19 @@ fun AppNavGraph(
                 // --- Auth Flow ---
                 composable(Screen.Splash.route) {
                     SplashScreen(
-                        onNavigateToLogin = {
-                            navController.navigate(Screen.Login.route) {
-                                popUpTo(Screen.Splash.route) { inclusive = true }
+                        onNavigate = { destination ->
+                            when (destination) {
+                                SplashDestination.Home -> {
+                                    navController.navigate(Screen.Home.route) {
+                                        popUpTo(Screen.Splash.route) { inclusive = true }
+                                    }
+                                }
+                                SplashDestination.Onboarding,
+                                SplashDestination.Login -> {
+                                    navController.navigate(Screen.Login.route) {
+                                        popUpTo(Screen.Splash.route) { inclusive = true }
+                                    }
+                                }
                             }
                         }
                     )
