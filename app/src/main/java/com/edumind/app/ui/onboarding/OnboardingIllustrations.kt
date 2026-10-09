@@ -38,7 +38,6 @@ fun OnboardingIllustration1(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.size(280.dp)
     ) {
-        // 1. Khung màn hình ngoài: #1E1B4B, rx=14dp
         Box(
             modifier = Modifier
                 .offset(x = 20.dp, y = 45.dp)
@@ -47,7 +46,6 @@ fun OnboardingIllustration1(modifier: Modifier = Modifier) {
                 .background(Color(0xFF1E1B4B))
         )
 
-        // 2. Màn hình bên trong: #0F0D2E, rx=8dp
         Box(
             modifier = Modifier
                 .offset(x = 28.dp, y = 53.dp)
@@ -56,7 +54,6 @@ fun OnboardingIllustration1(modifier: Modifier = Modifier) {
                 .background(Color(0xFF0F0D2E))
         )
 
-        // 3. Badge "Chương 01: Video": #FFFFFF 95% opacity, rx=11dp
         Box(
             modifier = Modifier
                 .offset(x = 36.dp, y = 65.dp)
@@ -74,8 +71,6 @@ fun OnboardingIllustration1(modifier: Modifier = Modifier) {
             )
         }
 
-        // 4. Nút Play chính giữa màn hình (cx=140, cy=119)
-        // Vầng hào quang ngoài: r=28 (size=56dp), #8B5CF6 opacity 0.35
         Box(
             modifier = Modifier
                 .offset(x = (140 - 28).dp, y = (119 - 28).dp)
@@ -84,7 +79,6 @@ fun OnboardingIllustration1(modifier: Modifier = Modifier) {
                 .background(Color(0xFF8B5CF6).copy(alpha = 0.35f))
         )
 
-        // Vòng tròn trắng: r=20 (size=40dp), #FFFFFF
         Box(
             modifier = Modifier
                 .offset(x = (140 - 20).dp, y = (119 - 20).dp)
@@ -93,7 +87,6 @@ fun OnboardingIllustration1(modifier: Modifier = Modifier) {
                 .background(Color.White),
             contentAlignment = Alignment.Center
         ) {
-            // Tam giác Play: points (135,110), (150,119), (135,128)
             Canvas(modifier = Modifier.size(width = 15.dp, height = 18.dp)) {
                 val path = Path().apply {
                     moveTo(0f, 0f)
@@ -105,8 +98,6 @@ fun OnboardingIllustration1(modifier: Modifier = Modifier) {
             }
         }
 
-        // 5. Thanh tiến độ video dưới đáy
-        // Track: width=200dp, height=4dp, #334155
         Box(
             modifier = Modifier
                 .offset(x = 40.dp, y = 171.dp)
@@ -115,7 +106,6 @@ fun OnboardingIllustration1(modifier: Modifier = Modifier) {
                 .background(Color(0xFF334155))
         )
 
-        // Dải Gradient tiến độ: width=90dp, height=4dp, #3B82F6 -> #8B5CF6 -> #EC4899
         Box(
             modifier = Modifier
                 .offset(x = 40.dp, y = 171.dp)
@@ -132,7 +122,6 @@ fun OnboardingIllustration1(modifier: Modifier = Modifier) {
                 )
         )
 
-        // Nốt scrubber: cx=130, cy=173, r=4 (size=8dp), #FFFFFF
         Box(
             modifier = Modifier
                 .offset(x = (130 - 4).dp, y = (173 - 4).dp)
@@ -153,7 +142,6 @@ fun OnboardingIllustration2(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.size(280.dp)
     ) {
-        // 1. Đầu AI Robot: cx=140, cy=95, r=38 (size=76dp), #8B5CF6
         Box(
             modifier = Modifier
                 .offset(x = (140 - 38).dp, y = (95 - 38).dp)
@@ -162,7 +150,6 @@ fun OnboardingIllustration2(modifier: Modifier = Modifier) {
                 .background(Color(0xFF8B5CF6))
         )
 
-        // Mắt trái: x=124, y=86, w=10, h=5, rx=2.5, #FFFFFF
         Box(
             modifier = Modifier
                 .offset(x = 124.dp, y = 86.dp)
@@ -171,7 +158,6 @@ fun OnboardingIllustration2(modifier: Modifier = Modifier) {
                 .background(Color.White)
         )
 
-        // Mắt phải: x=146, y=86, w=10, h=5, rx=2.5, #FFFFFF
         Box(
             modifier = Modifier
                 .offset(x = 146.dp, y = 86.dp)
@@ -180,7 +166,6 @@ fun OnboardingIllustration2(modifier: Modifier = Modifier) {
                 .background(Color.White)
         )
 
-        // Miệng cười: path d="M133 103 Q 140 109, 147 103"
         Canvas(
             modifier = Modifier
                 .offset(x = 133.dp, y = 103.dp)
@@ -197,7 +182,6 @@ fun OnboardingIllustration2(modifier: Modifier = Modifier) {
             )
         }
 
-        // 2. Bong bóng câu hỏi của học viên: x=30, y=146, w=175, h=48, rx=10, fill=#4C1D95
         Box(
             modifier = Modifier
                 .offset(x = 30.dp, y = 146.dp)
@@ -232,7 +216,6 @@ fun OnboardingIllustration2(modifier: Modifier = Modifier) {
             }
         }
 
-        // 3. Bong bóng phản hồi của AI Trợ giảng: x=75, y=200, w=175, h=48, rx=10, fill=#FFFFFF, stroke=#EDE9FE
         Box(
             modifier = Modifier
                 .offset(x = 75.dp, y = 200.dp)
@@ -280,7 +263,6 @@ fun OnboardingIllustration3(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.size(280.dp)
     ) {
-        // 1. Thẻ Sổ tay ghi chú: x=40, y=40, w=170, h=200, rx=12, fill=#FFFFFF, stroke=#E5E5E5
         Box(
             modifier = Modifier
                 .offset(x = 40.dp, y = 40.dp)
@@ -289,7 +271,6 @@ fun OnboardingIllustration3(modifier: Modifier = Modifier) {
                 .background(Color.White)
                 .border(width = 1.5.dp, color = Color(0xFFE5E5E5), shape = RoundedCornerShape(12.dp))
         ) {
-            // Thanh tiêu đề sổ tay: h=32, fill=#FAF5FF
             Box(
                 modifier = Modifier
                     .size(width = 170.dp, height = 32.dp)
@@ -306,12 +287,10 @@ fun OnboardingIllustration3(modifier: Modifier = Modifier) {
                 )
             }
 
-            // Phần nội dung ghi chú bên dưới
             Box(
                 modifier = Modifier
                     .offset(x = 12.dp, y = 45.dp)
             ) {
-                // Badge thời gian: w=48, h=16, rx=4, fill=#F3E8FF
                 Box(
                     modifier = Modifier
                         .size(width = 48.dp, height = 16.dp)
@@ -328,7 +307,6 @@ fun OnboardingIllustration3(modifier: Modifier = Modifier) {
                     )
                 }
 
-                // Tiêu đề ghi chú: Khái niệm OOP
                 Text(
                     text = "Khái niệm OOP",
                     fontFamily = EduMindFontFamily,
@@ -340,8 +318,6 @@ fun OnboardingIllustration3(modifier: Modifier = Modifier) {
             }
         }
 
-        // 2. Thẻ Quiz nổi: x=90, y=125, w=150, h=100, rx=10, fill=#FFFFFF, stroke=#DDD6FE
-        // Đổ bóng nổi nhẹ nhàng với ánh tím spotColor, tuyệt đối không tạo viền đen đặc
         Box(
             modifier = Modifier
                 .offset(x = 90.dp, y = 125.dp)
@@ -373,7 +349,6 @@ fun OnboardingIllustration3(modifier: Modifier = Modifier) {
                     color = Color(0xFF171717)
                 )
                 Spacer(modifier = Modifier.height(7.dp))
-                // Option trắc nghiệm đúng: w=126, h=20, rx=5, fill=#DCFCE7
                 Box(
                     modifier = Modifier
                         .size(width = 126.dp, height = 20.dp)
@@ -404,7 +379,6 @@ fun OnboardingIllustration4(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier.size(280.dp)
     ) {
-        // 1. Vòng tròn Gradient Nebula lớn: cx=140, cy=120, r=60 (size=120dp)
         Box(
             modifier = Modifier
                 .offset(x = (140 - 60).dp, y = (120 - 60).dp)
@@ -421,34 +395,29 @@ fun OnboardingIllustration4(modifier: Modifier = Modifier) {
                 )
         )
 
-        // 2. Biểu tượng Mũ Cử nhân (Graduation Cap):
-        // Nón chóp hình thoi: M140 95 L 170 110 L 140 125 L 110 110 Z
-        // Thân nón: M120 121 L 120 138 C 120 146, 160 146, 160 138 L 160 121
         Canvas(
             modifier = Modifier
                 .offset(x = 80.dp, y = 60.dp)
                 .size(120.dp)
         ) {
-            // Nón chóp thoi
             val capDiamond = Path().apply {
-                moveTo(60.dp.toPx(), 35.dp.toPx()) // (140, 95)
-                lineTo(90.dp.toPx(), 50.dp.toPx()) // (170, 110)
-                lineTo(60.dp.toPx(), 65.dp.toPx()) // (140, 125)
-                lineTo(30.dp.toPx(), 50.dp.toPx()) // (110, 110)
+                moveTo(60.dp.toPx(), 35.dp.toPx())
+                lineTo(90.dp.toPx(), 50.dp.toPx())
+                lineTo(60.dp.toPx(), 65.dp.toPx())
+                lineTo(30.dp.toPx(), 50.dp.toPx())
                 close()
             }
             drawPath(path = capDiamond, color = Color.White)
 
-            // Thân nón uốn cong
             val capBody = Path().apply {
-                moveTo(40.dp.toPx(), 61.dp.toPx()) // (120, 121)
-                lineTo(40.dp.toPx(), 78.dp.toPx()) // (120, 138)
+                moveTo(40.dp.toPx(), 61.dp.toPx())
+                lineTo(40.dp.toPx(), 78.dp.toPx())
                 cubicTo(
                     40.dp.toPx(), 86.dp.toPx(),
                     80.dp.toPx(), 86.dp.toPx(),
                     80.dp.toPx(), 78.dp.toPx()
                 )
-                lineTo(80.dp.toPx(), 61.dp.toPx()) // (160, 121)
+                lineTo(80.dp.toPx(), 61.dp.toPx())
             }
             drawPath(
                 path = capBody,
@@ -457,8 +426,6 @@ fun OnboardingIllustration4(modifier: Modifier = Modifier) {
             )
         }
 
-        // 3. Huy hiệu "Sẵn sàng học"
-        // Đổ bóng ánh tím nhẹ nhàng (spotColor tím)
         Box(
             modifier = Modifier
                 .offset(x = 85.dp, y = 195.dp)

@@ -50,7 +50,6 @@ fun ThemePreviewContent() {
 
         Divider()
 
-        // 1. TYPOGRAPHY PREVIEW (Tiếng Việt có dấu)
         Text(
             text = "1. Typography (Inter Font Family)",
             style = MaterialTheme.typography.titleLarge,
@@ -73,7 +72,6 @@ fun ThemePreviewContent() {
 
         Divider()
 
-        // 2. COLOR PALETTE PREVIEW
         Text(
             text = "2. Color Palette Tokens",
             style = MaterialTheme.typography.titleLarge,

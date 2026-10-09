@@ -3,7 +3,7 @@ package com.edumind.app.ui.theme
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
-// 1. PRIMARY BRAND COLORS (Royal Purple Scale)
+// Primary Brand Colors (Royal Purple Scale)
 val Primary950 = Color(0xFF2E1065)
 val Primary900 = Color(0xFF581C87)
 val Primary800 = Color(0xFF6B21A8)
@@ -16,7 +16,7 @@ val Primary200 = Color(0xFFE9D5FF)
 val Primary100 = Color(0xFFF3E8FF) // Badge background, bubble chat học viên
 val Primary50  = Color(0xFFFAF5FF) // Nền active menu, hover row
 
-// 2. BRAND GRADIENT (Nebula Transition)
+// Brand Gradient (Nebula Transition)
 val NebulaBlue   = Color(0xFF3B82F6)
 val NebulaPurple = Color(0xFF8B5CF6)
 val NebulaPink   = Color(0xFFEC4899)
@@ -35,7 +35,7 @@ val NebulaGradientHover = Brush.linearGradient(
     colors = listOf(Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFFDB2777))
 )
 
-// 3. SEMANTIC COLORS (Trạng thái hệ thống)
+// Semantic Colors (Trạng thái hệ thống)
 val Success700 = Color(0xFF15803D)
 val Success600 = Color(0xFF16A34A)
 val Success100 = Color(0xFFDCFCE7)
@@ -51,7 +51,7 @@ val Error100   = Color(0xFFFEE2E2)
 val Info600    = Color(0xFF2563EB)
 val Info100    = Color(0xFFDBEAFE)
 
-// 4. NEUTRAL / GRAY SCALE
+// Neutral / Gray Scale
 val Neutral950 = Color(0xFF0A0A0A) // Body text chính
 val Neutral900 = Color(0xFF171717)
 val Neutral800 = Color(0xFF262626)
@@ -65,7 +65,7 @@ val Neutral100 = Color(0xFFF5F5F5) // Background input
 val Neutral50  = Color(0xFFFAFAFA)
 val White      = Color(0xFFFFFFFF)
 
-// 5. CANVAS & SPECIAL BACKGROUNDS
+// Canvas & Special Backgrounds
 val BgCanvasMobile = Color(0xFFFAFAFA)
 val BgChatAi       = Color(0xFFF5F3FF)
-val BgOverlay      = Color(0x80000000) // 50% opacity black
+val BgOverlay      = Color(0x80000000)
