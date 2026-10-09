@@ -31,7 +31,7 @@ class SplashViewModel @Inject constructor(
     fun checkInitialRoute() {
         viewModelScope.launch {
             // Giữ màn hình tối thiểu 1500ms để hiệu ứng animation và thương hiệu được hiển thị trọn vẹn
-            val minDisplayDelay = launch { delay(10000) }
+            val minDisplayDelay = launch { delay(1500) }
 
             // 1. Kiểm tra trạng thái đã đăng nhập
             val hasToken = tokenManager.isLoggedIn()

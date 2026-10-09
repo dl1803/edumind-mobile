@@ -18,6 +18,7 @@ import com.edumind.app.ui.auth.LoginScreen
 import com.edumind.app.ui.explore.ExploreScreen
 import com.edumind.app.ui.home.HomeScreen
 import com.edumind.app.ui.library.MyCoursesScreen
+import com.edumind.app.ui.onboarding.OnboardingScreen
 import com.edumind.app.ui.profile.ProfileScreen
 import com.edumind.app.ui.progress.ProgressScreen
 import com.edumind.app.ui.splash.SplashDestination
@@ -86,12 +87,26 @@ fun AppNavGraph(
                                         popUpTo(Screen.Splash.route) { inclusive = true }
                                     }
                                 }
-                                SplashDestination.Onboarding,
+                                SplashDestination.Onboarding -> {
+                                    navController.navigate(Screen.Onboarding.route) {
+                                        popUpTo(Screen.Splash.route) { inclusive = true }
+                                    }
+                                }
                                 SplashDestination.Login -> {
                                     navController.navigate(Screen.Login.route) {
                                         popUpTo(Screen.Splash.route) { inclusive = true }
                                     }
                                 }
+                            }
+                        }
+                    )
+                }
+
+                composable(Screen.Onboarding.route) {
+                    OnboardingScreen(
+                        onFinishOnboarding = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.Onboarding.route) { inclusive = true }
                             }
                         }
                     )
