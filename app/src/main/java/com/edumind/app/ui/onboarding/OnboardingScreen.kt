@@ -154,10 +154,10 @@ fun OnboardingScreenContent(
             }
         }
 
-        // 2. Nội dung Slides: HorizontalPager
+        // Nội dung Slides
         pagerContent()
 
-        // 3. Vùng Điều Khiển Dưới Đáy (Dots Indicator + Action Button)
+        // Vùng Điều Khiển Dưới Đáy
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -165,7 +165,7 @@ fun OnboardingScreenContent(
                 .padding(bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Hàng Page Indicator Dots (gap-2 = 8dp, mb-6 = 24dp)
+            // Hàng Page Indicator Dots
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -199,8 +199,7 @@ fun OnboardingScreenContent(
                 }
             }
 
-            // Nút "Tiếp theo" (slides 1..3) hoặc "Bắt đầu" (slide 4)
-            // Đổ bóng tím phát sáng shadow-nebula (spotColor tím, loại bỏ bóng đen đậm)
+            // Nút chuyển slide hoặc hoàn thành Onboarding
             val btnInteraction = remember { MutableInteractionSource() }
             val isBtnPressed by btnInteraction.collectIsPressedAsState()
 
@@ -267,11 +266,6 @@ fun OnboardingSlideItem(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Khối minh họa:
-        // 1. Nền base sáng #F8FAFC
-        // 2. Dải gradient nebula-ambient đa sắc
-        // 3. Vầng loang hào quang tròn mềm ở trung tâm bao bọc ảnh minh họa
-        // 4. Hai dải fade làm mờ ở đỉnh và đáy hòa vào nền trắng
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -280,23 +274,22 @@ fun OnboardingSlideItem(
                 .background(
                     Brush.linearGradient(
                         colorStops = arrayOf(
-                            0.00f to Color(0x283B82F6), // ~16% blue
-                            0.38f to Color(0x328B5CF6), // ~20% purple
-                            0.72f to Color(0x2BEC4899), // ~17% pink
-                            1.00f to Color(0x208B5CF6)  // ~13% purple
+                            0.00f to Color(0x283B82F6),
+                            0.38f to Color(0x328B5CF6),
+                            0.72f to Color(0x2BEC4899),
+                            1.00f to Color(0x208B5CF6)
                         )
                     )
                 )
                 .drawBehind {
-                    // Vầng loang hào quang tròn tỏa sáng ở trung tâm quanh ảnh
                     val centerOffset = Offset(size.width / 2f, size.height / 2f)
                     val glowRadius = size.width * 0.46f
                     drawCircle(
                         brush = Brush.radialGradient(
                             colorStops = arrayOf(
-                                0.00f to Color(0x458B5CF6), // 27% tím rực rỡ
-                                0.40f to Color(0x28EC4899), // 16% hồng tươi
-                                0.72f to Color(0x123B82F6), // 7% xanh dương
+                                0.00f to Color(0x458B5CF6),
+                                0.40f to Color(0x28EC4899),
+                                0.72f to Color(0x123B82F6),
                                 1.00f to Color.Transparent
                             ),
                             center = centerOffset,
@@ -308,7 +301,6 @@ fun OnboardingSlideItem(
                 },
             contentAlignment = Alignment.Center
         ) {
-            // Hình minh họa chi tiết theo từng slide
             when (pageIndex) {
                 0 -> OnboardingIllustration1()
                 1 -> OnboardingIllustration2()
@@ -316,7 +308,6 @@ fun OnboardingSlideItem(
                 3 -> OnboardingIllustration4()
             }
 
-            // Top edge blend fade (48dp White -> Transparent)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -329,7 +320,6 @@ fun OnboardingSlideItem(
                     )
             )
 
-            // Bottom edge blend fade (48dp Transparent -> White)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -343,7 +333,6 @@ fun OnboardingSlideItem(
             )
         }
 
-        // Phần Tiêu đề và Mô tả (px-8 = 32dp, pt-6 = 24dp)
         Column(
             modifier = Modifier
                 .fillMaxWidth()

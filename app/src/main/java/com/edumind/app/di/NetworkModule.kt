@@ -7,6 +7,7 @@ import androidx.security.crypto.MasterKey
 import com.edumind.app.BuildConfig
 import com.edumind.app.data.local.prefs.TokenManager
 import com.edumind.app.data.remote.api.AuthApiService
+import com.edumind.app.data.remote.mock.FakeAuthApiService
 import com.edumind.app.data.remote.interceptor.AuthInterceptor
 import com.edumind.app.data.remote.interceptor.TokenAuthenticator
 import com.edumind.app.util.Constants
@@ -116,5 +117,17 @@ object NetworkModule {
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
+        // Cờ USE_MOCK_AUTH: Khi BE chưa deploy, trả FakeAuthApiService()
+        val useMockAuth = true
+        return if (useMockAuth) {
+            FakeAuthApiService()
+        } else {
+            retrofit.create(AuthApiService::class.java)
+        }
     }
 }

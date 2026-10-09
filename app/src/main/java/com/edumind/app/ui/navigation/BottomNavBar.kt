@@ -41,7 +41,7 @@ fun BottomNavBar(
     onNavigateToRoute: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // Dock nổi: bo tròn 26dp, cao 64dp, kính mờ đổ bóng 12dp
+    // Floating Dock bar
     Box(
         modifier = modifier
             .fillMaxWidth()

@@ -13,7 +13,7 @@ class AuthInterceptor @Inject constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
 
-        // 1. Kiểm tra cờ No-Auth (dành cho API công khai hoặc API refresh)
+        // Kiểm tra cờ No-Auth (dành cho API công khai hoặc API refresh)
         if (originalRequest.header("No-Auth") != null) {
             val requestWithoutNoAuth = originalRequest.newBuilder()
                 .removeHeader("No-Auth")
@@ -21,7 +21,7 @@ class AuthInterceptor @Inject constructor(
             return chain.proceed(requestWithoutNoAuth)
         }
 
-        // 2. Tự động gắn Bearer Token nếu người dùng đã đăng nhập
+        // Tự động gắn Bearer Token nếu người dùng đã đăng nhập
         val accessToken = tokenManager.getAccessToken()
         val requestBuilder = originalRequest.newBuilder()
 

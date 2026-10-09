@@ -22,26 +22,26 @@ class TokenAuthenticator @Inject constructor(
     private val lock = Any()
 
     override fun authenticate(route: Route?, response: Response): Request? {
-        // 1. Chống lặp vô hạn (chỉ cho phép retry tối đa 1 lần tiếp theo)
+        // Chống lặp vô hạn (chỉ cho phép retry tối đa 1 lần tiếp theo)
         if (responseCount(response) >= 2) {
             return null
         }
 
-        // 2. Không xử lý nếu request bị 401 không có header Authorization (ví dụ đăng nhập sai)
+        // Không xử lý nếu request bị 401 không có header Authorization (ví dụ đăng nhập sai)
         val currentHeader = response.request.header("Authorization") ?: return null
         val currentToken = currentHeader.removePrefix("Bearer ").trim()
 
         synchronized(lock) {
             val latestAccessToken = tokenManager.getAccessToken()
 
-            // 3. Nếu luồng khác đã vừa refresh xong và lưu token mới -> retry ngay lập tức
+            // Nếu luồng khác đã vừa refresh xong và lưu token mới -> retry ngay lập tức
             if (!latestAccessToken.isNullOrBlank() && latestAccessToken != currentToken) {
                 return response.request.newBuilder()
                     .header("Authorization", "Bearer $latestAccessToken")
                     .build()
             }
 
-            // 4. Nếu chưa có luồng nào refresh, tiến hành gọi API refresh
+            // Nếu chưa có luồng nào refresh, tiến hành gọi API refresh
             val refreshToken = tokenManager.getRefreshToken()
             if (refreshToken.isNullOrBlank()) {
                 handleSessionExpired()

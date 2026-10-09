@@ -129,7 +129,6 @@ fun SplashScreenContent(
     val cycleWidthPx = with(LocalDensity.current) { 520.dp.toPx() }
     val shimmerOffset = shimmerProgress * cycleWidthPx
 
-    // Shimmer cho tên ứng dụng EduMind
     val appNameBrush = Brush.linearGradient(
         colorStops = arrayOf(
             0.00f to Color(0xFF2563EB),
@@ -147,7 +146,6 @@ fun SplashScreenContent(
         tileMode = TileMode.Repeated
     )
 
-    // Shimmer cho icon ngôi sao của Badge
     val badgeIconBrush = Brush.linearGradient(
         colorStops = arrayOf(
             0.00f to Color(0xFF2563EB),
@@ -163,7 +161,6 @@ fun SplashScreenContent(
         tileMode = TileMode.Repeated
     )
 
-    // Shimmer cho text Badge AI
     val badgeTextBrush = Brush.linearGradient(
         colorStops = arrayOf(
             0.00f to Color(0xFF6B21A8),
@@ -181,7 +178,6 @@ fun SplashScreenContent(
         tileMode = TileMode.Repeated
     )
 
-    // Shimmer cho viền bo tròn của Badge
     val badgeBorderBrush = Brush.linearGradient(
         colorStops = arrayOf(
             0.00f to Color(0x60C084FC),
@@ -195,7 +191,6 @@ fun SplashScreenContent(
         tileMode = TileMode.Repeated
     )
 
-    // Container gốc áp dụng fade-in toàn màn hình
     Box(
         modifier = modifier
             .fillMaxSize()
