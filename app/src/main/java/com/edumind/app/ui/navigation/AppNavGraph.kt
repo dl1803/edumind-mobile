@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.edumind.app.ui.auth.LoginScreen
+import com.edumind.app.ui.auth.RegisterScreen
 import com.edumind.app.ui.explore.ExploreScreen
 import com.edumind.app.ui.home.HomeScreen
 import com.edumind.app.ui.library.MyCoursesScreen
@@ -132,15 +133,21 @@ fun AppNavGraph(
                 }
 
                 composable(Screen.Register.route) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = androidx.compose.ui.Alignment.Center
-                    ) {
-                        androidx.compose.material3.Text(
-                            text = "Tính năng Đăng ký (M-04) đang được hoàn thiện",
-                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
-                        )
-                    }
+                    RegisterScreen(
+                        onRegisterSuccess = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(Screen.Register.route) { inclusive = true }
+                            }
+                        },
+                        onNavigateToLogin = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.Register.route) { inclusive = true }
+                            }
+                        },
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        }
+                    )
                 }
 
                 composable(Screen.ForgotPassword.route) {
