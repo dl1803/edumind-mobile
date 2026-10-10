@@ -118,11 +118,42 @@ fun AppNavGraph(
                             navController.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Login.route) { inclusive = true }
                             }
+                        },
+                        onNavigateToRegister = {
+                            navController.navigate(Screen.Register.route)
+                        },
+                        onNavigateToForgotPassword = {
+                            navController.navigate(Screen.ForgotPassword.route)
+                        },
+                        onNavigateToOtp = { _ ->
+                            navController.navigate(Screen.Register.route)
                         }
                     )
                 }
 
-                // --- Main Flow (5 Tabs) ---
+                composable(Screen.Register.route) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        androidx.compose.material3.Text(
+                            text = "Tính năng Đăng ký (M-04) đang được hoàn thiện",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+
+                composable(Screen.ForgotPassword.route) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        androidx.compose.material3.Text(
+                            text = "Tính năng Quên mật khẩu (M-05) đang được hoàn thiện",
+                            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
                 composable(Screen.Home.route) {
                     HomeScreen()
                 }

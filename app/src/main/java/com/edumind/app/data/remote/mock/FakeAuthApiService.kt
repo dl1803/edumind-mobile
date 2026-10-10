@@ -121,6 +121,13 @@ class FakeAuthApiService : AuthApiService {
                         .toResponseBody("application/json".toMediaTypeOrNull())
                 )
             }
+            body.email == "rate_limit@test.com" -> {
+                Response.error(
+                    429,
+                    """{"error":{"code":"RATE_LIMIT_EXCEEDED","message":"Quá nhiều yêu cầu. Vui lòng thử lại sau 15 phút."}}"""
+                        .toResponseBody("application/json".toMediaTypeOrNull())
+                )
+            }
             else -> {
                 Response.error(
                     401,

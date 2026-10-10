@@ -8,7 +8,7 @@ val Primary950 = Color(0xFF2E1065)
 val Primary900 = Color(0xFF581C87)
 val Primary800 = Color(0xFF6B21A8)
 val Primary700 = Color(0xFF7C3AED) // Màu nhận diện cốt lõi (Core Primary)
-val Primary600 = Color(0xFF8B5CF6) // Hover, border focus, icon active
+val Primary600 = Color(0xFF9333EA) // Hover, border focus, icon active (Purple600)
 val Primary500 = Color(0xFFA855F7)
 val Primary400 = Color(0xFFC084FC)
 val Primary300 = Color(0xFFD8B4FE)
@@ -20,13 +20,18 @@ val Primary50  = Color(0xFFFAF5FF) // Nền active menu, hover row
 val NebulaBlue   = Color(0xFF3B82F6)
 val NebulaPurple = Color(0xFF8B5CF6)
 val NebulaPink   = Color(0xFFEC4899)
+val NebulaShadow = Color(0x598B5CF6) // rgba(139, 92, 246, 0.35)
 
-// Dải Gradient Nebula dùng cho nút CTA chính và thanh tiến độ
+// Dải Gradient Nebula dùng cho nút CTA chính và thanh tiến độ (135 độ)
 val NebulaGradient = Brush.linearGradient(
     colors = listOf(NebulaBlue, NebulaPurple, NebulaPink)
 )
 
-val NebulaBrush = Brush.horizontalGradient(
+val NebulaBrush = Brush.linearGradient(
+    colors = listOf(NebulaBlue, NebulaPurple, NebulaPink)
+)
+
+val NebulaBrush135 = Brush.linearGradient(
     colors = listOf(NebulaBlue, NebulaPurple, NebulaPink)
 )
 
@@ -46,7 +51,12 @@ val Warning100 = Color(0xFFFEF9C3)
 
 val Error700   = Color(0xFFB91C1C)
 val Error600   = Color(0xFFDC2626)
+val Error500   = Color(0xFFEF4444)
+val Error400   = Color(0xFFF87171) // Viền đỏ nhạt, nhẹ nhàng
+val Error300   = Color(0xFFFCA5A5)
+val Error200   = Color(0xFFFECACA)
 val Error100   = Color(0xFFFEE2E2)
+val Error50    = Color(0xFFFEF2F2)
 
 val Info600    = Color(0xFF2563EB)
 val Info100    = Color(0xFFDBEAFE)
