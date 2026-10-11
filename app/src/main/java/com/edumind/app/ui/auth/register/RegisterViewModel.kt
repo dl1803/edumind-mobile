@@ -1,4 +1,4 @@
-package com.edumind.app.ui.auth
+package com.edumind.app.ui.auth.register
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -224,7 +224,7 @@ class RegisterViewModel @Inject constructor(
             val result = authRepository.verifyOtp(
                 email = state.email.trim(),
                 otp = otp.trim(),
-                purpose = "register"
+                purpose = "registration"
             )
 
             result.fold(
@@ -251,7 +251,7 @@ class RegisterViewModel @Inject constructor(
 
             val result = authRepository.resendOtp(
                 email = state.email.trim(),
-                purpose = "register"
+                purpose = "registration"
             )
 
             result.fold(

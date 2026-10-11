@@ -1,4 +1,4 @@
-package com.edumind.app.ui.auth
+package com.edumind.app.ui.auth.login
 
 import android.widget.Toast
 import androidx.compose.animation.core.Animatable
@@ -8,11 +8,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.*
@@ -26,6 +28,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -177,8 +181,8 @@ fun LoginScreen(
                         isError = !uiState.emailError.isNullOrBlank() || isServerError,
                         enabled = !uiState.isLocked && !uiState.isLoading,
                         onFocus = { viewModel.clearErrors() },
-                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
-                            keyboardType = androidx.compose.ui.text.input.KeyboardType.Email,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
                             imeAction = ImeAction.Next
                         ),
                         leadingIcon = {
@@ -260,18 +264,18 @@ fun LoginScreen(
                     ) {
                         Text(
                             text = "Chưa có tài khoản?",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 14.sp,
                                 color = Neutral600
                             )
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "Đăng ký ngay",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontSize = 12.sp,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontSize = 14.sp,
                                 color = Primary700,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.SemiBold
                             ),
                             modifier = Modifier.clickable { onNavigateToRegister() }
                         )
@@ -279,7 +283,6 @@ fun LoginScreen(
                 }
             }
 
-            // Modal Locked Dialog chuẩn prototype M-03 (Tài khoản bị tạm khóa)
             if (uiState.isLocked || uiState.showAccountLockedDialog) {
                 Box(
                     modifier = Modifier
@@ -289,7 +292,7 @@ fun LoginScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Surface(
-                        shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                        shape = RoundedCornerShape(20.dp),
                         color = Color.White,
                         shadowElevation = 16.dp,
                         modifier = Modifier.fillMaxWidth()
@@ -301,7 +304,7 @@ fun LoginScreen(
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .clip(androidx.compose.foundation.shape.CircleShape)
+                                    .clip(CircleShape)
                                     .background(Error100),
                                 contentAlignment = Alignment.Center
                             ) {
@@ -331,7 +334,7 @@ fun LoginScreen(
                                 style = MaterialTheme.typography.bodySmall.copy(
                                     fontSize = 12.sp,
                                     color = Neutral600,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    textAlign = TextAlign.Center,
                                     lineHeight = 18.sp
                                 )
                             )

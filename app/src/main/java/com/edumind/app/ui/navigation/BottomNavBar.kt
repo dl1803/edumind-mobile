@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.edumind.app.ui.theme.Neutral400
@@ -65,7 +66,7 @@ fun BottomNavBar(
                     color = Color(0xFF8B5CF6).copy(alpha = 0.20f),
                     shape = RoundedCornerShape(26.dp)
                 )
-                .padding(horizontal = 8.dp),
+                .padding(horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -86,6 +87,7 @@ fun BottomNavBar(
 
                 Column(
                     modifier = Modifier
+                        .weight(1f)
                         .clip(RoundedCornerShape(16.dp))
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -95,7 +97,7 @@ fun BottomNavBar(
                                 onNavigateToRoute(item.route)
                             }
                         }
-                        .padding(horizontal = 10.dp, vertical = 4.dp),
+                        .padding(vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -120,9 +122,9 @@ fun BottomNavBar(
                                             color = Primary600.copy(alpha = 0.35f),
                                             shape = RoundedCornerShape(14.dp)
                                         )
-                                        .padding(horizontal = 12.dp, vertical = 3.dp)
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
                                 } else {
-                                    Modifier.padding(horizontal = 12.dp, vertical = 3.dp)
+                                    Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                                 }
                             ),
                         contentAlignment = Alignment.Center
@@ -138,8 +140,10 @@ fun BottomNavBar(
                     Text(
                         text = item.title,
                         color = textColor,
-                        fontSize = 10.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 12.sp,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }

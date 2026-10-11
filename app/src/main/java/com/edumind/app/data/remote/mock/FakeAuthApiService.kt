@@ -156,6 +156,13 @@ class FakeAuthApiService : AuthApiService {
 
     override suspend fun forgotPassword(body: ForgotPasswordRequest): Response<MessageResponse> {
         delay(600)
+        if (body.email.trim().equals("notfound@test.com", ignoreCase = true)) {
+            return Response.error(
+                404,
+                """{"error":{"code":"EMAIL_NOT_FOUND","message":"Email không tồn tại trong hệ thống."}}"""
+                    .toResponseBody("application/json".toMediaTypeOrNull())
+            )
+        }
         return Response.success(
             MessageResponse(
                 message = "Nếu email tồn tại, mã xác nhận sẽ được gửi.",
