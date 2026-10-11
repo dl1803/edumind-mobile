@@ -1,4 +1,4 @@
-package com.edumind.app.ui.auth
+package com.edumind.app.ui.auth.login
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -7,8 +7,6 @@ import com.edumind.app.util.AppException
 import com.edumind.app.util.NetworkException
 import com.edumind.app.util.Validators
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow

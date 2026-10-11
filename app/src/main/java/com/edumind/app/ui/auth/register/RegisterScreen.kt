@@ -1,4 +1,4 @@
-package com.edumind.app.ui.auth
+package com.edumind.app.ui.auth.register
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -17,11 +17,11 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -33,7 +33,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -153,8 +152,9 @@ fun RegisterScreen(
                 title = {
                     Text(
                         text = if (uiState.currentStep == RegisterStep.FORM) "Đăng ký" else "Xác nhận email",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = Neutral950
                         ),
                         modifier = Modifier.fillMaxWidth(),
@@ -279,7 +279,7 @@ private fun RegisterFormContent(
                 errorText = uiState.fullNameError,
                 isError = !uiState.fullNameError.isNullOrBlank(),
                 enabled = !uiState.isLoading,
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Text,
                     imeAction = ImeAction.Next
                 ),
@@ -295,11 +295,11 @@ private fun RegisterFormContent(
                 value = uiState.email,
                 onValueChange = onEmailChange,
                 label = "Email",
-                placeholder = "example@email.com",
+                placeholder = "example@gmail.com",
                 errorText = uiState.emailError,
                 isError = !uiState.emailError.isNullOrBlank(),
                 enabled = !uiState.isLoading,
-                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Email,
                     imeAction = ImeAction.Next
                 ),
@@ -363,14 +363,14 @@ private fun RegisterFormContent(
         ) {
             Text(
                 text = "Đã có tài khoản?",
-                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp, color = Neutral700)
+                style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp, color = Neutral700)
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = "Đăng nhập",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = Primary700
                 ),
                 modifier = Modifier.clickable(onClick = onNavigateToLogin)
@@ -412,7 +412,7 @@ private fun CriteriaItem(text: String, isMet: Boolean) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall.copy(
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 fontWeight = if (isMet) FontWeight.Medium else FontWeight.Normal,
                 color = if (isMet) Success700 else Neutral500
             )
@@ -455,9 +455,9 @@ private fun RegisterOtpContent(
             // Tiêu đề & Thông tin Email nhận mã
             Text(
                 text = "Mã xác nhận bảo mật",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = Neutral950
                 ),
                 textAlign = TextAlign.Center
@@ -467,9 +467,9 @@ private fun RegisterOtpContent(
 
             Text(
                 text = "Mã xác thực 6 số đã được gửi đến",
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 13.sp,
-                    color = Neutral500
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.sp,
+                    color = Neutral600
                 ),
                 textAlign = TextAlign.Center
             )
@@ -478,9 +478,9 @@ private fun RegisterOtpContent(
 
             Text(
                 text = uiState.email,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = Neutral950
                 ),
                 textAlign = TextAlign.Center
@@ -519,7 +519,7 @@ private fun RegisterOtpContent(
                     text = "Mã hết hạn sau ${uiState.countdownFormatted}",
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontFamily = FontFamily.Monospace,
-                        fontSize = 13.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = Warning600
                     ),
@@ -533,7 +533,7 @@ private fun RegisterOtpContent(
             Text(
                 text = "Gửi lại mã",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = if (uiState.isResendEnabled && !uiState.isLoading && !uiState.isOtpLocked) Primary700 else Neutral400
                 ),
