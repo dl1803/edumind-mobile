@@ -21,25 +21,25 @@ import com.edumind.app.ui.theme.Neutral100
 fun Modifier.shimmer(): Modifier = composed {
     val transition = rememberInfiniteTransition(label = "shimmer")
     val translateAnim by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1000f,
+        initialValue = -500f,
+        targetValue = 1500f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1200, easing = LinearEasing),
+            animation = tween(durationMillis = 1500, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "shimmerTranslate"
     )
 
     val shimmerColors = listOf(
-        Neutral100,
-        Color.White.copy(alpha = 0.7f),
-        Neutral100,
+        Color(0xFFE5E5E5), // Neutral200 (#E5E5E5 25%)
+        Color(0xFFF5F5F5), // Neutral100 (#F5F5F5 50%)
+        Color(0xFFE5E5E5), // Neutral200 (#E5E5E5 75%)
     )
 
     val brush = Brush.linearGradient(
         colors = shimmerColors,
-        start = Offset(translateAnim - 200f, translateAnim - 200f),
-        end = Offset(translateAnim, translateAnim)
+        start = Offset(translateAnim - 400f, 0f),
+        end = Offset(translateAnim, 0f)
     )
 
     background(brush)

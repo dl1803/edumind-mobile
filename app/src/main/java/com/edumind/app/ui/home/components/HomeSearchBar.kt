@@ -40,7 +40,7 @@ fun HomeSearchBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(vertical = 6.dp)
     ) {
         Row(
             modifier = Modifier

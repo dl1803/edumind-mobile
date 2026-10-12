@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -36,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.edumind.app.data.model.response.ContinueLearningItem
 import com.edumind.app.ui.theme.EduMindFontFamily
@@ -61,13 +61,13 @@ fun ContinueLearningSection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp)
+            .padding(vertical = 8.dp)
     ) {
-        // Tiêu đề Section
+        // Tiêu đề Section (Căn mép thẳng hàng với lưới 16dp)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -78,13 +78,6 @@ fun ContinueLearningSection(
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     color = Neutral950
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                // Chấm xanh nhịp đập pulse
-                Box(
-                    modifier = Modifier
-                        .size(8.dp)
-                        .background(Success600, CircleShape)
                 )
             }
 
@@ -100,7 +93,6 @@ fun ContinueLearningSection(
 
         // Danh sách thẻ ngang 265dp
         LazyRow(
-            contentPadding = PaddingValues(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(items, key = { "${it.courseId}_${it.lessonId}" }) { item ->
@@ -128,6 +120,7 @@ fun ContinueLearningSection(
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)
                                     .data(item.thumbnailUrl)
+                                    .decoderFactory(SvgDecoder.Factory())
                                     .crossfade(true)
                                     .build(),
                                 contentDescription = item.courseTitle,
@@ -180,7 +173,7 @@ fun ContinueLearningSection(
 
                             Spacer(modifier = Modifier.height(10.dp))
 
-                            // Thanh tiến độ
+                            // Thanh tiến độ Nebula
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()

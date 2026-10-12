@@ -3,38 +3,45 @@ package com.edumind.app.ui.home.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material3.BadgedBox
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.edumind.app.ui.theme.EduMindFontFamily
 import com.edumind.app.ui.theme.Error600
 import com.edumind.app.ui.theme.NebulaBrush
 import com.edumind.app.ui.theme.Neutral500
-import com.edumind.app.ui.theme.Neutral700
 import com.edumind.app.ui.theme.Neutral900
 import com.edumind.app.ui.theme.Primary700
-import com.edumind.app.ui.theme.Success600
 
 @Composable
 fun HomeHeader(
@@ -48,10 +55,11 @@ fun HomeHeader(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .statusBarsPadding()
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar với viền Nebula + Chấm Online xanh
+        // Avatar với viền Nebula (Đã xóa chấm xanh online)
         Box(
             modifier = Modifier
                 .size(42.dp)
@@ -79,14 +87,6 @@ fun HomeHeader(
                     )
                 }
             }
-            // Chấm xanh online
-            Box(
-                modifier = Modifier
-                    .size(10.dp)
-                    .align(Alignment.BottomEnd)
-                    .background(Success600, CircleShape)
-                    .border(2.dp, Color.White, CircleShape)
-            )
         }
 
         Spacer(modifier = Modifier.width(12.dp))
@@ -126,39 +126,66 @@ fun HomeHeader(
             )
         }
 
-        // Chuông thông báo với Badge đếm
-        IconButton(
-            onClick = onNotificationClick,
-            modifier = Modifier.size(40.dp)
+        // Icon Chuông: Icon chuông tô màu Gradient Nebula + Badge đỏ tròn chuẩn trên vai phải chuông
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onNotificationClick
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            BadgedBox(
-                badge = {
-                    if (unreadCount > 0) {
-                        val displayCount = if (unreadCount > 99) "99+" else unreadCount.toString()
-                        Box(
-                            modifier = Modifier
-                                .background(Error600, CircleShape)
-                                .border(1.5.dp, Color.White, CircleShape)
-                                .padding(horizontal = 4.dp, vertical = 1.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = displayCount,
-                                fontFamily = EduMindFontFamily,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 9.sp,
-                                color = Color.White
-                            )
-                        }
-                    }
-                }
+            Box(
+                modifier = Modifier.size(28.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Notifications,
+                    imageVector = Icons.Filled.Notifications,
                     contentDescription = "Thông báo",
-                    tint = Neutral700,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier
+                        .size(28.dp)
+                        .graphicsLayer(alpha = 0.99f)
+                        .drawWithCache {
+                            onDrawWithContent {
+                                drawContent()
+                                drawRect(NebulaBrush, blendMode = BlendMode.SrcIn)
+                            }
+                        }
                 )
+
+                if (unreadCount > 0) {
+                    val displayCount = if (unreadCount > 99) "99+" else unreadCount.toString()
+                    val badgeSize = if (displayCount.length > 2) 18.dp else 16.dp
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .offset(x = 3.dp, y = (-2).dp)
+                            .size(badgeSize)
+                            .background(Error600, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = displayCount,
+                            style = TextStyle(
+                                fontFamily = EduMindFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = if (displayCount.length > 2) 7.5.sp else 10.sp,
+                                color = Color.White,
+                                textAlign = TextAlign.Center,
+                                lineHeight = if (displayCount.length > 2) 7.5.sp else 10.sp,
+                                platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(
+                                    includeFontPadding = false
+                                ),
+                                lineHeightStyle = LineHeightStyle(
+                                    alignment = LineHeightStyle.Alignment.Center,
+                                    trim = LineHeightStyle.Trim.Both
+                                )
+                            )
+                        )
+                    }
+                }
             }
         }
     }

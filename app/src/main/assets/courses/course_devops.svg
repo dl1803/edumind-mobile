@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 225" width="400" height="225">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#374151"/>
+      <stop offset="100%" style="stop-color:#111827"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="225" fill="url(#bg)"/>
+  <!-- Infinity DevOps loop -->
+  <path d="M140,112 C140,82 175,82 200,112 C225,142 260,142 260,112 C260,82 225,82 200,112 C175,142 140,142 140,112" stroke="rgba(96,165,250,0.6)" stroke-width="3" fill="none"/>
+  <!-- Pipeline arrows -->
+  <rect x="30" y="100" width="40" height="24" rx="6" fill="rgba(52,211,153,0.25)" stroke="rgba(52,211,153,0.5)" stroke-width="1.5"/>
+  <text x="40" y="116" fill="rgba(52,211,153,0.8)" font-family="monospace" font-size="9">DEV</text>
+  <polygon points="78,112 88,106 88,118" fill="rgba(255,255,255,0.3)"/>
+  <rect x="330" y="100" width="40" height="24" rx="6" fill="rgba(168,85,247,0.25)" stroke="rgba(168,85,247,0.5)" stroke-width="1.5"/>
+  <text x="335" y="116" fill="rgba(168,85,247,0.8)" font-family="monospace" font-size="9">OPS</text>
+  <polygon points="322,112 312,106 312,118" fill="rgba(255,255,255,0.3)"/>
+  <!-- Docker container -->
+  <rect x="60" y="45" width="50" height="35" rx="4" fill="rgba(56,189,248,0.15)" stroke="rgba(56,189,248,0.4)" stroke-width="1.5"/>
+  <rect x="65" y="42" width="40" height="5" rx="2" fill="rgba(56,189,248,0.25)"/>
+  <rect x="68" y="55" width="10" height="8" rx="1" fill="rgba(56,189,248,0.3)"/>
+  <rect x="82" y="55" width="10" height="8" rx="1" fill="rgba(56,189,248,0.3)"/>
+  <rect x="68" y="66" width="10" height="8" rx="1" fill="rgba(56,189,248,0.3)"/>
+  <rect x="82" y="66" width="10" height="8" rx="1" fill="rgba(56,189,248,0.3)"/>
+  <!-- Terminal -->
+  <rect x="290" y="40" width="70" height="45" rx="5" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
+  <circle cx="298" cy="48" r="2" fill="rgba(239,68,68,0.6)"/>
+  <circle cx="306" cy="48" r="2" fill="rgba(234,179,8,0.6)"/>
+  <circle cx="314" cy="48" r="2" fill="rgba(34,197,94,0.6)"/>
+  <text x="296" y="62" fill="rgba(52,211,153,0.7)" font-family="monospace" font-size="7">$ git push</text>
+  <text x="296" y="72" fill="rgba(255,255,255,0.4)" font-family="monospace" font-size="7">deploying...</text>
+  <!-- Git branches -->
+  <circle cx="150" cy="180" r="5" fill="rgba(250,204,21,0.4)"/>
+  <circle cx="180" cy="180" r="5" fill="rgba(250,204,21,0.4)"/>
+  <circle cx="210" cy="180" r="5" fill="rgba(52,211,153,0.5)"/>
+  <circle cx="240" cy="180" r="5" fill="rgba(52,211,153,0.5)"/>
+  <line x1="155" y1="180" x2="175" y2="180" stroke="rgba(250,204,21,0.3)" stroke-width="2"/>
+  <line x1="185" y1="180" x2="205" y2="180" stroke="rgba(250,204,21,0.3)" stroke-width="2"/>
+  <line x1="215" y1="180" x2="235" y2="180" stroke="rgba(52,211,153,0.3)" stroke-width="2"/>
+  <!-- Branch merge line -->
+  <line x1="180" y1="175" x2="210" y2="175" stroke="rgba(168,85,247,0.3)" stroke-width="1.5" stroke-dasharray="3,3"/>
+  <!-- Checkmarks -->
+  <circle cx="210" cy="160" r="8" fill="rgba(52,211,153,0.2)"/>
+  <polyline points="205,160 209,164 216,156" stroke="rgba(52,211,153,0.7)" stroke-width="2" fill="none"/>
+  <!-- Cloud -->
+  <path d="M165,42 A15,15 0 0,1 195,35 A20,20 0 0,1 230,45 A12,12 0 0,1 230,68 L165,68 A15,15 0 0,1 165,42" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+</svg>

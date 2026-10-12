@@ -39,10 +39,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.edumind.app.data.model.response.FeaturedCourse
 import com.edumind.app.ui.theme.EduMindFontFamily
@@ -78,13 +78,11 @@ fun HomeBannerPager(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 6.dp)
     ) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxWidth()
         ) { page ->
             val course = featuredCourses[page]
             Card(
@@ -101,6 +99,7 @@ fun HomeBannerPager(
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(course.bannerUrl)
+                            .decoderFactory(SvgDecoder.Factory())
                             .crossfade(true)
                             .build(),
                         contentDescription = course.title,
@@ -193,25 +192,13 @@ fun HomeBannerPager(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = course.priceVnd.toVnd(),
-                                    fontFamily = EduMindFontFamily,
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 14.sp,
-                                    color = Color.White
-                                )
-                                course.originalPriceVnd?.let { original ->
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Text(
-                                        text = original.toVnd(),
-                                        fontFamily = EduMindFontFamily,
-                                        fontSize = 11.sp,
-                                        color = Color.White.copy(alpha = 0.6f),
-                                        textDecoration = TextDecoration.LineThrough
-                                    )
-                                }
-                            }
+                            Text(
+                                text = course.priceVnd.toVnd(),
+                                fontFamily = EduMindFontFamily,
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 14.sp,
+                                color = Color.White
+                            )
 
                             Row(
                                 modifier = Modifier

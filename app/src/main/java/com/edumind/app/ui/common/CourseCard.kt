@@ -3,6 +3,7 @@ package com.edumind.app.ui.common
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,20 +28,24 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.edumind.app.data.model.response.CourseSummary
 import com.edumind.app.ui.theme.EduMindFontFamily
-import com.edumind.app.ui.theme.NebulaBrush
+import com.edumind.app.ui.theme.NebulaTextBrush
 import com.edumind.app.ui.theme.Neutral100
 import com.edumind.app.ui.theme.Neutral200
 import com.edumind.app.ui.theme.Neutral500
+import com.edumind.app.ui.theme.Neutral700
 import com.edumind.app.ui.theme.Neutral900
 import com.edumind.app.ui.theme.Primary700
+import com.edumind.app.ui.theme.Success600
 import com.edumind.app.ui.theme.Warning600
 import com.edumind.app.util.toVnd
 
@@ -61,7 +66,7 @@ fun CourseCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, Neutral200.copy(alpha = 0.6f))
     ) {
         Column {
-            // Thumbnail 16:9
+            // Thumbnail 16:9 hỗ trợ cả JPG và SVG
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -71,6 +76,7 @@ fun CourseCard(
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(course.thumbnailUrl)
+                        .decoderFactory(SvgDecoder.Factory())
                         .crossfade(true)
                         .build(),
                     contentDescription = course.title,
@@ -85,7 +91,7 @@ fun CourseCard(
                     .fillMaxWidth()
                     .padding(12.dp)
             ) {
-                // Tiêu đề khóa học (tối đa 2 dòng)
+                // Tiêu đề khóa học: cố định đúng 2 dòng, nếu lố thì dùng '...'
                 Text(
                     text = course.title,
                     fontFamily = EduMindFontFamily,
@@ -93,14 +99,14 @@ fun CourseCard(
                     fontSize = 13.sp,
                     lineHeight = 18.sp,
                     color = Neutral900,
+                    minLines = 2,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.height(36.dp)
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Giảng viên
+                // Tên giảng viên
                 Text(
                     text = course.instructorName,
                     fontFamily = EduMindFontFamily,
@@ -112,64 +118,68 @@ fun CourseCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                // Đánh giá sao
+                // Hàng đánh giá: bên trái là điểm sao, bên phải là số lượt đánh giá
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = null,
-                        tint = Warning600,
-                        modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(3.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = Warning600,
+                            modifier = Modifier.size(13.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = course.rating.toString(),
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 11.sp,
+                            color = Neutral700,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
                     Text(
-                        text = "${course.rating} · ${course.reviewCount} đánh giá",
+                        text = "${course.reviewCount} đánh giá",
                         fontFamily = EduMindFontFamily,
                         fontSize = 11.sp,
                         color = Neutral500,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Normal
                     )
                 }
 
+                // Dấu gạch ngang nhạt ngăn cách giá tiền với phần trên
                 Spacer(modifier = Modifier.height(8.dp))
-
-                // Giá tiền hoặc Badge Miễn phí
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    contentAlignment = Alignment.CenterStart
+                        .height(1.dp)
+                        .background(Color(0xFFF1F1F4))
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Giá tiền (Gradient 3 dải màu Nebula) hoặc Chữ Miễn phí (Màu xanh nổi bật Success600) nằm góc phải
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.CenterEnd
                 ) {
                     if (course.priceVnd <= 0L) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = Color(0xFFF3E8FF),
-                                    shape = RoundedCornerShape(6.dp)
-                                )
-                                .border(
-                                    width = 1.dp,
-                                    color = Color(0xFFD8B4FE),
-                                    shape = RoundedCornerShape(6.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = "Miễn phí",
-                                fontFamily = EduMindFontFamily,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp,
-                                color = Primary700
-                            )
-                        }
+                        Text(
+                            text = "Miễn phí",
+                            fontFamily = EduMindFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = Success600
+                        )
                     } else {
                         Text(
                             text = course.priceVnd.toVnd(),
                             fontFamily = EduMindFontFamily,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
-                            color = Primary700
+                            style = TextStyle(brush = NebulaTextBrush)
                         )
                     }
                 }
