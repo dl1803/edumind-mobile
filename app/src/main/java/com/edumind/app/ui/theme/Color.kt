@@ -40,6 +40,11 @@ val NebulaGradientHover = Brush.linearGradient(
     colors = listOf(Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFFDB2777))
 )
 
+// Dải Gradient 3 màu chủ đạo đậm nét dùng riêng cho Text hiển thị giá tiền (.text-nebula)
+val NebulaTextBrush = Brush.linearGradient(
+    colors = listOf(Color(0xFF2563EB), Color(0xFF7C3AED), Color(0xFFDB2777))
+)
+
 // Semantic Colors (Trạng thái hệ thống)
 val Success700 = Color(0xFF15803D)
 val Success600 = Color(0xFF16A34A)

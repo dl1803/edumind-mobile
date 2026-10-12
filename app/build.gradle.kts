@@ -109,6 +109,7 @@ dependencies {
 
     // Image Loading
     implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("io.coil-kt:coil-svg:2.5.0")
 
     // Encrypted Preferences & DataStore
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
