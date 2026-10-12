@@ -162,8 +162,32 @@ fun AppNavGraph(
                 }
 
                 composable(Screen.Home.route) {
-                    HomeScreen()
+                    HomeScreen(
+                        onCourseClick = { courseId ->
+                            navController.navigate(Screen.CourseDetail.createRoute(courseId))
+                        },
+                        onContinueClick = { courseId, lessonId ->
+                            navController.navigate(Screen.VideoPlayer.createRoute(lessonId))
+                        },
+                        onSearchClick = {
+                            navController.navigate(Screen.Explore.route)
+                        },
+                        onAiChatClick = {
+                            // Sẽ điều hướng vào màn Chat AI M-13 ở Ngày 14
+                            navController.navigate(Screen.Explore.route)
+                        },
+                        onNotificationClick = {
+                            navController.navigate(Screen.Notification.route)
+                        },
+                        onAvatarClick = {
+                            navController.navigate(Screen.Profile.route)
+                        },
+                        onSeeAllCoursesClick = {
+                            navController.navigate(Screen.MyCourses.route)
+                        }
+                    )
                 }
+
 
                 composable(Screen.Explore.route) {
                     ExploreScreen()
