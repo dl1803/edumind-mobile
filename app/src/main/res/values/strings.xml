@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">edumind-mobile</string>
+    <string name="error_invalid_credentials">Tài khoản hoặc mật khẩu không chính xác.</string>
+    <string name="error_account_locked_15m">Tài khoản bị khóa tạm thời 15 phút do nhập sai 5 lần.</string>
+    <string name="error_too_many_requests">Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.</string>
 </resources>

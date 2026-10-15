@@ -1,37 +1,32 @@
 package com.edumind.app.data.local.prefs
 
 import android.content.SharedPreferences
-import com.edumind.app.util.Constants
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class TokenManager @Inject constructor(
-    private val prefs: SharedPreferences
+    private val storage: TokenStorage
 ) {
+    constructor(prefs: SharedPreferences) : this(EncryptedTokenStorage(prefs))
+
     fun saveTokens(accessToken: String, refreshToken: String) {
-        prefs.edit()
-            .putString(Constants.ACCESS_TOKEN_KEY, accessToken)
-            .putString(Constants.REFRESH_TOKEN_KEY, refreshToken)
-            .apply()
+        storage.saveTokens(accessToken, refreshToken)
     }
 
     fun getAccessToken(): String? {
-        return prefs.getString(Constants.ACCESS_TOKEN_KEY, null)
+        return storage.getAccessToken()
     }
 
     fun getRefreshToken(): String? {
-        return prefs.getString(Constants.REFRESH_TOKEN_KEY, null)
+        return storage.getRefreshToken()
     }
 
     fun clearTokens() {
-        prefs.edit()
-            .remove(Constants.ACCESS_TOKEN_KEY)
-            .remove(Constants.REFRESH_TOKEN_KEY)
-            .apply()
+        storage.clearTokens()
     }
 
     fun isLoggedIn(): Boolean {
         return !getAccessToken().isNullOrBlank()
     }
-}
+}

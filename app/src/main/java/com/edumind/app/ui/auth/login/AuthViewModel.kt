@@ -6,6 +6,7 @@ import com.edumind.app.repository.AuthRepository
 import com.edumind.app.util.AppException
 import com.edumind.app.util.NetworkException
 import com.edumind.app.util.Validators
+import com.edumind.app.util.ClockProvider
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,7 +50,8 @@ sealed interface LoginUiEvent {
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val clockProvider: ClockProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginUiState())
@@ -58,10 +60,9 @@ class AuthViewModel @Inject constructor(
     private val _eventFlow = MutableSharedFlow<LoginUiEvent>()
     val eventFlow: SharedFlow<LoginUiEvent> = _eventFlow.asSharedFlow()
 
-    /**
-     * Khi người dùng đang nhập email: chỉ cập nhật giá trị và xóa lỗi đang hiển thị.
-     * Không validate ngay khi đang gõ để tránh báo lỗi làm phiền người dùng.
-     */
+    private var failedAttempts: Int = 0
+    private var lockedUntilTimestamp: Long = 0L
+
     fun onEmailChanged(newEmail: String) {
         _uiState.update {
             it.copy(
@@ -72,10 +73,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Khi người dùng đang nhập mật khẩu: chỉ cập nhật giá trị và xóa lỗi đang hiển thị.
-     * Không validate ngay khi đang gõ để tránh báo lỗi làm phiền người dùng.
-     */
     fun onPasswordChanged(newPassword: String) {
         _uiState.update {
             it.copy(
@@ -86,12 +83,31 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Xử lý đăng nhập: Chỉ validate khi người dùng bấm Đăng nhập.
-     */
     fun login() {
         val currentState = _uiState.value
-        if (currentState.isLoading || currentState.isLocked) return
+        if (currentState.isLoading) return
+
+        val now = clockProvider.currentTimeMillis()
+        if (currentState.isLocked) {
+            if (now >= lockedUntilTimestamp) {
+                failedAttempts = 0
+                lockedUntilTimestamp = 0L
+                _uiState.update {
+                    it.copy(
+                        isLocked = false,
+                        lockRemainingSeconds = 0L,
+                        generalErrorMessage = null
+                    )
+                }
+            } else {
+                val remainingSeconds = ((lockedUntilTimestamp - now) / 1000).coerceAtLeast(1)
+                _uiState.update { it.copy(lockRemainingSeconds = remainingSeconds) }
+                viewModelScope.launch {
+                    _eventFlow.emit(LoginUiEvent.TriggerShake)
+                }
+                return
+            }
+        }
 
         val emailValidation = Validators.validateEmail(currentState.email)
         val passwordValidation = Validators.validatePassword(currentState.password)
@@ -124,7 +140,16 @@ class AuthViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = {
-                    _uiState.update { it.copy(isLoading = false, isLoginSuccess = true) }
+                    failedAttempts = 0
+                    lockedUntilTimestamp = 0L
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isLoginSuccess = true,
+                            isLocked = false,
+                            lockRemainingSeconds = 0L
+                        )
+                    }
                 },
                 onFailure = { error ->
                     handleLoginError(error)
@@ -140,31 +165,49 @@ class AuthViewModel @Inject constructor(
             is AppException -> {
                 when (error.httpCode) {
                     401 -> {
-                        // Kích hoạt rung form, không phát Toast đáy màn hình
+                        failedAttempts++
                         _eventFlow.emit(LoginUiEvent.TriggerShake)
-                        val errorMsg = "Tài khoản hoặc mật khẩu không chính xác."
-                        _uiState.update {
-                            it.copy(
-                                generalErrorMessage = errorMsg
-                            )
+
+                        if (failedAttempts >= 5) {
+                            lockedUntilTimestamp = clockProvider.currentTimeMillis() + 15 * 60 * 1000L
+                            _uiState.update {
+                                it.copy(
+                                    isLocked = true,
+                                    lockRemainingSeconds = 900L,
+                                    generalErrorMessage = "Tài khoản bị khóa tạm thời 15 phút do nhập sai 5 lần."
+                                )
+                            }
+                        } else {
+                            val errorMsg = "Tài khoản hoặc mật khẩu không chính xác."
+                            _uiState.update {
+                                it.copy(generalErrorMessage = errorMsg)
+                            }
                         }
                     }
                     403 -> {
-                        if (error.errorCode == "EMAIL_NOT_VERIFIED") {
-                            _uiState.update { it.copy(showUnverifiedSnackbar = true) }
-                        } else if (error.errorCode == "ACCOUNT_LOCKED") {
-                            _uiState.update { it.copy(showAccountLockedDialog = true) }
-                        } else {
-                            val msg = error.message
-                            _eventFlow.emit(LoginUiEvent.ShowToast(msg))
-                            _uiState.update { it.copy(generalErrorMessage = msg) }
+                        when (error.errorCode) {
+                            "EMAIL_NOT_VERIFIED" -> {
+                                _uiState.update { it.copy(showUnverifiedSnackbar = true) }
+                            }
+                            "ACCOUNT_LOCKED" -> {
+                                _uiState.update { it.copy(showAccountLockedDialog = true) }
+                            }
+                            else -> {
+                                val msg = error.message
+                                _eventFlow.emit(LoginUiEvent.ShowToast(msg))
+                                _uiState.update { it.copy(generalErrorMessage = msg) }
+                            }
                         }
                     }
                     429 -> {
-                        val msg = error.message
+                        failedAttempts = 5
+                        lockedUntilTimestamp = clockProvider.currentTimeMillis() + 15 * 60 * 1000L
+                        val msg = error.message.ifBlank { "Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút." }
                         _eventFlow.emit(LoginUiEvent.TriggerShake)
                         _uiState.update {
                             it.copy(
+                                isLocked = true,
+                                lockRemainingSeconds = 900L,
                                 showAccountLockedDialog = true,
                                 generalErrorMessage = msg
                             )

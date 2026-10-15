@@ -50,6 +50,17 @@ object Validators {
             else -> ValidationResult(true)
         }
     }
+
+    fun validateOtp(otp: String): ValidationResult {
+        val trimmed = otp.trim()
+        return when {
+            trimmed.isEmpty() -> ValidationResult(false, "Vui lòng nhập mã xác thực.")
+            trimmed.length != 6 -> ValidationResult(false, "Mã xác thực phải gồm 6 chữ số.")
+            !trimmed.all { it.isDigit() } -> ValidationResult(false, "Mã xác thực chỉ chứa chữ số.")
+            else -> ValidationResult(true)
+        }
+    }
+
     // Các hàm kiểm tra tiêu chí con để phục vụ hiển thị Checklist trực quan
     fun hasMinLength(password: String): Boolean = password.length >= 8
     fun hasUppercase(password: String): Boolean = password.any { it.isUpperCase() }

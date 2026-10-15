@@ -64,6 +64,7 @@ class TokenAuthenticator @Inject constructor(
                     null
                 }
             } catch (e: Exception) {
+                handleSessionExpired()
                 null
             }
         }

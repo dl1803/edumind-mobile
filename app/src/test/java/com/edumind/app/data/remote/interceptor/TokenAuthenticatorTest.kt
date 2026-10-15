@@ -145,4 +145,31 @@ class TokenAuthenticatorTest {
         }
         verify(exactly = 1) { authApiService.refresh(any()) }
     }
+
+    @Test
+    fun authenticate_clearsTokensAndEmitsExpired_whenRefreshThrowsException() {
+        val request = Request.Builder()
+            .url("https://api.edumind.com/user/profile")
+            .header("Authorization", "Bearer old_token")
+            .build()
+        val response = Response.Builder()
+            .request(request)
+            .protocol(Protocol.HTTP_1_1)
+            .code(401)
+            .message("Unauthorized")
+            .build()
+
+        every { tokenManager.getAccessToken() } returns "old_token"
+        every { tokenManager.getRefreshToken() } returns "valid_refresh"
+
+        val call: Call<RefreshResponse> = mockk()
+        every { authApiService.refresh(any()) } returns call
+        every { call.execute() } throws RuntimeException("Network connection error")
+
+        val result = authenticator.authenticate(null, response)
+
+        assertNull(result)
+        verify { tokenManager.clearTokens() }
+        verify { sessionEventBus.emitSessionExpired() }
+    }
 }
