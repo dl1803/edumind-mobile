@@ -130,4 +130,10 @@ object NetworkModule {
             retrofit.create(AuthApiService::class.java)
         }
     }
+
+    @Provides
+    @Singleton
+    fun provideClockProvider(): com.edumind.app.util.ClockProvider {
+        return com.edumind.app.util.ClockProvider { System.currentTimeMillis() }
+    }
 }
