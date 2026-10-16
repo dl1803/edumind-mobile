@@ -122,9 +122,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
-        // Cờ USE_MOCK_AUTH: Khi BE chưa deploy, trả FakeAuthApiService()
-        val useMockAuth = true
-        return if (useMockAuth) {
+        return if (BuildConfig.USE_MOCK_AUTH) {
             FakeAuthApiService()
         } else {
             retrofit.create(AuthApiService::class.java)

@@ -31,8 +31,14 @@ android {
             useSupportLibrary = true
         }
 
-        val apiBaseUrl = localProperties.getProperty("API_BASE_URL_DEV") ?: "http://10.0.2.2:8000/api/"
+        val useMockAuth = localProperties.getProperty("USE_MOCK_AUTH")?.toBoolean() ?: false
+        val apiBaseUrl = if (useMockAuth) {
+            localProperties.getProperty("API_BASE_URL_DEV") ?: "http://10.0.2.2:8000/api/"
+        } else {
+            localProperties.getProperty("API_BASE_URL_STAGING") ?: "https://staging-api.edumind.edu.vn/api/"
+        }
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        buildConfigField("boolean", "USE_MOCK_AUTH", "$useMockAuth")
     }
 
     buildTypes {
