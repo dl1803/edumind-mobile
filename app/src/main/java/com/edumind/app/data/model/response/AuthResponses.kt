@@ -73,14 +73,14 @@ data class MessageResponse(
 // Cấu trúc lỗi chuẩn hệ thống từ Backend (FastAPI)
 data class ApiErrorWrapper(
     @SerializedName("error")
-    val error: ApiErrorDetail
+    val error: ApiErrorDetail? = null
 )
 
 data class ApiErrorDetail(
     @SerializedName("code")
-    val code: String,
+    val code: String = "UNKNOWN_ERROR",
     @SerializedName("message")
-    val message: String,
+    val message: String = "Đã xảy ra lỗi.",
     @SerializedName("details")
     val details: Map<String, Any>? = null
 )
