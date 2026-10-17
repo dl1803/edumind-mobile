@@ -22,8 +22,10 @@ import androidx.navigation.navArgument
 import com.edumind.app.ui.auth.forgot.ForgotPasswordScreen
 import com.edumind.app.ui.auth.login.LoginScreen
 import com.edumind.app.ui.auth.register.RegisterScreen
+import com.edumind.app.ui.course.CourseDetailScreen
 import com.edumind.app.ui.explore.ExploreScreen
 import com.edumind.app.ui.home.HomeScreen
+import com.edumind.app.ui.search.SearchScreen
 import com.edumind.app.ui.library.MyCoursesScreen
 import com.edumind.app.ui.onboarding.OnboardingScreen
 import com.edumind.app.ui.profile.ProfileScreen
@@ -175,7 +177,7 @@ fun AppNavGraph(
                             navController.navigate(Screen.VideoPlayer.createRoute(lessonId))
                         },
                         onSearchClick = {
-                            navController.navigate(Screen.Explore.route)
+                            navController.navigate(Screen.Search.route)
                         },
                         onAiChatClick = {
                             navController.navigate(Screen.Explore.route)
@@ -220,29 +222,28 @@ fun AppNavGraph(
                     arguments = listOf(
                         navArgument(Screen.ARG_COURSE_ID) { type = NavType.StringType }
                     )
-                ) { backStackEntry ->
-                    val courseId = backStackEntry.arguments?.getString(Screen.ARG_COURSE_ID).orEmpty()
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Chi tiết khóa học: $courseId",
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    }
+                ) {
+                    CourseDetailScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToPlayer = { lessonId ->
+                            navController.navigate(Screen.VideoPlayer.createRoute(lessonId))
+                        }
+                    )
                 }
 
                 composable(Screen.Search.route) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "Tìm kiếm khóa học",
-                            style = MaterialTheme.typography.titleLarge
-                        )
-                    }
+                    SearchScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToExplore = {
+                            navController.navigate(Screen.Explore.route) {
+                                popUpTo(Screen.Home.route)
+                                launchSingleTop = true
+                            }
+                        },
+                        onCourseClick = { courseId ->
+                            navController.navigate(Screen.CourseDetail.createRoute(courseId))
+                        }
+                    )
                 }
             }
         }
