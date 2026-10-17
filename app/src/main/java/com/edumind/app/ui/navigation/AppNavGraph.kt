@@ -4,16 +4,21 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
 import com.edumind.app.ui.auth.forgot.ForgotPasswordScreen
 import com.edumind.app.ui.auth.login.LoginScreen
 import com.edumind.app.ui.auth.register.RegisterScreen
@@ -166,14 +171,13 @@ fun AppNavGraph(
                         onCourseClick = { courseId ->
                             navController.navigate(Screen.CourseDetail.createRoute(courseId))
                         },
-                        onContinueClick = { courseId, lessonId ->
+                        onContinueClick = { _, lessonId ->
                             navController.navigate(Screen.VideoPlayer.createRoute(lessonId))
                         },
                         onSearchClick = {
                             navController.navigate(Screen.Explore.route)
                         },
                         onAiChatClick = {
-                            // Sẽ điều hướng vào màn Chat AI M-13 ở Ngày 14
                             navController.navigate(Screen.Explore.route)
                         },
                         onNotificationClick = {
@@ -188,9 +192,15 @@ fun AppNavGraph(
                     )
                 }
 
-
                 composable(Screen.Explore.route) {
-                    ExploreScreen()
+                    ExploreScreen(
+                        onCourseClick = { courseId ->
+                            navController.navigate(Screen.CourseDetail.createRoute(courseId))
+                        },
+                        onSearchClick = {
+                            navController.navigate(Screen.Search.route)
+                        }
+                    )
                 }
 
                 composable(Screen.MyCourses.route) {
@@ -203,6 +213,36 @@ fun AppNavGraph(
 
                 composable(Screen.Profile.route) {
                     ProfileScreen()
+                }
+
+                composable(
+                    route = Screen.CourseDetail.route,
+                    arguments = listOf(
+                        navArgument(Screen.ARG_COURSE_ID) { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    val courseId = backStackEntry.arguments?.getString(Screen.ARG_COURSE_ID).orEmpty()
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Chi tiết khóa học: $courseId",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
+                }
+
+                composable(Screen.Search.route) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Tìm kiếm khóa học",
+                            style = MaterialTheme.typography.titleLarge
+                        )
+                    }
                 }
             }
         }
