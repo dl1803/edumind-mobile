@@ -234,6 +234,12 @@ fun AppNavGraph(
                 composable(Screen.Search.route) {
                     SearchScreen(
                         onNavigateBack = { navController.popBackStack() },
+                        onNavigateToExplore = {
+                            navController.navigate(Screen.Explore.route) {
+                                popUpTo(Screen.Home.route)
+                                launchSingleTop = true
+                            }
+                        },
                         onCourseClick = { courseId ->
                             navController.navigate(Screen.CourseDetail.createRoute(courseId))
                         }
