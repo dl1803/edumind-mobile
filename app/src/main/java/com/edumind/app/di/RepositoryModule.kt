@@ -2,6 +2,8 @@ package com.edumind.app.di
 
 import com.edumind.app.repository.AuthRepository
 import com.edumind.app.repository.AuthRepositoryImpl
+import com.edumind.app.repository.CourseRepository
+import com.edumind.app.repository.FakeCourseRepository
 import com.edumind.app.repository.FakeHomeRepository
 import com.edumind.app.repository.HomeRepository
 import dagger.Binds
@@ -25,4 +27,11 @@ abstract class RepositoryModule {
     abstract fun bindHomeRepository(
         fakeHomeRepository: FakeHomeRepository
     ): HomeRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCourseRepository(
+        fakeCourseRepository: FakeCourseRepository
+    ): CourseRepository
+
 }
