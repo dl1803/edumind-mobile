@@ -45,6 +45,7 @@ data class ExploreFilter(
 }
 
 sealed interface ExploreUiState {
+    data object InitialLoading : ExploreUiState
     data object Loading : ExploreUiState
     data class Success(
         val courses: List<CourseSummary>,

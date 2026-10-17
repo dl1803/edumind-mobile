@@ -22,7 +22,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.edumind.app.R
@@ -103,16 +107,25 @@ fun ExploreFilterBar(
                     Spacer(modifier = Modifier.width(6.dp))
                     Box(
                         modifier = Modifier
-                            .size(16.dp)
+                            .size(18.dp)
                             .clip(CircleShape)
                             .background(NebulaBrush),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = activeFilterCount.toString(),
-                            fontSize = 9.sp,
+                            fontSize = 10.sp,
+                            fontFamily = EduMindFontFamily,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Color.White,
+                            style = TextStyle(
+                                platformStyle = PlatformTextStyle(includeFontPadding = false),
+                                lineHeightStyle = LineHeightStyle(
+                                    alignment = LineHeightStyle.Alignment.Center,
+                                    trim = LineHeightStyle.Trim.Both
+                                )
+                            ),
+                            textAlign = TextAlign.Center
                         )
                     }
                 }

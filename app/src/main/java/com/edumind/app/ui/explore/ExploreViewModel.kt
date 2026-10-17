@@ -17,7 +17,7 @@ class ExploreViewModel @Inject constructor(
     private val courseRepository: CourseRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow<ExploreUiState>(ExploreUiState.Loading)
+    private val _uiState = MutableStateFlow<ExploreUiState>(ExploreUiState.InitialLoading)
     val uiState: StateFlow<ExploreUiState> = _uiState.asStateFlow()
 
     private val _filter = MutableStateFlow(ExploreFilter())
@@ -35,6 +35,7 @@ class ExploreViewModel @Inject constructor(
     }
 
     fun loadInitialData() {
+        _uiState.value = ExploreUiState.InitialLoading
         viewModelScope.launch {
             loadCategories()
             fetchCourses(page = 1, isRefresh = true)
@@ -97,8 +98,12 @@ class ExploreViewModel @Inject constructor(
 
     fun retry() {
         val currentState = _uiState.value
-        if (currentState is ExploreUiState.Error || currentState is ExploreUiState.Loading) {
-            resetAndReload()
+        if (currentState is ExploreUiState.Error || currentState is ExploreUiState.Loading || currentState is ExploreUiState.InitialLoading) {
+            if (_categories.value.isEmpty()) {
+                loadInitialData()
+            } else {
+                resetAndReload()
+            }
         }
     }
 

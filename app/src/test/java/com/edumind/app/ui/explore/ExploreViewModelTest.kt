@@ -440,4 +440,21 @@ class ExploreViewModelTest {
         val successState = viewModel.uiState.value as ExploreUiState.Success
         assertEquals(2, successState.courses.size)
     }
+
+    @Test
+    fun initialState_isInitialLoading() = runTest(testDispatcher) {
+        viewModel = ExploreViewModel(courseRepository)
+        assertEquals(ExploreUiState.InitialLoading, viewModel.uiState.value)
+    }
+
+    @Test
+    fun onCategorySelected_emitsLoadingStateNotInitialLoading() = runTest(testDispatcher) {
+        viewModel = ExploreViewModel(courseRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(viewModel.uiState.value is ExploreUiState.Success)
+
+        viewModel.onCategorySelected("cat_it")
+        assertEquals(ExploreUiState.Loading, viewModel.uiState.value)
+    }
 }

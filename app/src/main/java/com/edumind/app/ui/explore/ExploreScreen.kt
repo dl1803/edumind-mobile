@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -39,6 +40,7 @@ import com.edumind.app.ui.common.ErrorView
 import com.edumind.app.ui.explore.components.CategoryChipsRow
 import com.edumind.app.ui.explore.components.ExploreEmptyState
 import com.edumind.app.ui.explore.components.ExploreFilterBar
+import com.edumind.app.ui.explore.components.ExploreFullSkeleton
 import com.edumind.app.ui.explore.components.ExploreSkeletonGrid
 import com.edumind.app.ui.explore.components.FilterBottomSheet
 import com.edumind.app.ui.theme.BgCanvasMobile
@@ -94,51 +96,49 @@ fun ExploreScreen(
                 )
         )
 
-        Column(modifier = Modifier.fillMaxSize()) {
-            Text(
-                text = "Khám phá",
-                fontFamily = EduMindFontFamily,
-                fontSize = 22.sp,
-                lineHeight = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = Neutral950,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 8.dp)
-            )
+        if (uiState is ExploreUiState.InitialLoading) {
+            ExploreFullSkeleton()
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+            ) {
+                EduMindSearchBar(
+                    onSearchClick = onSearchClick,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 6.dp)
+                )
 
-            EduMindSearchBar(
-                onSearchClick = onSearchClick,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-            )
+                CategoryChipsRow(
+                    categories = categories,
+                    selectedCategoryId = filter.categoryId,
+                    onCategoryClick = { viewModel.onCategorySelected(it) },
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
 
-            CategoryChipsRow(
-                categories = categories,
-                selectedCategoryId = filter.categoryId,
-                onCategoryClick = { viewModel.onCategorySelected(it) },
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-
-            val totalItems = (uiState as? ExploreUiState.Success)?.totalCount ?: 0
-            ExploreFilterBar(
-                totalCount = totalItems,
-                activeFilterCount = filter.activeCount,
-                currentSort = filter.sortOption,
-                onOpenFilterSheet = { showFilterSheet = true },
-                onToggleSort = {
-                    val nextSort = when (filter.sortOption) {
-                        SortOption.NEWEST -> SortOption.POPULAR
-                        SortOption.POPULAR -> SortOption.PRICE_ASC
-                        SortOption.PRICE_ASC -> SortOption.PRICE_DESC
-                        SortOption.PRICE_DESC -> SortOption.NEWEST
+                val totalItems = (uiState as? ExploreUiState.Success)?.totalCount ?: 0
+                ExploreFilterBar(
+                    totalCount = totalItems,
+                    activeFilterCount = filter.activeCount,
+                    currentSort = filter.sortOption,
+                    onOpenFilterSheet = { showFilterSheet = true },
+                    onToggleSort = {
+                        val nextSort = when (filter.sortOption) {
+                            SortOption.NEWEST -> SortOption.POPULAR
+                            SortOption.POPULAR -> SortOption.PRICE_ASC
+                            SortOption.PRICE_ASC -> SortOption.PRICE_DESC
+                            SortOption.PRICE_DESC -> SortOption.NEWEST
+                        }
+                        viewModel.onSortChanged(nextSort)
                     }
-                    viewModel.onSortChanged(nextSort)
-                }
-            )
+                )
 
-            Box(modifier = Modifier.weight(1f)) {
-                when (val state = uiState) {
-                    is ExploreUiState.Loading -> {
-                        ExploreSkeletonGrid()
-                    }
+                Box(modifier = Modifier.weight(1f)) {
+                    when (val state = uiState) {
+                        is ExploreUiState.InitialLoading -> Unit
+                        is ExploreUiState.Loading -> {
+                            ExploreSkeletonGrid()
+                        }
 
                     is ExploreUiState.Empty -> {
                         ExploreEmptyState(
@@ -195,6 +195,7 @@ fun ExploreScreen(
                 }
             }
         }
+    }
 
         if (showFilterSheet) {
             FilterBottomSheet(
