@@ -1,7 +1,12 @@
 package com.edumind.app.repository
 
 import com.edumind.app.data.model.response.Category
+import com.edumind.app.data.model.response.CourseDetail
+import com.edumind.app.data.model.response.CourseLesson
+import com.edumind.app.data.model.response.CourseSection
 import com.edumind.app.data.model.response.CourseSummary
+import com.edumind.app.data.model.response.InstructorSummary
+import com.edumind.app.data.model.response.LessonType
 import com.edumind.app.data.model.response.PagedResponse
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -11,6 +16,7 @@ import javax.inject.Singleton
 class FakeCourseRepository @Inject constructor() : CourseRepository {
 
     var simulateError: Boolean = false
+    private val enrolledCourseIds = mutableSetOf<String>("p_1")
 
     private val categories = listOf(
         Category(id = "cat_all", name = "Tất cả", courseCount = 45),
@@ -100,6 +106,122 @@ class FakeCourseRepository @Inject constructor() : CourseRepository {
         delay(200)
         return Result.success(categories)
     }
+
+    override suspend fun getCourseDetail(courseId: String): Result<CourseDetail> {
+        delay(400)
+
+        if (simulateError || courseId == "invalid_id") {
+            return Result.failure(Exception("Khóa học không tồn tại hoặc đã bị gỡ."))
+        }
+
+        val foundPair = allCourses.find { it.second.id == courseId }
+        val courseSummary = foundPair?.second ?: allCourses.firstOrNull()?.second
+
+        if (courseSummary == null) {
+            return Result.failure(Exception("Khóa học không tồn tại hoặc đã bị gỡ."))
+        }
+
+        val isEnrolled = enrolledCourseIds.contains(courseId)
+        val originalPrice = if (courseSummary.priceVnd > 0L) (courseSummary.priceVnd * 1.4).toLong() else null
+
+        val detail = CourseDetail(
+            id = courseId,
+            title = courseSummary.title,
+            categoryName = when (foundPair?.first) {
+                "cat_prog" -> "Lập trình"
+                "cat_design" -> "Thiết kế"
+                "cat_biz" -> "Kinh doanh"
+                "cat_data" -> "Dữ liệu"
+                "cat_ai" -> "AI/ML"
+                else -> "Lập trình"
+            },
+            thumbnailUrl = courseSummary.thumbnailUrl,
+            priceVnd = courseSummary.priceVnd,
+            originalPriceVnd = originalPrice,
+            rating = courseSummary.rating,
+            reviewCount = courseSummary.reviewCount,
+            studentCount = courseSummary.reviewCount * 12,
+            totalHours = 14,
+            description = "Khóa học cung cấp lộ trình từ cơ bản đến nâng cao, kết hợp bài tập thực hành theo dự án thực tế và trợ lý AI giải đáp thắc mắc trực tiếp theo ngữ cảnh bài học.",
+            keyFeatures = listOf(
+                "14 giờ video chất lượng cao",
+                "24 bài giảng chia làm 4 chương",
+                "AI Trợ giảng hỗ trợ học tập",
+                "Dự án thực hành thực tế"
+            ),
+            learningObjectives = listOf(
+                "Nắm vững các kiến thức nền tảng và tư duy phát triển cốt lõi.",
+                "Làm chủ các công cụ, thư viện và kiến trúc ứng dụng hiện đại.",
+                "Thực hành tương tác trực tiếp cùng trợ lý AI ngữ cảnh.",
+                "Hoàn thành đồ án thực tế có thể đưa vào hồ sơ năng lực."
+            ),
+            requirements = listOf(
+                "Máy tính cá nhân có kết nối Internet để cài đặt môi trường.",
+                "Sự kiên trì và tinh thần học hỏi, không bắt buộc kinh nghiệm trước."
+            ),
+            instructor = InstructorSummary(
+                id = "ins_${courseSummary.id}",
+                name = courseSummary.instructorName,
+                title = "Chuyên gia đào tạo công nghệ",
+                rating = courseSummary.rating,
+                courseCount = 8,
+                studentCount = courseSummary.reviewCount * 10
+            ),
+            sections = listOf(
+                CourseSection(
+                    id = "sec_1",
+                    title = "Chương 1: Tổng quan và Thiết lập môi trường",
+                    durationSummary = "3 bài học • 45 phút",
+                    lessons = listOf(
+                        CourseLesson("l_1_1", "Bài 1: Giới thiệu khóa học & cài đặt công cụ", "12:45", LessonType.VIDEO, isFreePreview = true, isCompleted = isEnrolled),
+                        CourseLesson("l_1_2", "Bài 2: Các khái niệm cơ bản đầu tiên", "18:30", LessonType.VIDEO, isFreePreview = true, isCompleted = isEnrolled),
+                        CourseLesson("l_1_3", "Bài 3: Bài trắc nghiệm kiểm tra đầu khóa", "15 phút", LessonType.QUIZ, isFreePreview = false, isCompleted = isEnrolled)
+                    )
+                ),
+                CourseSection(
+                    id = "sec_2",
+                    title = "Chương 2: Cú pháp cốt lõi và Kỹ thuật nền tảng",
+                    durationSummary = "4 bài học • 1 giờ 20 phút",
+                    lessons = listOf(
+                        CourseLesson("l_2_1", "Bài 4: Cấu trúc điều khiển và xử lý luồng dữ liệu", "16:10", LessonType.VIDEO, isFreePreview = false, isCompleted = isEnrolled),
+                        CourseLesson("l_2_2", "Bài 5: Tối ưu mã nguồn và kỹ thuật viết code sạch", "22:00", LessonType.VIDEO, isFreePreview = false, isCompleted = false, isCurrent = isEnrolled),
+                        CourseLesson("l_2_3", "Bài 6: Xử lý ngoại lệ và bắt lỗi thực tế", "25:15", LessonType.VIDEO, isFreePreview = false, isCompleted = false),
+                        CourseLesson("l_2_4", "Bài 7: Bài tập thực hành Chương 2", "15 phút", LessonType.QUIZ, isFreePreview = false, isCompleted = false)
+                    )
+                ),
+                CourseSection(
+                    id = "sec_3",
+                    title = "Chương 3: Kiến trúc nâng cao và Ứng dụng thực tế",
+                    durationSummary = "2 bài học • 45 phút",
+                    lessons = listOf(
+                        CourseLesson("l_3_1", "Bài 8: Thiết kế mô hình và phân tầng logic", "20:00", LessonType.VIDEO, isFreePreview = false),
+                        CourseLesson("l_3_2", "Bài 9: Kết nối cơ sở dữ liệu và API", "24:30", LessonType.VIDEO, isFreePreview = false)
+                    )
+                ),
+                CourseSection(
+                    id = "sec_4",
+                    title = "Chương 4: Hoàn thiện dự án và Đóng gói",
+                    durationSummary = "1 bài học • 32 phút",
+                    lessons = listOf(
+                        CourseLesson("l_4_1", "Bài 10: Xây dựng dự án hoàn chỉnh cuối khóa", "32:00", LessonType.VIDEO, isFreePreview = false)
+                    )
+                )
+            ),
+            isEnrolled = isEnrolled,
+            progressPercent = if (isEnrolled) 35 else 0,
+            lastLessonId = if (isEnrolled) "l_2_2" else null,
+            lastLessonTitle = if (isEnrolled) "Bài 5: Tối ưu mã nguồn và kỹ thuật viết code sạch" else null
+        )
+
+        return Result.success(detail)
+    }
+
+    override suspend fun enrollCourse(courseId: String): Result<Boolean> {
+        delay(400)
+        enrolledCourseIds.add(courseId)
+        return Result.success(true)
+    }
+
 
     private fun generateDummyCourses(): List<Pair<String, CourseSummary>> {
         val list = mutableListOf<Pair<String, CourseSummary>>()

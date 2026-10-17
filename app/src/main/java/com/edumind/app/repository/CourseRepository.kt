@@ -1,6 +1,7 @@
 package com.edumind.app.repository
 
 import com.edumind.app.data.model.response.Category
+import com.edumind.app.data.model.response.CourseDetail
 import com.edumind.app.data.model.response.CourseSummary
 import com.edumind.app.data.model.response.PagedResponse
 
@@ -17,4 +18,9 @@ interface CourseRepository {
     ): Result<PagedResponse<CourseSummary>>
 
     suspend fun getCategories(): Result<List<Category>>
+
+    suspend fun getCourseDetail(courseId: String): Result<CourseDetail>
+
+    suspend fun enrollCourse(courseId: String): Result<Boolean>
 }
+
