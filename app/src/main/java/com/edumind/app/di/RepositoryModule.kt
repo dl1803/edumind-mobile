@@ -33,5 +33,4 @@ abstract class RepositoryModule {
     abstract fun bindCourseRepository(
         fakeCourseRepository: FakeCourseRepository
     ): CourseRepository
-
 }
