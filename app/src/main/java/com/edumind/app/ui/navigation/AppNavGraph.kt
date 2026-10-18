@@ -206,7 +206,23 @@ fun AppNavGraph(
                 }
 
                 composable(Screen.MyCourses.route) {
-                    MyCoursesScreen()
+                    MyCoursesScreen(
+                        onCourseClick = { courseId ->
+                            navController.navigate(Screen.CourseDetail.createRoute(courseId))
+                        },
+                        onResumeLearningClick = { _, lessonId ->
+                            navController.navigate(Screen.VideoPlayer.createRoute(lessonId))
+                        },
+                        onExploreClick = {
+                            navController.navigate(Screen.Explore.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    )
                 }
 
                 composable(Screen.Progress.route) {
