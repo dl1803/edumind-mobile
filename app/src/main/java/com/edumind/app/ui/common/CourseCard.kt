@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -53,7 +54,8 @@ import com.edumind.app.util.toVnd
 fun CourseCard(
     course: CourseSummary,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    progress: Int? = null
 ) {
     Card(
         modifier = modifier
@@ -116,71 +118,107 @@ fun CourseCard(
                     overflow = TextOverflow.Ellipsis
                 )
 
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // Hàng đánh giá: bên trái là điểm sao, bên phải là số lượt đánh giá
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Filled.Star,
-                            contentDescription = null,
-                            tint = Warning600,
-                            modifier = Modifier.size(13.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
+                if (progress != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text(
-                            text = course.rating.toString(),
+                            text = if (progress >= 100) "Hoàn thành" else "Tiến độ",
                             fontFamily = EduMindFontFamily,
                             fontSize = 11.sp,
-                            color = Neutral700,
-                            fontWeight = FontWeight.SemiBold
+                            color = if (progress >= 100) Success600 else Neutral500,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "$progress%",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 11.sp,
+                            color = Primary700,
+                            fontWeight = FontWeight.Bold
                         )
                     }
 
-                    Text(
-                        text = "${course.reviewCount} đánh giá",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 11.sp,
-                        color = Neutral500,
-                        fontWeight = FontWeight.Normal
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    LinearProgressIndicator(
+                        progress = { progress.coerceIn(0, 100) / 100f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(9999.dp)),
+                        color = Primary700,
+                        trackColor = Neutral100
                     )
-                }
+                } else {
+                    Spacer(modifier = Modifier.height(6.dp))
 
-                // Dấu gạch ngang nhạt ngăn cách giá tiền với phần trên
-                Spacer(modifier = Modifier.height(8.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(Color(0xFFF1F1F4))
-                )
-                Spacer(modifier = Modifier.height(6.dp))
+                    // Hàng đánh giá: bên trái là điểm sao, bên phải là số lượt đánh giá
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Filled.Star,
+                                contentDescription = null,
+                                tint = Warning600,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = course.rating.toString(),
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 11.sp,
+                                color = Neutral700,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
 
-                // Giá tiền (Gradient 3 dải màu Nebula) hoặc Chữ Miễn phí (Màu xanh nổi bật Success600) nằm góc phải
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.CenterEnd
-                ) {
-                    if (course.priceVnd <= 0L) {
                         Text(
-                            text = "Miễn phí",
+                            text = "${course.reviewCount} đánh giá",
                             fontFamily = EduMindFontFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = Success600
+                            fontSize = 11.sp,
+                            color = Neutral500,
+                            fontWeight = FontWeight.Normal
                         )
-                    } else {
-                        Text(
-                            text = course.priceVnd.toVnd(),
-                            fontFamily = EduMindFontFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            style = TextStyle(brush = NebulaTextBrush)
-                        )
+                    }
+
+                    // Dấu gạch ngang nhạt ngăn cách giá tiền với phần trên
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(Color(0xFFF1F1F4))
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+
+                    // Giá tiền (Gradient 3 dải màu Nebula) hoặc Chữ Miễn phí (Màu xanh nổi bật Success600) nằm góc phải
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.CenterEnd
+                    ) {
+                        if (course.priceVnd <= 0L) {
+                            Text(
+                                text = "Miễn phí",
+                                fontFamily = EduMindFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                color = Success600
+                            )
+                        } else {
+                            Text(
+                                text = course.priceVnd.toVnd(),
+                                fontFamily = EduMindFontFamily,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                style = TextStyle(brush = NebulaTextBrush)
+                            )
+                        }
                     }
                 }
             }
