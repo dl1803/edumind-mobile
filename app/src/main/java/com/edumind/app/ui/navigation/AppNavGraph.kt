@@ -1,9 +1,13 @@
 package com.edumind.app.ui.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -11,7 +15,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.edumind.app.ui.theme.EduMindFontFamily
+import com.edumind.app.ui.theme.Neutral500
+import com.edumind.app.ui.theme.Neutral900
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -206,7 +216,23 @@ fun AppNavGraph(
                 }
 
                 composable(Screen.MyCourses.route) {
-                    MyCoursesScreen()
+                    MyCoursesScreen(
+                        onCourseClick = { courseId ->
+                            navController.navigate(Screen.CourseDetail.createRoute(courseId))
+                        },
+                        onResumeLearningClick = { _, lessonId ->
+                            navController.navigate(Screen.VideoPlayer.createRoute(lessonId))
+                        },
+                        onExploreClick = {
+                            navController.navigate(Screen.Explore.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    )
                 }
 
                 composable(Screen.Progress.route) {
@@ -244,6 +270,51 @@ fun AppNavGraph(
                             navController.navigate(Screen.CourseDetail.createRoute(courseId))
                         }
                     )
+                }
+
+                composable(
+                    route = Screen.VideoPlayer.route,
+                    arguments = listOf(
+                        navArgument(Screen.ARG_LESSON_ID) { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    val lessonId = backStackEntry.arguments?.getString(Screen.ARG_LESSON_ID) ?: ""
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.White)
+                            .statusBarsPadding()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "Trình phát Video Bài học",
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Neutral900
+                            )
+                            Text(
+                                text = "Mã bài học: $lessonId (Tính năng phát video M-12)",
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 13.sp,
+                                color = Neutral500
+                            )
+                            androidx.compose.material3.OutlinedButton(
+                                onClick = { navController.popBackStack() }
+                            ) {
+                                Text(
+                                    text = "Quay lại",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

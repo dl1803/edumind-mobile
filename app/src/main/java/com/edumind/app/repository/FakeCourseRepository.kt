@@ -1,12 +1,14 @@
 package com.edumind.app.repository
 
 import com.edumind.app.data.model.response.Category
+import com.edumind.app.data.model.response.ContinueLearningItem
 import com.edumind.app.data.model.response.CourseDetail
 import com.edumind.app.data.model.response.CourseLesson
 import com.edumind.app.data.model.response.CourseSection
 import com.edumind.app.data.model.response.CourseSummary
 import com.edumind.app.data.model.response.InstructorSummary
 import com.edumind.app.data.model.response.LessonType
+import com.edumind.app.data.model.response.MyCourse
 import com.edumind.app.data.model.response.PagedResponse
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -16,7 +18,7 @@ import javax.inject.Singleton
 class FakeCourseRepository @Inject constructor() : CourseRepository {
 
     var simulateError: Boolean = false
-    private val enrolledCourseIds = mutableSetOf<String>("p_1")
+    private val enrolledCourseIds = mutableSetOf<String>("p_1", "p_2", "p_3", "p_4")
 
     private val categories = listOf(
         Category(id = "cat_all", name = "Tất cả", courseCount = 45),
@@ -220,6 +222,91 @@ class FakeCourseRepository @Inject constructor() : CourseRepository {
         delay(400)
         enrolledCourseIds.add(courseId)
         return Result.success(true)
+    }
+
+    private val quickResumeData = ContinueLearningItem(
+        courseId = "p_1",
+        lessonId = "l_2_2",
+        courseTitle = "Nhập môn Lập trình Python với AI",
+        currentLessonTitle = "Bài 04: Cấu trúc điều kiện If-Else & Vòng lặp",
+        thumbnailUrl = "file:///android_asset/courses/course_python.jpg",
+        progressPercent = 45,
+        remainingTimeText = "12:45 / 24:30"
+    )
+
+    private val myCoursesList = listOf(
+        MyCourse(
+            id = "p_1",
+            title = "Nhập môn Lập trình Python với AI",
+            thumbnailUrl = "file:///android_asset/courses/course_python.jpg",
+            instructorName = "TS. Lê Hoàng Nam",
+            progressPercent = 45,
+            totalLessons = 20,
+            completedLessons = 9,
+            nextLessonTitle = "Bài 04: Cấu trúc điều kiện If-Else",
+            nextLessonId = "l_2_2",
+            categoryName = "Python Core",
+            rating = 4.8f,
+            reviewCount = 120
+        ),
+        MyCourse(
+            id = "p_2",
+            title = "Cấu trúc dữ liệu & Giải thuật Python",
+            thumbnailUrl = "file:///android_asset/courses/course_sql.jpg",
+            instructorName = "ThS. Đặng Minh Tuấn",
+            progressPercent = 12,
+            totalLessons = 25,
+            completedLessons = 3,
+            nextLessonTitle = "Bài 02: Phân tích độ phức tạp Big-O",
+            nextLessonId = "l_1_2",
+            categoryName = "Thuật toán",
+            rating = 4.9f,
+            reviewCount = 85
+        ),
+        MyCourse(
+            id = "p_3",
+            title = "Thiết kế Web Hiện đại với Tailwind CSS",
+            thumbnailUrl = "file:///android_asset/courses/course_web.jpg",
+            instructorName = "ThS. Hoàng Thùy Linh",
+            progressPercent = 100,
+            totalLessons = 16,
+            completedLessons = 16,
+            nextLessonTitle = "Bài 16: Tối ưu hiệu năng & Triển khai",
+            nextLessonId = "l_4_1",
+            categoryName = "Web Design",
+            rating = 4.7f,
+            reviewCount = 64
+        ),
+        MyCourse(
+            id = "p_4",
+            title = "Machine Learning cơ bản và ứng dụng",
+            thumbnailUrl = "file:///android_asset/courses/course_ml.jpg",
+            instructorName = "ThS. Lê Hoàng Long",
+            progressPercent = 0,
+            totalLessons = 15,
+            completedLessons = 0,
+            nextLessonTitle = "Bài 01: Giới thiệu Machine Learning",
+            nextLessonId = "l_1_1",
+            categoryName = "AI/ML",
+            rating = 4.6f,
+            reviewCount = 42
+        )
+    )
+
+    override suspend fun getMyCourses(): Result<List<MyCourse>> {
+        delay(400)
+        if (simulateError) {
+            return Result.failure(Exception("Không thể tải danh sách khóa học của bạn."))
+        }
+        return Result.success(myCoursesList)
+    }
+
+    override suspend fun getQuickResumeItem(): Result<ContinueLearningItem?> {
+        delay(200)
+        if (simulateError) {
+            return Result.failure(Exception("Không thể tải bài học gần nhất."))
+        }
+        return Result.success(quickResumeData)
     }
 
 

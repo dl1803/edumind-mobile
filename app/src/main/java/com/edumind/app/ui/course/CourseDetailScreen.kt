@@ -745,7 +745,7 @@ private fun CourseIntroTab(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "AI Trợ giảng tương tác ngữ cảnh (BR-21)",
+                        text = "AI Trợ giảng tương tác ngữ cảnh",
                         fontFamily = EduMindFontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
@@ -753,7 +753,7 @@ private fun CourseIntroTab(
                     )
                 }
                 Text(
-                    text = "Học viên được hỗ trợ bởi AI Trợ giảng tương tác theo ngữ cảnh bài giảng (hạn mức 50 câu hỏi/ngày và 10 lượt tóm tắt/ngày theo quy định BR-21).",
+                    text = "Học viên được hỗ trợ bởi AI Trợ giảng tương tác theo ngữ cảnh bài giảng (hạn mức 50 câu hỏi/ngày và 10 lượt tóm tắt/ngày).",
                     fontFamily = EduMindFontFamily,
                     fontSize = 12.sp,
                     color = Neutral600,
@@ -1171,11 +1171,7 @@ private fun CourseSyllabusTab(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(if (isCurrent) Primary50.copy(alpha = 0.6f) else Color.White)
-                                    .border(
-                                        width = if (isCurrent) 2.dp else 0.dp,
-                                        color = if (isCurrent) Primary600 else Color.Transparent
-                                    )
+                                    .background(if (isCurrent) Primary50 else Color.White)
                                     .clickable { onLessonClick(lesson.id, isUnlocked) }
                                     .padding(horizontal = 14.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1676,23 +1672,33 @@ private fun CourseStickyCtaBar(
     modifier: Modifier = Modifier
 ) {
     if (course.isEnrolled) {
+        val lessonShortName = remember(course.lastLessonTitle) {
+            val raw = course.lastLessonTitle ?: "Bài 5"
+            val match = Regex("""Bài\s*\d+""", RegexOption.IGNORE_CASE).find(raw)
+            match?.value ?: (if (raw.contains(":")) raw.substringBefore(":").trim() else raw.take(10).trim())
+        }
+
         Box(
             modifier = modifier
                 .fillMaxWidth()
+                .background(Color.White)
+                .border(width = 1.dp, color = Neutral200)
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp)
+                    .height(48.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(NebulaBrush)
-                    .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(14.dp))
                     .clickable(onClick = onContinueClick),
                 contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
                         contentDescription = null,
@@ -1701,13 +1707,11 @@ private fun CourseStickyCtaBar(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Tiếp tục học (${course.lastLessonTitle ?: "Bài 5: Vòng lặp For và While"})",
+                        text = "Tiếp tục học ($lessonShortName)",
                         fontFamily = EduMindFontFamily,
-                        fontSize = 12.sp,
+                        fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        color = Color.White
                     )
                 }
             }
