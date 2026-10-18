@@ -18,7 +18,7 @@ import javax.inject.Singleton
 class FakeCourseRepository @Inject constructor() : CourseRepository {
 
     var simulateError: Boolean = false
-    private val enrolledCourseIds = mutableSetOf<String>("p_1")
+    private val enrolledCourseIds = mutableSetOf<String>("p_1", "p_2", "p_3", "p_4")
 
     private val categories = listOf(
         Category(id = "cat_all", name = "Tất cả", courseCount = 45),

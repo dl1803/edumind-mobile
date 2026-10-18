@@ -90,7 +90,7 @@ class MyCoursesViewModelTest {
     }
 
     @Test
-    fun `loadMyCourses thanh cong - mac dinh chon filter IN_PROGRESS va phan loai dung so luong`() = runTest {
+    fun `loadMyCourses thanh cong - mac dinh chon filter ALL va dua khoa hoc hoan thanh xuong cuoi`() = runTest {
         coEvery { courseRepository.getMyCourses() } returns Result.success(sampleCourses)
         coEvery { courseRepository.getQuickResumeItem() } returns Result.success(sampleResumeItem)
 
@@ -101,13 +101,29 @@ class MyCoursesViewModelTest {
         assertTrue(state is MyCoursesUiState.Success)
         val successState = state as MyCoursesUiState.Success
 
-        assertEquals(MyCoursesFilter.IN_PROGRESS, successState.selectedFilter)
+        assertEquals(MyCoursesFilter.ALL, successState.selectedFilter)
         assertEquals(4, successState.allCount)
         assertEquals(3, successState.inProgressCount)
         assertEquals(1, successState.completedCount)
-        assertEquals(3, successState.displayedCourses.size)
-        assertTrue(successState.displayedCourses.all { it.progressPercent < 100 })
+        assertEquals(4, successState.displayedCourses.size)
+        assertEquals(100, successState.displayedCourses.last().progressPercent)
         assertNotNull(successState.quickResumeItem)
+    }
+
+    @Test
+    fun `onFilterChanged sang IN_PROGRESS - chi hien thi cac khoa hoc dang hoc`() = runTest {
+        coEvery { courseRepository.getMyCourses() } returns Result.success(sampleCourses)
+        coEvery { courseRepository.getQuickResumeItem() } returns Result.success(sampleResumeItem)
+
+        viewModel = MyCoursesViewModel(courseRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onFilterChanged(MyCoursesFilter.IN_PROGRESS)
+
+        val state = viewModel.uiState.value as MyCoursesUiState.Success
+        assertEquals(MyCoursesFilter.IN_PROGRESS, state.selectedFilter)
+        assertEquals(3, state.displayedCourses.size)
+        assertTrue(state.displayedCourses.all { it.progressPercent < 100 })
     }
 
     @Test

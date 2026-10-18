@@ -37,7 +37,7 @@ class MyCoursesViewModel @Inject constructor(
                     } else {
                         val inProgress = courses.filter { it.progressPercent < 100 }
                         val completed = courses.filter { it.progressPercent == 100 }
-                        val defaultFilter = MyCoursesFilter.IN_PROGRESS
+                        val defaultFilter = MyCoursesFilter.ALL
 
                         _uiState.value = MyCoursesUiState.Success(
                             allCourses = courses,
@@ -71,7 +71,7 @@ class MyCoursesViewModel @Inject constructor(
 
     private fun filterCourses(courses: List<MyCourse>, filter: MyCoursesFilter): List<MyCourse> {
         return when (filter) {
-            MyCoursesFilter.ALL -> courses
+            MyCoursesFilter.ALL -> courses.sortedWith(compareBy<MyCourse> { it.progressPercent == 100 })
             MyCoursesFilter.IN_PROGRESS -> courses.filter { it.progressPercent < 100 }
             MyCoursesFilter.COMPLETED -> courses.filter { it.progressPercent == 100 }
         }

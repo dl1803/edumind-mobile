@@ -1,5 +1,6 @@
 package com.edumind.app.ui.library
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,22 +15,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -39,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -47,20 +46,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.edumind.app.data.model.response.ContinueLearningItem
-import com.edumind.app.data.model.response.CourseSummary
 import com.edumind.app.data.model.response.MyCourse
-import com.edumind.app.ui.common.CourseCard
 import com.edumind.app.ui.common.ErrorView
 import com.edumind.app.ui.theme.EduMindFontFamily
 import com.edumind.app.ui.theme.NebulaGradient
 import com.edumind.app.ui.theme.Neutral100
 import com.edumind.app.ui.theme.Neutral200
+import com.edumind.app.ui.theme.Neutral400
+import com.edumind.app.ui.theme.Neutral50
 import com.edumind.app.ui.theme.Neutral500
 import com.edumind.app.ui.theme.Neutral700
+import com.edumind.app.ui.theme.Neutral800
 import com.edumind.app.ui.theme.Neutral900
 import com.edumind.app.ui.theme.Primary100
 import com.edumind.app.ui.theme.Primary700
 import com.edumind.app.ui.theme.Success600
+import com.edumind.app.ui.theme.Success700
 
 @Composable
 fun MyCoursesScreen(
@@ -118,6 +119,7 @@ private fun TopAppBarHeader() {
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
+            .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
@@ -156,14 +158,6 @@ private fun TopAppBarHeader() {
                 )
             }
         }
-
-        IconButton(onClick = { }) {
-            Icon(
-                imageVector = Icons.Default.Search,
-                contentDescription = "Tìm kiếm",
-                tint = Neutral700
-            )
-        }
     }
 }
 
@@ -174,14 +168,14 @@ private fun SuccessContent(
     onCourseClick: (String) -> Unit,
     onResumeLearningClick: (courseId: String, lessonId: String) -> Unit
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+    val context = LocalContext.current
+
+    LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 80.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item(span = { GridItemSpan(2) }) {
+        item {
             FilterChipsRow(
                 state = state,
                 onFilterSelect = onFilterSelect
@@ -190,10 +184,15 @@ private fun SuccessContent(
 
         state.quickResumeItem?.let { resumeItem ->
             if (state.selectedFilter != MyCoursesFilter.COMPLETED) {
-                item(span = { GridItemSpan(2) }) {
+                item {
                     QuickResumeCard(
                         item = resumeItem,
                         onResumeClick = {
+                            Toast.makeText(
+                                context,
+                                "Tiếp tục bài học: ${resumeItem.currentLessonTitle}",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             onResumeLearningClick(resumeItem.courseId, resumeItem.lessonId)
                         }
                     )
@@ -201,7 +200,7 @@ private fun SuccessContent(
             }
         }
 
-        item(span = { GridItemSpan(2) }) {
+        item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -218,7 +217,7 @@ private fun SuccessContent(
                     letterSpacing = 0.5.sp
                 )
                 Text(
-                    text = "Truy cập gần nhất",
+                    text = "Sắp xếp: Truy cập gần nhất",
                     fontFamily = EduMindFontFamily,
                     fontSize = 11.sp,
                     color = Primary700,
@@ -228,7 +227,7 @@ private fun SuccessContent(
         }
 
         if (state.displayedCourses.isEmpty()) {
-            item(span = { GridItemSpan(2) }) {
+            item {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -245,21 +244,258 @@ private fun SuccessContent(
             }
         } else {
             items(state.displayedCourses, key = { it.id }) { myCourse ->
-                val summary = CourseSummary(
-                    id = myCourse.id,
-                    title = myCourse.title,
-                    thumbnailUrl = myCourse.thumbnailUrl,
-                    instructorName = myCourse.instructorName,
-                    rating = myCourse.rating,
-                    reviewCount = myCourse.reviewCount,
-                    priceVnd = 0L
+                MyCourseHorizontalCard(
+                    course = myCourse,
+                    onCourseClick = onCourseClick,
+                    onResumeLearningClick = { courseId, lessonId ->
+                        Toast.makeText(
+                            context,
+                            "Tiếp tục bài học: ${myCourse.nextLessonTitle}",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        onResumeLearningClick(courseId, lessonId)
+                    }
                 )
+            }
+        }
+    }
+}
 
-                CourseCard(
-                    course = summary,
-                    onClick = { onCourseClick(myCourse.id) },
-                    progress = myCourse.progressPercent
-                )
+@Composable
+private fun MyCourseHorizontalCard(
+    course: MyCourse,
+    onCourseClick: (String) -> Unit,
+    onResumeLearningClick: (courseId: String, lessonId: String) -> Unit
+) {
+    val isCompleted = course.progressPercent == 100
+    val cardBackground = if (isCompleted) Color(0xFFF0FDF4) else Color.White
+    val cardBorderColor = if (isCompleted) Color(0xFFBBF7D0) else Neutral200
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(cardBackground)
+            .border(1.dp, cardBorderColor, RoundedCornerShape(18.dp))
+            .clickable { onCourseClick(course.id) }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(92.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        when (course.categoryName) {
+                            "Python Core" -> Brush.linearGradient(listOf(Color(0xFF4F46E5), Color(0xFF7C3AED)))
+                            "Thuật toán" -> Brush.linearGradient(listOf(Color(0xFF059669), Color(0xFF0D9488), Color(0xFF0891B2)))
+                            "Web Design" -> Brush.linearGradient(listOf(Color(0xFF7C3AED), Color(0xFF9333EA), Color(0xFFDB2777)))
+                            else -> Brush.linearGradient(listOf(Color(0xFF2563EB), Color(0xFF7C3AED)))
+                        }
+                    )
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.Black.copy(alpha = 0.4f))
+                            .padding(horizontal = 4.dp, vertical = 1.dp)
+                    ) {
+                        Text(
+                            text = "${course.totalLessons}h",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                        contentDescription = null,
+                        tint = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier
+                            .size(26.dp)
+                            .align(Alignment.CenterHorizontally)
+                    )
+
+                    Text(
+                        text = course.categoryName.ifBlank { "Khóa học" },
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White.copy(alpha = 0.95f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(if (isCompleted) Color(0xFFDCFCE7) else Primary100.copy(alpha = 0.7f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = course.categoryName.ifBlank { "Lập trình" },
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isCompleted) Success700 else Primary700
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = course.title,
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Neutral900,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    Text(
+                        text = course.instructorName,
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 11.sp,
+                        color = Neutral500,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${course.completedLessons} / ${course.totalLessons} bài học",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 10.sp,
+                            color = Neutral500
+                        )
+                        Text(
+                            text = "${course.progressPercent}%",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isCompleted) Success700 else Primary700
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(if (isCompleted) Color(0xFFDCFCE7) else Color(0xFFF1F5F9))
+                    ) {
+                        if (course.progressPercent > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(fraction = (course.progressPercent / 100f).coerceIn(0.02f, 1f))
+                                    .height(6.dp)
+                                    .clip(RoundedCornerShape(3.dp))
+                                    .background(
+                                        if (isCompleted) {
+                                            Brush.horizontalGradient(listOf(Success600, Success700))
+                                        } else {
+                                            NebulaGradient
+                                        }
+                                    )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        if (!isCompleted) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Neutral100)
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Neutral50.copy(alpha = 0.8f))
+                    .padding(horizontal = 14.dp, vertical = 9.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                ) {
+                    Text(
+                        text = "Bài tiếp:",
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 10.sp,
+                        color = Neutral400
+                    )
+                    Text(
+                        text = course.nextLessonTitle.ifBlank { "Bài học tiếp theo" },
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Neutral800,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Color.White)
+                        .border(1.dp, Primary700, RoundedCornerShape(10.dp))
+                        .clickable { onResumeLearningClick(course.id, course.nextLessonId) }
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = Primary700,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Text(
+                            text = "Tiếp tục học",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Primary700
+                        )
+                    }
+                }
             }
         }
     }
@@ -272,13 +508,12 @@ private fun FilterChipsRow(
 ) {
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(vertical = 4.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         item {
             FilterChipItem(
                 label = "Tất cả",
-                count = state.allCount,
+                count = state.allCourses.size,
                 isSelected = state.selectedFilter == MyCoursesFilter.ALL,
                 onClick = { onFilterSelect(MyCoursesFilter.ALL) }
             )
@@ -383,13 +618,24 @@ private fun QuickResumeCard(
                         .border(1.dp, Color(0xFFC084FC).copy(alpha = 0.3f), RoundedCornerShape(6.dp))
                         .padding(horizontal = 8.dp, vertical = 3.dp)
                 ) {
-                    Text(
-                        text = "● Đang học dở",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFE9D5FF)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFF22C55E))
+                        )
+                        Text(
+                            text = "Đang học dở",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFFE9D5FF)
+                        )
+                    }
                 }
 
                 Text(
@@ -401,7 +647,7 @@ private fun QuickResumeCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = item.currentLessonTitle,
@@ -417,22 +663,30 @@ private fun QuickResumeCard(
                 text = "Khóa: ${item.courseTitle}",
                 fontFamily = EduMindFontFamily,
                 fontSize = 11.sp,
-                color = Color(0xFFCBD5E1),
+                color = Color(0xFFDDD6FE),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            LinearProgressIndicator(
-                progress = { item.progressPercent.coerceIn(0, 100) / 100f },
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(5.dp)
-                    .clip(RoundedCornerShape(9999.dp)),
-                color = Color(0xFF8B5CF6),
-                trackColor = Color.White.copy(alpha = 0.2f)
-            )
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(Color.White.copy(alpha = 0.2f))
+            ) {
+                if (item.progressPercent > 0) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = (item.progressPercent / 100f).coerceIn(0.02f, 1f))
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(NebulaGradient)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -445,7 +699,7 @@ private fun QuickResumeCard(
                     text = item.remainingTimeText,
                     fontFamily = EduMindFontFamily,
                     fontSize = 11.sp,
-                    color = Color(0xFF94A3B8)
+                    color = Color(0xFFC4B5FD)
                 )
 
                 Row(
