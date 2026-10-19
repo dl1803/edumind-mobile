@@ -47,6 +47,10 @@ import com.edumind.app.ui.theme.Neutral300
 import com.edumind.app.ui.theme.Neutral400
 import com.edumind.app.ui.theme.Neutral950
 import com.edumind.app.ui.theme.Primary100
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import com.edumind.app.ui.theme.Primary500
 
 @Composable
@@ -80,114 +84,116 @@ fun OtpInput(
         label = "CursorAlpha"
     )
 
-    Box(
-        modifier = modifier.fillMaxWidth(),
-        contentAlignment = Alignment.Center
-    ) {
-        BasicTextField(
-            value = value,
-            onValueChange = { input ->
-                val filtered = input.filter { it.isDigit() }.take(otpLength)
-                onValueChange(filtered)
-                if (filtered.length == otpLength) {
-                    onOtpComplete?.invoke(filtered)
-                }
-            },
-            modifier = Modifier
-                .matchParentSize()
-                .focusRequester(focusRequester)
-                .alpha(0.01f),
-            enabled = enabled,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Done
-            ),
-            keyboardActions = KeyboardActions(
-                onDone = {
-                    if (value.length == otpLength) {
-                        onOtpComplete?.invoke(value)
-                    }
-                }
-            ),
-            cursorBrush = SolidColor(Color.Transparent)
+    var textFieldValue by remember(value) {
+        mutableStateOf(
+            TextFieldValue(
+                text = value,
+                selection = TextRange(value.length)
+            )
         )
+    }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    focusRequester.requestFocus()
-                    keyboardController?.show()
-                },
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            for (index in 0 until otpLength) {
-                val digit = value.getOrNull(index)?.toString()
-                val isFocusedCell = value.length == index && enabled
-
-                val cellBorderColor = when {
-                    isError -> Error500
-                    isFocusedCell -> Primary500
-                    digit != null -> Primary500
-                    else -> Neutral200
+    BasicTextField(
+        value = textFieldValue,
+        onValueChange = { newTfv ->
+            val digits = newTfv.text.filter { it.isDigit() }.take(otpLength)
+            textFieldValue = TextFieldValue(
+                text = digits,
+                selection = TextRange(digits.length)
+            )
+            if (digits != value) {
+                onValueChange(digits)
+            }
+            if (digits.length == otpLength) {
+                onOtpComplete?.invoke(digits)
+            }
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .focusRequester(focusRequester),
+        enabled = enabled,
+        keyboardOptions = KeyboardOptions(
+            keyboardType = KeyboardType.NumberPassword,
+            imeAction = ImeAction.Done
+        ),
+        keyboardActions = KeyboardActions(
+            onDone = {
+                if (value.length == otpLength) {
+                    onOtpComplete?.invoke(value)
                 }
+            }
+        ),
+        cursorBrush = SolidColor(Color.Transparent),
+        decorationBox = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                for (index in 0 until otpLength) {
+                    val digit = value.getOrNull(index)?.toString()
+                    val isFocusedCell = value.length == index && enabled
 
-                val cellBorderWidth = if (isFocusedCell || isError) 1.5.dp else 1.dp
+                    val cellBorderColor = when {
+                        isError -> Error500
+                        isFocusedCell -> Primary500
+                        digit != null -> Primary500
+                        else -> Neutral200
+                    }
 
-                Box(
-                    modifier = Modifier
-                        .width(48.dp)
-                        .height(56.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White)
-                        .border(
-                            width = cellBorderWidth,
-                            color = cellBorderColor,
-                            shape = RoundedCornerShape(8.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    when {
-                        digit != null -> {
-                            Text(
-                                text = digit,
-                                style = androidx.compose.ui.text.TextStyle(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp,
-                                    color = Neutral950,
-                                    textAlign = TextAlign.Center
+                    val cellBorderWidth = if (isFocusedCell || isError) 1.5.dp else 1.dp
+
+                    Box(
+                        modifier = Modifier
+                            .width(48.dp)
+                            .height(56.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White)
+                            .border(
+                                width = cellBorderWidth,
+                                color = cellBorderColor,
+                                shape = RoundedCornerShape(8.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        when {
+                            digit != null -> {
+                                Text(
+                                    text = digit,
+                                    style = androidx.compose.ui.text.TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 20.sp,
+                                        color = Neutral950,
+                                        textAlign = TextAlign.Center
+                                    )
                                 )
-                            )
-                        }
-                        isFocusedCell -> {
-                            Box(
-                                modifier = Modifier
-                                    .width(2.dp)
-                                    .height(24.dp)
-                                    .alpha(cursorAlpha)
-                                    .background(Primary500)
-                            )
-                        }
-                        else -> {
-                            Text(
-                                text = "-",
-                                style = androidx.compose.ui.text.TextStyle(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp,
-                                    color = Neutral300,
-                                    textAlign = TextAlign.Center
+                            }
+                            isFocusedCell -> {
+                                Box(
+                                    modifier = Modifier
+                                        .width(2.dp)
+                                        .height(24.dp)
+                                        .alpha(cursorAlpha)
+                                        .background(Primary500)
                                 )
-                            )
+                            }
+                            else -> {
+                                Text(
+                                    text = "-",
+                                    style = androidx.compose.ui.text.TextStyle(
+                                        fontFamily = FontFamily.Monospace,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 20.sp,
+                                        color = Neutral300,
+                                        textAlign = TextAlign.Center
+                                    )
+                                )
+                            }
                         }
                     }
                 }
             }
         }
-    }
+    )
 }

@@ -133,6 +133,7 @@ fun ForgotPasswordScreen(
                             otp = uiState.otp,
                             otpError = uiState.otpError,
                             countdownSeconds = uiState.countdownSeconds,
+                            resendCooldownSeconds = uiState.resendCooldownSeconds,
                             isResendEnabled = uiState.isResendEnabled,
                             isLoading = uiState.isLoading,
                             shakeTrigger = uiState.shakeTrigger,
@@ -491,6 +492,7 @@ private fun StepOtpContent(
     otp: String,
     otpError: String?,
     countdownSeconds: Int,
+    resendCooldownSeconds: Int,
     isResendEnabled: Boolean,
     isLoading: Boolean,
     shakeTrigger: Long,
@@ -608,8 +610,13 @@ private fun StepOtpContent(
                         fontSize = 14.sp,
                         color = Neutral600
                     )
+                    val resendText = if (resendCooldownSeconds > 0) {
+                        "Gửi lại mã (${resendCooldownSeconds}s)"
+                    } else {
+                        "Gửi lại mã"
+                    }
                     Text(
-                        text = "Gửi lại mã",
+                        text = resendText,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = if (isResendEnabled) Primary700 else Neutral400,

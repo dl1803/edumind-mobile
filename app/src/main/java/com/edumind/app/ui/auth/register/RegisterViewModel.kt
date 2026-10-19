@@ -193,7 +193,7 @@ class RegisterViewModel @Inject constructor(
             is AppException -> {
                 if (error.httpCode == 409 || error.errorCode == "EMAIL_ALREADY_EXISTS") {
                     _eventFlow.emit(RegisterUiEvent.TriggerShake)
-                    _uiState.update { it.copy(emailError = "Email này đã được đăng ký. Vui lòng đăng nhập.") }
+                    _uiState.update { it.copy(emailError = "Email này đã được đăng ký.") }
                 } else {
                     _eventFlow.emit(RegisterUiEvent.ShowToast(error.message))
                 }
