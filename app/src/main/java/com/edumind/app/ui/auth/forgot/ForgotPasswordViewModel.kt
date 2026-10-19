@@ -48,9 +48,6 @@ class ForgotPasswordViewModel @Inject constructor(
     fun onOtpChanged(value: String) {
         if (value.length <= 6) {
             _uiState.update { it.copy(otp = value, otpError = null, generalError = null) }
-            if (value.length == 6) {
-                verifyOtp(value)
-            }
         }
     }
 
@@ -113,8 +110,11 @@ class ForgotPasswordViewModel @Inject constructor(
 
     // --- Xác thực mã OTP ---
     fun verifyOtp(otpCode: String = _uiState.value.otp) {
-        if (otpCode.length != 6) {
-            _uiState.update { it.copy(otpError = "Vui lòng nhập đủ 6 chữ số mã OTP.") }
+        val state = _uiState.value
+        if (state.isLoading || otpCode.length != 6) {
+            if (otpCode.length != 6) {
+                _uiState.update { it.copy(otpError = "Vui lòng nhập đủ 6 chữ số mã OTP.") }
+            }
             return
         }
 
@@ -219,7 +219,7 @@ class ForgotPasswordViewModel @Inject constructor(
 
     fun confirmCancelOtp() {
         stopCountdown()
-        _uiState.update { it.copy(isCancelDialogOpen = false, otp = "", otpError = null) }
+        _uiState.update { it.copy(isCancelDialogOpen = false, otp = "", otpError = null, resendCooldownSeconds = 60) }
         setStep(ForgotPasswordStep.EMAIL)
     }
 
@@ -234,13 +234,29 @@ class ForgotPasswordViewModel @Inject constructor(
 
     private fun startCountdown() {
         countdownJob?.cancel()
-        _uiState.update { it.copy(countdownSeconds = OTP_COUNTDOWN_TIME, isResendEnabled = false) }
+        _uiState.update {
+            it.copy(
+                countdownSeconds = OTP_COUNTDOWN_TIME,
+                resendCooldownSeconds = 60,
+                isResendEnabled = false
+            )
+        }
         countdownJob = viewModelScope.launch {
             var timeRemaining = OTP_COUNTDOWN_TIME
+            var resendTime = 60
             while (timeRemaining > 0) {
                 delay(1000L)
                 timeRemaining--
-                _uiState.update { it.copy(countdownSeconds = timeRemaining) }
+                if (resendTime > 0) {
+                    resendTime--
+                }
+                _uiState.update {
+                    it.copy(
+                        countdownSeconds = timeRemaining,
+                        resendCooldownSeconds = resendTime,
+                        isResendEnabled = (resendTime == 0)
+                    )
+                }
             }
             _uiState.update { it.copy(isResendEnabled = true) }
         }

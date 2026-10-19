@@ -21,6 +21,7 @@ data class ForgotPasswordUiState(
     val confirmPassword: String = "",
     val confirmPasswordError: String? = null,
     val countdownSeconds: Int = 300,
+    val resendCooldownSeconds: Int = 60,
     val isResendEnabled: Boolean = false,
     val isLoading: Boolean = false,
     val generalError: String? = null,
