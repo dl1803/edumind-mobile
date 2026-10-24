@@ -15,7 +15,7 @@ class FakeProgressRepository @Inject constructor() : ProgressRepository {
     private var currentGoalMinutes: Int = 45
 
     override suspend fun getProgressOverview(): Result<LearningProgressResponse> {
-        delay(300)
+        delay(600)
 
         if (shouldReturnError) {
             return Result.failure(Exception("Không thể tải dữ liệu tiến độ học tập. Vui lòng thử lại."))

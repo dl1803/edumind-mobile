@@ -1,19 +1,24 @@
 package com.edumind.app.ui.progress
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.LocalFireDepartment
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.LocalFireDepartment
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -21,10 +26,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,28 +51,53 @@ import com.edumind.app.ui.common.EmptyStateView
 import com.edumind.app.ui.common.ErrorView
 import com.edumind.app.ui.common.SkeletonBox
 import com.edumind.app.ui.progress.components.GoalAdjustmentBottomSheet
-import com.edumind.app.ui.progress.components.ProgressRing
 import com.edumind.app.ui.progress.components.WeeklyBarChart
 import com.edumind.app.ui.theme.*
 
 @Composable
 fun ProgressScreen(
+    userName: String = "Nguyễn Văn Minh",
     onExploreClick: () -> Unit = {},
     onCourseClick: (String) -> Unit = {},
+    onPlayClick: (String) -> Unit = onCourseClick,
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Scaffold(
-        containerColor = BgCanvasMobile,
-        topBar = {
-            ProgressTopBar()
-        }
-    ) { innerPadding ->
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BgCanvasMobile)
+    ) {
+        // Hiệu ứng Ambient Glow nhẹ trên đầu màn hình đồng bộ với HomeScreen
         Box(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+                .fillMaxWidth()
+                .height(260.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0x1A8B5CF6),
+                            Color(0x0DE0E7FF),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
+
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (uiState is ProgressUiState.Loading) {
+                ProgressTopBarSkeleton()
+            } else {
+                ProgressTopBar(userName = userName)
+            }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
         ) {
             when (val state = uiState) {
                 is ProgressUiState.Loading -> {
@@ -85,7 +126,8 @@ fun ProgressScreen(
                     ProgressContent(
                         state = state,
                         onEditGoalClick = { viewModel.toggleGoalSheet(true) },
-                        onCourseClick = onCourseClick
+                        onCourseClick = onCourseClick,
+                        onPlayClick = onPlayClick
                     )
 
                     if (state.isGoalSheetVisible) {
@@ -100,107 +142,139 @@ fun ProgressScreen(
         }
     }
 }
+}
 
 @Composable
-private fun ProgressTopBar() {
-    Surface(
-        color = Color.White,
-        border = CardDefaults.outlinedCardBorder()
+private fun ProgressTopBar(
+    userName: String = "Nguyễn Văn Minh"
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            // Avatar viền Nebula đồng bộ trang Home
+            Box(
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .background(Primary100),
-                    contentAlignment = Alignment.Center
+                        .matchParentSize()
+                        .background(NebulaBrush, shape = CircleShape)
+                        .padding(2.dp)
                 ) {
-                    Text(
-                        text = "NA",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = Primary700
-                    )
-                }
-
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(Color.White, shape = CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Nguyễn Văn A",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = Neutral950
+                            text = userName.take(1).uppercase(),
+                            fontFamily = EduMindFontFamily,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 16.sp,
+                            color = Primary700
                         )
-                        Surface(
-                            color = Warning100,
-                            shape = RoundedCornerShape(4.dp)
-                        ) {
-                            Text(
-                                text = "Học viên",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                ),
-                                color = Warning700,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                            )
-                        }
                     }
-                    Text(
-                        text = "Tiến độ học tập cá nhân",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 11.sp,
-                            color = Neutral500
-                        )
-                    )
                 }
             }
 
+            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = userName,
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Neutral900
+                    )
+                    // Card Học viên kích cỡ tương đương card chuỗi trang Home, padding gọn bao trọn
+                    Box(
+                        modifier = Modifier
+                            .background(Color(0xFFFEF3C7), RoundedCornerShape(12.dp))
+                            .border(1.dp, Color(0xFFFDE68A), RoundedCornerShape(12.dp))
+                            .padding(horizontal = 6.dp, vertical = 1.5.dp)
+                    ) {
+                        Text(
+                            text = "Học viên",
+                            fontFamily = EduMindFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                            color = Color(0xFFB45309)
+                        )
+                    }
+                }
+                Text(
+                    text = "Tiến độ học tập cá nhân",
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 12.sp,
+                    color = Neutral500
+                )
+            }
+        }
+
+        // Icon Chuông đồng bộ trang Home
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clickable { },
+            contentAlignment = Alignment.Center
+        ) {
             Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable { },
+                modifier = Modifier.size(28.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.Notifications,
+                    imageVector = Icons.Filled.Notifications,
                     contentDescription = "Thông báo",
-                    tint = Primary700,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier
+                        .size(28.dp)
+                        .graphicsLayer(alpha = 0.99f)
+                        .drawWithCache {
+                            onDrawWithContent {
+                                drawContent()
+                                drawRect(NebulaBrush, blendMode = BlendMode.SrcIn)
+                            }
+                        }
                 )
                 Box(
                     modifier = Modifier
-                        .size(16.dp)
                         .align(Alignment.TopEnd)
-                        .clip(CircleShape)
-                        .background(Error600),
+                        .offset(x = 3.dp, y = (-2).dp)
+                        .size(16.dp)
+                        .background(Error600, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "3",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = Color.White
+                        style = TextStyle(
+                            fontFamily = EduMindFontFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 10.sp,
+                            platformStyle = @Suppress("DEPRECATION") PlatformTextStyle(
+                                includeFontPadding = false
+                            ),
+                            lineHeightStyle = LineHeightStyle(
+                                alignment = LineHeightStyle.Alignment.Center,
+                                trim = LineHeightStyle.Trim.Both
+                            )
+                        )
                     )
                 }
             }
@@ -209,60 +283,69 @@ private fun ProgressTopBar() {
 }
 
 @Composable
+private fun ProgressTopBarSkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            SkeletonBox(
+                modifier = Modifier.size(42.dp),
+                shape = CircleShape
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    SkeletonBox(
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(16.dp),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    SkeletonBox(
+                        modifier = Modifier
+                            .width(52.dp)
+                            .height(18.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
+                SkeletonBox(
+                    modifier = Modifier
+                        .width(130.dp)
+                        .height(12.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+            }
+        }
+        SkeletonBox(
+            modifier = Modifier.size(36.dp),
+            shape = CircleShape
+        )
+    }
+}
+
+@Composable
 private fun ProgressContent(
     state: ProgressUiState.Success,
     onEditGoalClick: () -> Unit,
-    onCourseClick: (String) -> Unit
+    onCourseClick: (String) -> Unit,
+    onPlayClick: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 100.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 0.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = CardDefaults.outlinedCardBorder()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceAround
-                ) {
-                    ProgressRing(percent = state.overallPercent)
-
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(start = 16.dp)
-                    ) {
-                        Text(
-                            text = "Tiến độ học tập",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontSize = 16.sp,
-                                lineHeight = 22.sp,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            color = Neutral950
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Duy trì thói quen học tập đều đặn mỗi ngày để đạt mục tiêu của bạn!",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp
-                            ),
-                            color = Neutral600
-                        )
-                    }
-                }
-            }
-        }
-
+        // KPI row 1: Tổng giờ học & Hoàn thành
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -271,22 +354,22 @@ private fun ProgressContent(
                 KpiCard(
                     title = "${state.data.totalHoursWatched}h",
                     subtitle = "Tổng giờ học",
-                    icon = Icons.Outlined.Schedule,
+                    customIcon = { SolidClockIcon(tint = Color(0xFF2563EB)) },
                     iconBg = Color(0xFFEFF6FF),
-                    iconTint = Color(0xFF2563EB),
                     modifier = Modifier.weight(1f)
                 )
                 KpiCard(
                     title = "${state.data.totalEnrolledCourses} khóa",
                     subtitle = "Hoàn thành",
-                    icon = Icons.Outlined.School,
-                    iconBg = Primary50,
-                    iconTint = Primary700,
+                    icon = Icons.Filled.School,
+                    iconBg = Color(0xFFF5F3FF),
+                    iconTint = Color(0xFF8B5CF6),
                     modifier = Modifier.weight(1f)
                 )
             }
         }
 
+        // KPI row 2: Bài tập đạt yêu cầu & Chuỗi học tập
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -295,15 +378,14 @@ private fun ProgressContent(
                 KpiCard(
                     title = "${state.data.totalExercisesPassed} / ${state.data.totalExercises} bài",
                     subtitle = "Đạt yêu cầu",
-                    icon = Icons.Outlined.CheckCircle,
-                    iconBg = Success100,
-                    iconTint = Success600,
+                    customIcon = { SolidCheckCircleIcon(tint = Color(0xFF16A34A)) },
+                    iconBg = Color(0xFFF0FDF4),
                     modifier = Modifier.weight(1f)
                 )
                 KpiCard(
                     title = "${state.data.streakDays} ngày",
                     subtitle = "Chuỗi học tập 🔥",
-                    icon = Icons.Outlined.LocalFireDepartment,
+                    icon = Icons.Filled.LocalFireDepartment,
                     iconBg = Color(0xFFFFF7ED),
                     iconTint = Color(0xFFEA580C),
                     modifier = Modifier.weight(1f)
@@ -311,6 +393,7 @@ private fun ProgressContent(
             }
         }
 
+        // Biểu đồ thời lượng tuần & Mục tiêu
         item {
             WeeklyBarChart(
                 weeklyData = state.data.weeklyStudy,
@@ -319,38 +402,39 @@ private fun ProgressContent(
             )
         }
 
+        // Tiêu đề section Khóa học đang học
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp),
+                    .padding(top = 4.dp, bottom = 2.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "KHÓA HỌC ĐANG HỌC",
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
-                    ),
-                    color = Neutral700
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp,
+                    color = Neutral900
                 )
                 Text(
                     text = "${state.data.courses.size} khóa đang học",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold
-                    ),
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.SemiBold,
                     color = Primary700
                 )
             }
         }
 
+        // Danh sách khóa học
         items(state.data.courses, key = { it.courseId }) { course ->
             CourseProgressItem(
                 course = course,
-                onClick = { onCourseClick(course.courseId) }
+                onClick = { onCourseClick(course.courseId) },
+                onPlayClick = { onPlayClick(course.courseId) }
             )
         }
     }
@@ -360,16 +444,17 @@ private fun ProgressContent(
 private fun KpiCard(
     title: String,
     subtitle: String,
-    icon: ImageVector,
+    icon: ImageVector? = null,
     iconBg: Color,
-    iconTint: Color,
+    iconTint: Color = Color.Unspecified,
+    customIcon: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.height(72.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = CardDefaults.outlinedCardBorder()
+        border = BorderStroke(1.dp, Color(0xFFE5E5E5).copy(alpha = 0.8f))
     ) {
         Row(
             modifier = Modifier
@@ -381,16 +466,20 @@ private fun KpiCard(
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(RoundedCornerShape(12.dp))
                     .background(iconBg),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = iconTint,
-                    modifier = Modifier.size(20.dp)
-                )
+                if (customIcon != null) {
+                    customIcon()
+                } else if (icon != null) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
             Column(
                 modifier = Modifier.weight(1f),
@@ -398,20 +487,19 @@ private fun KpiCard(
             ) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = Neutral950,
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Neutral900,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 10.sp,
-                        color = Neutral500
-                    ),
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 10.sp,
+                    color = Neutral500,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -421,9 +509,68 @@ private fun KpiCard(
 }
 
 @Composable
+private fun SolidClockIcon(
+    tint: Color = Color(0xFF2563EB),
+    modifier: Modifier = Modifier.size(20.dp)
+) {
+    Canvas(modifier = modifier) {
+        val radius = size.minDimension / 2f
+        // Solid colored circle
+        drawCircle(
+            color = tint,
+            radius = radius,
+            center = center
+        )
+        // White clock hands
+        val strokeWidth = 2.dp.toPx()
+        // Vertical hand from 12 o'clock to center
+        drawLine(
+            color = Color.White,
+            start = Offset(center.x, center.y - radius * 0.52f),
+            end = Offset(center.x, center.y),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
+        )
+        // Horizontal hand from center to 3 o'clock
+        drawLine(
+            color = Color.White,
+            start = Offset(center.x, center.y),
+            end = Offset(center.x + radius * 0.42f, center.y),
+            strokeWidth = strokeWidth,
+            cap = StrokeCap.Round
+        )
+    }
+}
+
+@Composable
+private fun SolidCheckCircleIcon(
+    tint: Color = Color(0xFF16A34A),
+    modifier: Modifier = Modifier.size(20.dp)
+) {
+    Canvas(modifier = modifier) {
+        val radius = size.minDimension / 2f
+        // Solid colored circle
+        drawCircle(
+            color = tint,
+            radius = radius,
+            center = center
+        )
+        // White checkmark
+        val strokeWidth = 2.dp.toPx()
+        val start = Offset(center.x - radius * 0.45f, center.y)
+        val pivot = Offset(center.x - radius * 0.1f, center.y + radius * 0.35f)
+        val end = Offset(center.x + radius * 0.45f, center.y - radius * 0.35f)
+
+        drawLine(Color.White, start, pivot, strokeWidth, StrokeCap.Round)
+        drawLine(Color.White, pivot, end, strokeWidth, StrokeCap.Round)
+    }
+}
+
+@Composable
 private fun CourseProgressItem(
     course: CourseProgress,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onPlayClick: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -432,7 +579,7 @@ private fun CourseProgressItem(
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = CardDefaults.outlinedCardBorder()
+        border = BorderStroke(1.dp, Color(0xFFE5E5E5).copy(alpha = 0.8f))
     ) {
         Row(
             modifier = Modifier
@@ -445,7 +592,7 @@ private fun CourseProgressItem(
                 model = course.thumbnailUrl,
                 contentDescription = course.courseTitle,
                 modifier = Modifier
-                    .size(60.dp)
+                    .size(64.dp)
                     .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop
             )
@@ -453,15 +600,14 @@ private fun CourseProgressItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = course.courseTitle,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    color = Neutral950,
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 12.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Neutral900,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(5.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -469,17 +615,15 @@ private fun CourseProgressItem(
                 ) {
                     Text(
                         text = "${course.completedLessons} / ${course.totalLessons} bài học",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 11.sp,
-                            color = Neutral500
-                        )
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 10.sp,
+                        color = Neutral500
                     )
                     Text(
                         text = "${course.progressPercent.toInt()}%",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 10.5.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Primary700
                     )
                 }
@@ -503,16 +647,17 @@ private fun CourseProgressItem(
 
             Box(
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(32.dp)
                     .clip(CircleShape)
-                    .background(Primary50),
+                    .background(Color(0xFFF5F3FF))
+                    .clickable { onPlayClick() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Filled.PlayArrow,
                     contentDescription = "Học tiếp",
                     tint = Primary700,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
@@ -524,40 +669,207 @@ private fun ProgressLoadingSkeleton() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 0.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        SkeletonBox(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(140.dp),
-            shape = RoundedCornerShape(20.dp)
-        )
+        // 4 KPI Cards Grid Skeleton
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            SkeletonBox(modifier = Modifier.weight(1f).height(72.dp), shape = RoundedCornerShape(16.dp))
-            SkeletonBox(modifier = Modifier.weight(1f).height(72.dp), shape = RoundedCornerShape(16.dp))
+            KpiCardSkeleton(modifier = Modifier.weight(1f))
+            KpiCardSkeleton(modifier = Modifier.weight(1f))
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            SkeletonBox(modifier = Modifier.weight(1f).height(72.dp), shape = RoundedCornerShape(16.dp))
-            SkeletonBox(modifier = Modifier.weight(1f).height(72.dp), shape = RoundedCornerShape(16.dp))
+            KpiCardSkeleton(modifier = Modifier.weight(1f))
+            KpiCardSkeleton(modifier = Modifier.weight(1f))
         }
-        SkeletonBox(
+
+        // Weekly Chart Card Skeleton
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            border = BorderStroke(1.dp, Color(0xFFE5E5E5).copy(alpha = 0.8f))
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        SkeletonBox(
+                            modifier = Modifier
+                                .width(140.dp)
+                                .height(14.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        SkeletonBox(
+                            modifier = Modifier
+                                .width(176.dp)
+                                .height(10.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                    }
+                    SkeletonBox(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(28.dp),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 7 Chart bars
+                val barHeights = listOf(42.dp, 38.dp, 58.dp, 26.dp, 50.dp, 74.dp, 10.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(116.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    barHeights.forEach { height ->
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            SkeletonBox(
+                                modifier = Modifier
+                                    .width(16.dp)
+                                    .height(height),
+                                shape = RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            SkeletonBox(
+                                modifier = Modifier
+                                    .width(14.dp)
+                                    .height(10.dp),
+                                shape = RoundedCornerShape(2.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Section header skeleton
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(180.dp),
-            shape = RoundedCornerShape(16.dp)
-        )
-        SkeletonBox(
+                .padding(top = 4.dp, bottom = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SkeletonBox(
+                modifier = Modifier
+                    .width(128.dp)
+                    .height(12.dp),
+                shape = RoundedCornerShape(4.dp)
+            )
+            SkeletonBox(
+                modifier = Modifier
+                    .width(80.dp)
+                    .height(12.dp),
+                shape = RoundedCornerShape(4.dp)
+            )
+        }
+
+        // 2 Course Cards Skeleton
+        repeat(2) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = BorderStroke(1.dp, Color(0xFFE5E5E5).copy(alpha = 0.8f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    SkeletonBox(
+                        modifier = Modifier.size(64.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        SkeletonBox(
+                            modifier = Modifier
+                                .fillMaxWidth(0.75f)
+                                .height(14.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        SkeletonBox(
+                            modifier = Modifier
+                                .fillMaxWidth(0.5f)
+                                .height(10.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        SkeletonBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp),
+                            shape = RoundedCornerShape(3.dp)
+                        )
+                    }
+                    SkeletonBox(
+                        modifier = Modifier.size(32.dp),
+                        shape = CircleShape
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun KpiCardSkeleton(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.height(72.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(1.dp, Color(0xFFE5E5E5).copy(alpha = 0.8f))
+    ) {
+        Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(80.dp),
-            shape = RoundedCornerShape(16.dp)
-        )
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SkeletonBox(
+                modifier = Modifier.size(36.dp),
+                shape = RoundedCornerShape(12.dp)
+            )
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                SkeletonBox(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .height(14.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                SkeletonBox(
+                    modifier = Modifier
+                        .width(64.dp)
+                        .height(10.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+            }
+        }
     }
 }

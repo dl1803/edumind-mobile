@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.edumind.app.ui.theme.EduMindFontFamily
 import com.edumind.app.ui.theme.Neutral500
 import com.edumind.app.ui.theme.Neutral900
+import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -247,7 +248,10 @@ fun AppNavGraph(
                             }
                         },
                         onCourseClick = { courseId ->
-                            navController.navigate(Screen.CourseDetail.createRoute(courseId))
+                            navController.navigate(Screen.CourseProgressDetail.createRoute(courseId))
+                        },
+                        onPlayClick = { courseId ->
+                            navController.navigate(Screen.CourseProgressDetail.createRoute(courseId))
                         }
                     )
                 }
@@ -316,6 +320,52 @@ fun AppNavGraph(
                                 fontFamily = EduMindFontFamily,
                                 fontSize = 13.sp,
                                 color = Neutral500
+                            )
+                            androidx.compose.material3.OutlinedButton(
+                                onClick = { navController.popBackStack() }
+                            ) {
+                                Text(
+                                    text = "Quay lại",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+                }
+
+                composable(
+                    route = Screen.CourseProgressDetail.route,
+                    arguments = listOf(
+                        navArgument(Screen.ARG_COURSE_ID) { type = NavType.StringType }
+                    )
+                ) { backStackEntry ->
+                    val courseId = backStackEntry.arguments?.getString(Screen.ARG_COURSE_ID) ?: ""
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.White)
+                            .statusBarsPadding()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "Chi tiết tiến độ khóa học",
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Neutral900
+                            )
+                            Text(
+                                text = "Mã khóa học: $courseId\n(Giao diện khóa học đã mua, đang học dở)",
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 13.sp,
+                                color = Neutral500,
+                                textAlign = TextAlign.Center
                             )
                             androidx.compose.material3.OutlinedButton(
                                 onClick = { navController.popBackStack() }

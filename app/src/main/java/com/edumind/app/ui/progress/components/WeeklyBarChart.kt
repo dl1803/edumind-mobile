@@ -13,7 +13,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.edumind.app.data.model.response.DailyStudyTime
@@ -33,6 +38,7 @@ fun WeeklyBarChart(
         border = CardDefaults.outlinedCardBorder()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -41,21 +47,36 @@ fun WeeklyBarChart(
                 Column {
                     Text(
                         text = "Thời lượng học trong tuần",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontSize = 14.sp,
-                            lineHeight = 20.sp,
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = Neutral950
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 12.5.sp,
+                        lineHeight = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Neutral900
                     )
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Mục tiêu hiện tại: $dailyGoalMinutes phút / ngày",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = Primary700
+                        text = buildAnnotatedString {
+                            withStyle(
+                                SpanStyle(
+                                    fontFamily = EduMindFontFamily,
+                                    color = Neutral500,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            ) {
+                                append("Mục tiêu hiện tại: ")
+                            }
+                            withStyle(
+                                SpanStyle(
+                                    fontFamily = EduMindFontFamily,
+                                    color = Primary700,
+                                    fontSize = 10.5.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            ) {
+                                append("$dailyGoalMinutes phút / ngày")
+                            }
+                        }
                     )
                 }
 
@@ -76,23 +97,23 @@ fun WeeklyBarChart(
                             imageVector = Icons.Outlined.Edit,
                             contentDescription = "Đổi mục tiêu",
                             tint = Primary700,
-                            modifier = Modifier.size(13.dp)
+                            modifier = Modifier.size(12.dp)
                         )
                         Text(
                             text = "Đổi mục tiêu",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.SemiBold
-                            ),
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold,
                             color = Primary700
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            val maxMinutes = 100f
+            // 7 Days Chart Bar Area
+            val maxMinutes = 90f
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -101,18 +122,19 @@ fun WeeklyBarChart(
                 verticalAlignment = Alignment.Bottom
             ) {
                 weeklyData.forEach { item ->
-                    val barHeight = ((item.minutes / maxMinutes) * 78).coerceIn(6f, 78f).dp
+                    val barHeight = ((item.minutes / maxMinutes) * 74).coerceIn(6f, 74f).dp
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
                             text = "${item.minutes}p",
-                            fontSize = 10.sp,
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 9.5.sp,
                             fontWeight = if (item.isToday) FontWeight.Bold else FontWeight.Normal,
-                            color = if (item.isToday) Primary700 else Neutral400
+                            color = if (item.isToday) Primary700 else if (item.minutes == 0) Neutral300 else Neutral400
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
                         Box(
                             modifier = Modifier
                                 .width(16.dp)
@@ -126,10 +148,15 @@ fun WeeklyBarChart(
                         )
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = item.dayOfWeek,
-                            fontSize = 11.sp,
+                            text = if (item.isToday) "${item.dayOfWeek} (19/09)" else item.dayOfWeek,
+                            fontFamily = EduMindFontFamily,
+                            fontSize = if (item.isToday) 9.5.sp else 10.sp,
                             fontWeight = if (item.isToday) FontWeight.Bold else FontWeight.Medium,
-                            color = if (item.isToday) Primary700 else Neutral600
+                            color = if (item.isToday) Primary700 else if (item.minutes == 0) Neutral400 else Neutral500,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Visible,
+                            modifier = Modifier.wrapContentWidth(unbounded = true)
                         )
                     }
                 }
