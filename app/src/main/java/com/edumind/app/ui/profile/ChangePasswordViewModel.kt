@@ -20,7 +20,7 @@ class ChangePasswordViewModel @Inject constructor(
     val uiState: StateFlow<ChangePasswordUiState> = _uiState.asStateFlow()
 
     fun onCurrentPasswordChange(value: String) {
-        _uiState.update { it.copy(currentPassword = value, errorMessage = null) }
+        _uiState.update { it.copy(currentPassword = value, currentPasswordError = null, errorMessage = null) }
     }
 
     fun onNewPasswordChange(value: String) {
@@ -48,7 +48,7 @@ class ChangePasswordViewModel @Inject constructor(
         if (!state.isSaveEnabled) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            _uiState.update { it.copy(isLoading = true, currentPasswordError = null, errorMessage = null) }
             profileRepository.changePassword(
                 currentPassword = state.currentPassword,
                 newPassword = state.newPassword
@@ -60,16 +60,30 @@ class ChangePasswordViewModel @Inject constructor(
                             isSuccess = true,
                             currentPassword = "",
                             newPassword = "",
-                            confirmPassword = ""
+                            confirmPassword = "",
+                            currentPasswordError = null,
+                            errorMessage = null
                         )
                     }
                 },
                 onFailure = { error ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            errorMessage = error.localizedMessage ?: "Đổi mật khẩu thất bại. Vui lòng thử lại."
-                        )
+                    val errorMsg = error.localizedMessage ?: "Đổi mật khẩu thất bại. Vui lòng thử lại."
+                    if (errorMsg.contains("hiện tại", ignoreCase = true)) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                currentPasswordError = errorMsg,
+                                errorMessage = null
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                errorMessage = errorMsg,
+                                currentPasswordError = null
+                            )
+                        }
                     }
                 }
             )

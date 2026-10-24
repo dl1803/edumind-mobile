@@ -44,8 +44,8 @@ class FakeProfileRepository @Inject constructor() : ProfileRepository {
         if (shouldReturnError) {
             return Result.failure(Exception("Không thể đổi mật khẩu. Vui lòng thử lại."))
         }
-        if (currentPassword == "wrong_password") {
-            return Result.failure(Exception("Mật khẩu hiện tại không đúng."))
+        if (currentPassword == "wrong_password" || currentPassword.contains("wrong", ignoreCase = true)) {
+            return Result.failure(Exception("Mật khẩu hiện tại không chính xác. Vui lòng thử lại."))
         }
         if (currentPassword == newPassword) {
             return Result.failure(Exception("Mật khẩu mới không được trùng với mật khẩu cũ."))

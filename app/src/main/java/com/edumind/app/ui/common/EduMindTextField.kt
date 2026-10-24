@@ -6,13 +6,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,9 +48,11 @@ fun EduMindTextField(
         if (!label.isNullOrBlank()) {
             Text(
                 text = label,
-                style = MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp),
+                fontFamily = EduMindFontFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
                 color = Neutral700,
-                modifier = Modifier.padding(bottom = 4.dp)
+                modifier = Modifier.padding(bottom = 6.dp)
             )
         }
 
@@ -57,9 +65,11 @@ fun EduMindTextField(
                 .semantics { if (errorText != null) error(errorText) },
             enabled = enabled,
             singleLine = singleLine,
-            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                fontSize = 16.sp,
-                color = if (enabled) Neutral950 else Neutral400
+            textStyle = TextStyle(
+                fontFamily = EduMindFontFamily,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Normal,
+                color = if (enabled) Neutral950 else Neutral500
             ),
             cursorBrush = SolidColor(Primary600),
             keyboardOptions = keyboardOptions,
@@ -76,25 +86,35 @@ fun EduMindTextField(
                     interactionSource = interactionSource,
                     isError = isError,
                     placeholder = placeholder?.let {
-                        { Text(text = it, style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp), color = Neutral400) }
+                        {
+                            Text(
+                                text = it,
+                                style = TextStyle(
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Normal
+                                ),
+                                color = Neutral400
+                            )
+                        }
                     },
                     leadingIcon = leadingIcon,
                     trailingIcon = trailingIcon,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 0.dp),
                     container = {
                         OutlinedTextFieldDefaults.ContainerBox(
                             enabled = enabled,
                             isError = isError,
                             interactionSource = interactionSource,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Primary600,
-                                unfocusedBorderColor = Neutral400,
+                                focusedBorderColor = Color(0xFFA78BFA),
+                                unfocusedBorderColor = Color(0xFFE5E7EB),
                                 errorBorderColor = Error600,
-                                disabledBorderColor = Neutral300,
-                                disabledContainerColor = Neutral100
+                                disabledBorderColor = Color(0xFFE5E7EB),
+                                disabledContainerColor = Color(0xFFF9FAFB)
                             ),
-                            shape = RoundedCornerShape(8.dp),
-                            focusedBorderThickness = 2.dp,
+                            shape = RoundedCornerShape(10.dp),
+                            focusedBorderThickness = 1.2.dp,
                             unfocusedBorderThickness = 1.dp
                         )
                     }
@@ -102,13 +122,26 @@ fun EduMindTextField(
             }
         )
 
-        if (errorText != null) {
-            Text(
-                text = errorText,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                color = Error600,
+        if (!errorText.isNullOrBlank()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
                 modifier = Modifier.padding(top = 4.dp)
-            )
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Error,
+                    contentDescription = null,
+                    tint = Error600,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = errorText,
+                    fontFamily = EduMindFontFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 12.sp,
+                    color = Error600
+                )
+            }
         }
     }
 }

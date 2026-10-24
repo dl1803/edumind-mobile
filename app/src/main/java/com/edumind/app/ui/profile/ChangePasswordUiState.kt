@@ -9,6 +9,7 @@ data class ChangePasswordUiState(
     val isConfirmPasswordVisible: Boolean = false,
     val isLoading: Boolean = false,
     val isSuccess: Boolean = false,
+    val currentPasswordError: String? = null,
     val errorMessage: String? = null
 ) {
     val hasMinLength: Boolean
