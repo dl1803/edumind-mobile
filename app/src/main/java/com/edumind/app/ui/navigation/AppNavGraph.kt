@@ -70,35 +70,14 @@ fun AppNavGraph(
         }
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        bottomBar = {
-            if (shouldShowBottomBar) {
-                BottomNavBar(
-                    currentRoute = currentRoute,
-                    onNavigateToRoute = { targetRoute ->
-                        navController.navigate(targetRoute) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
-            }
-        }
-    ) { innerPadding ->
-        // Ghi chú: Nội dung màn hình trải toàn màn hình, Floating Dock nổi phía trên
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = if (shouldShowBottomBar) innerPadding.calculateBottomPadding() else 0.dp)
+    Box(
+        modifier = modifier.fillMaxSize()
+    ) {
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Splash.route,
+            modifier = Modifier.fillMaxSize()
         ) {
-            NavHost(
-                navController = navController,
-                startDestination = Screen.Splash.route
-            ) {
                 // --- Auth Flow ---
                 composable(Screen.Splash.route) {
                     SplashScreen(
@@ -452,6 +431,22 @@ fun AppNavGraph(
                     }
                 }
             }
+
+        // Floating Bottom Navigation Dock nổi đè lên trên ở đáy màn hình
+        if (shouldShowBottomBar) {
+            BottomNavBar(
+                currentRoute = currentRoute,
+                onNavigateToRoute = { targetRoute ->
+                    navController.navigate(targetRoute) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

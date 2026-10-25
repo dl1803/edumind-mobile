@@ -361,57 +361,32 @@ private fun ProfileContent(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 4.dp)
             ) {
-                // Khung Avatar với icon camera không bị che cắt
+                // Avatar 76dp với viền Nebula tròn
                 Box(
-                    modifier = Modifier.size(84.dp),
+                    modifier = Modifier
+                        .size(76.dp)
+                        .background(NebulaBrush, shape = CircleShape)
+                        .padding(3.dp)
+                        .clip(CircleShape)
+                        .background(Color.White),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Avatar 76dp với viền Nebula tròn
-                    Box(
-                        modifier = Modifier
-                            .size(76.dp)
-                            .background(NebulaBrush, shape = CircleShape)
-                            .padding(3.dp)
-                            .clip(CircleShape)
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (!user.avatarUrl.isNullOrBlank()) {
-                            AsyncImage(
-                                model = user.avatarUrl,
-                                contentDescription = "Avatar",
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        } else {
-                            Text(
-                                text = user.fullName.take(1).uppercase(),
-                                fontFamily = EduMindFontFamily,
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 28.sp,
-                                color = Primary700
-                            )
-                        }
-                    }
-
-                    // Nút camera chỉnh sửa độc lập, không bị clip bởi viền tròn avatar
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(28.dp)
-                            .clip(CircleShape)
-                            .background(Primary700)
-                            .border(2.dp, Color.White, CircleShape)
-                            .clickable { onEditProfileClick() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.PhotoCamera,
-                            contentDescription = "Đổi ảnh đại diện",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
+                    if (!user.avatarUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = user.avatarUrl,
+                            contentDescription = "Avatar",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Text(
+                            text = user.fullName.take(1).uppercase(),
+                            fontFamily = EduMindFontFamily,
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 28.sp,
+                            color = Primary700
                         )
                     }
                 }
@@ -564,7 +539,7 @@ private fun ProfileContent(
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp)
+                    .padding(bottom = 120.dp)
             )
         }
     }
@@ -762,6 +737,8 @@ private fun ProfileLoadingSkeleton() {
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(120.dp))
         }
     }
 }
