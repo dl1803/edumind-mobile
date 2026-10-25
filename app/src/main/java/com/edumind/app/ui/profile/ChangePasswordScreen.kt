@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
@@ -25,6 +26,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import android.widget.Toast
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -35,7 +39,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.edumind.app.ui.common.EduMindButton
 import com.edumind.app.ui.common.EduMindTextField
 import com.edumind.app.ui.theme.*
-import kotlinx.coroutines.delay
 
 @Composable
 fun ChangePasswordScreen(
@@ -44,12 +47,19 @@ fun ChangePasswordScreen(
     viewModel: ChangePasswordViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            delay(800)
+            Toast.makeText(context, "Đổi mật khẩu thành công", Toast.LENGTH_SHORT).show()
             viewModel.resetSuccess()
             onBackClick()
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -118,7 +128,7 @@ fun ChangePasswordContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 14.dp)
+                        .padding(horizontal = 20.dp, vertical = 16.dp)
                 ) {
                     EduMindButton(
                         text = "Lưu mật khẩu mới",
@@ -225,19 +235,52 @@ fun ChangePasswordContent(
                         modifier = Modifier.fillMaxWidth()
                     )
 
-                    // Checklist tiêu chí độ mạnh
+                    // Checklist tiêu chí độ mạnh (đồng bộ chuẩn 4 tiêu chí như RegisterScreen)
                     Column(
-                        modifier = Modifier.padding(top = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp)
+                            .padding(top = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        ChecklistCriteriaItem(
+                        CriteriaItem(
                             text = "Tối thiểu 8 ký tự",
-                            isSatisfied = uiState.hasMinLength
+                            isMet = uiState.hasMinLength
                         )
-                        ChecklistCriteriaItem(
-                            text = "Bao gồm cả chữ và số",
-                            isSatisfied = uiState.hasLetterAndDigit
+                        CriteriaItem(
+                            text = "Gồm chữ hoa (A-Z) và chữ thường (a-z)",
+                            isMet = uiState.hasUpperAndLower
                         )
+                        CriteriaItem(
+                            text = "Gồm ít nhất 1 chữ số (0-9)",
+                            isMet = uiState.hasDigit
+                        )
+                        CriteriaItem(
+                            text = "Gồm ít nhất 1 ký tự đặc biệt (@$!%*?&)",
+                            isMet = uiState.hasSpecialChar
+                        )
+                    }
+
+                    if (uiState.isSameAsOldPassword) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Error,
+                                contentDescription = null,
+                                tint = Error600,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = "Mật khẩu mới không được trùng với mật khẩu hiện tại",
+                                fontFamily = EduMindFontFamily,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 12.sp,
+                                color = Error600
+                            )
+                        }
                     }
                 }
 
@@ -293,58 +336,49 @@ fun ChangePasswordContent(
                             )
                         }
                     } else if (uiState.confirmPassword.isNotEmpty()) {
-                        Text(
-                            text = "Mật khẩu xác nhận không trùng khớp",
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 11.sp,
-                            color = Error600,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Error,
+                                contentDescription = null,
+                                tint = Error600,
+                                modifier = Modifier.size(13.dp)
+                            )
+                            Text(
+                                text = "Mật khẩu xác nhận không trùng khớp",
+                                fontFamily = EduMindFontFamily,
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 12.sp,
+                                color = Error600
+                            )
+                        }
                     }
                 }
 
                 // Error message từ ViewModel nếu có
                 uiState.errorMessage?.let { errorMsg ->
-                    Text(
-                        text = errorMsg,
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 12.sp,
-                        color = Error600,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-
-            // Toast thông báo đã đổi mật khẩu thành công
-            AnimatedVisibility(
-                visible = uiState.isSuccess,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { 50 }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { 50 }),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 20.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xE6171717), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.CheckCircle,
+                            imageVector = Icons.Filled.Error,
                             contentDescription = null,
-                            tint = Color(0xFF34D399),
-                            modifier = Modifier.size(16.dp)
+                            tint = Error600,
+                            modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "Đã cập nhật mật khẩu mới",
+                            text = errorMsg,
                             fontFamily = EduMindFontFamily,
                             fontWeight = FontWeight.Medium,
                             fontSize = 12.sp,
-                            color = Color.White
+                            color = Error600
                         )
                     }
                 }
@@ -354,37 +388,26 @@ fun ChangePasswordContent(
 }
 
 @Composable
-private fun ChecklistCriteriaItem(
+private fun CriteriaItem(
     text: String,
-    isSatisfied: Boolean
+    isMet: Boolean
 ) {
-    val tintColor = if (isSatisfied) Color(0xFF15803D) else Neutral400
-    val iconBg = if (isSatisfied) Color(0xFFDCFCE7) else Color(0xFFF5F5F5)
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(16.dp)
-                .background(iconBg, RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Check,
-                contentDescription = null,
-                tint = tintColor,
-                modifier = Modifier.size(10.dp)
-            )
-        }
-
+        Icon(
+            imageVector = if (isMet) Icons.Default.Check else Icons.Default.Close,
+            contentDescription = null,
+            tint = if (isMet) Success600 else Neutral400,
+            modifier = Modifier.size(13.dp)
+        )
         Text(
             text = text,
             fontFamily = EduMindFontFamily,
-            fontWeight = if (isSatisfied) FontWeight.SemiBold else FontWeight.Normal,
-            fontSize = 11.sp,
-            color = tintColor
+            fontSize = 12.sp,
+            fontWeight = if (isMet) FontWeight.Medium else FontWeight.Normal,
+            color = if (isMet) Success700 else Neutral500
         )
     }
 }

@@ -31,6 +31,7 @@ class EditProfileViewModel @Inject constructor(
                 onSuccess = { user ->
                     _uiState.update {
                         it.copy(
+                            initialFullName = user.fullName,
                             fullName = user.fullName,
                             email = user.email,
                             currentAvatarUrl = user.avatarUrl,
@@ -87,6 +88,7 @@ class EditProfileViewModel @Inject constructor(
                 onSuccess = { updatedUser ->
                     _uiState.update {
                         it.copy(
+                            initialFullName = updatedUser.fullName,
                             fullName = updatedUser.fullName,
                             currentAvatarUrl = updatedUser.avatarUrl,
                             selectedAvatarUri = null,

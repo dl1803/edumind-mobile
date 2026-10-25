@@ -28,17 +28,21 @@ class ProfileViewModel @Inject constructor(
         loadProfile()
     }
 
-    fun loadProfile() {
+    fun loadProfile(showLoading: Boolean = true) {
         viewModelScope.launch {
-            _uiState.value = ProfileUiState.Loading
+            if (showLoading || _uiState.value !is ProfileUiState.Success) {
+                _uiState.value = ProfileUiState.Loading
+            }
             profileRepository.getProfile().fold(
                 onSuccess = { user ->
                     _uiState.value = ProfileUiState.Success(user = user)
                 },
                 onFailure = { error ->
-                    _uiState.value = ProfileUiState.Error(
-                        message = error.localizedMessage ?: "Không thể tải thông tin hồ sơ."
-                    )
+                    if (_uiState.value !is ProfileUiState.Success) {
+                        _uiState.value = ProfileUiState.Error(
+                            message = error.localizedMessage ?: "Không thể tải thông tin hồ sơ."
+                        )
+                    }
                 }
             )
         }

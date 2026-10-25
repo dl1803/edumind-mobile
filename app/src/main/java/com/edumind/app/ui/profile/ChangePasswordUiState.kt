@@ -1,5 +1,7 @@
 package com.edumind.app.ui.profile
 
+import com.edumind.app.util.Validators
+
 data class ChangePasswordUiState(
     val currentPassword: String = "",
     val newPassword: String = "",
@@ -13,21 +15,39 @@ data class ChangePasswordUiState(
     val errorMessage: String? = null
 ) {
     val hasMinLength: Boolean
-        get() = newPassword.length >= 8
+        get() = Validators.hasMinLength(newPassword)
+
+    val hasUppercase: Boolean
+        get() = Validators.hasUppercase(newPassword)
+
+    val hasLowercase: Boolean
+        get() = Validators.hasLowercase(newPassword)
+
+    val hasUpperAndLower: Boolean
+        get() = hasUppercase && hasLowercase
+
+    val hasDigit: Boolean
+        get() = Validators.hasDigit(newPassword)
+
+    val hasSpecialChar: Boolean
+        get() = Validators.hasSpecialChar(newPassword)
 
     val hasLetterAndDigit: Boolean
-        get() = newPassword.any { it.isLetter() } && newPassword.any { it.isDigit() }
+        get() = (hasUppercase || hasLowercase) && hasDigit
 
     val isConfirmMatching: Boolean
         get() = confirmPassword.isNotEmpty() && confirmPassword == newPassword
 
     val isNewPasswordValid: Boolean
-        get() = hasMinLength && hasLetterAndDigit
+        get() = hasMinLength && hasUpperAndLower && hasDigit && hasSpecialChar
+
+    val isSameAsOldPassword: Boolean
+        get() = currentPassword.isNotEmpty() && newPassword.isNotEmpty() && currentPassword == newPassword
 
     val isSaveEnabled: Boolean
         get() = currentPassword.isNotEmpty() &&
                 isNewPasswordValid &&
                 isConfirmMatching &&
-                currentPassword != newPassword &&
+                !isSameAsOldPassword &&
                 !isLoading
 }

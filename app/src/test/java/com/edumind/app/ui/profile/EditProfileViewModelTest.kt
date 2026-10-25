@@ -58,7 +58,8 @@ class EditProfileViewModelTest {
         assertEquals("https://example.com/avatar_original.jpg", state.currentAvatarUrl)
         assertFalse(state.isInitialLoading)
         assertNull(state.errorMessage)
-        assertTrue(state.isSaveEnabled)
+        assertFalse(state.hasChanges)
+        assertFalse(state.isSaveEnabled)
     }
 
     @Test

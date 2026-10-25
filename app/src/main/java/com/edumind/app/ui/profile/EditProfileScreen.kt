@@ -20,6 +20,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.outlined.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -32,12 +33,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.edumind.app.ui.common.EduMindButton
 import com.edumind.app.ui.common.EduMindTextField
 import com.edumind.app.ui.theme.*
-import kotlinx.coroutines.delay
 
 @Composable
 fun EditProfileScreen(
@@ -45,6 +47,7 @@ fun EditProfileScreen(
     viewModel: EditProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -54,9 +57,15 @@ fun EditProfileScreen(
 
     LaunchedEffect(uiState.isSaveSuccess) {
         if (uiState.isSaveSuccess) {
-            delay(800)
+            Toast.makeText(context, "Cập nhật hồ sơ thành công", Toast.LENGTH_SHORT).show()
             viewModel.resetSaveSuccess()
             onBackClick()
+        }
+    }
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -110,24 +119,30 @@ fun EditProfileContent(
             }
         },
         bottomBar = {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                color = Color.White,
-                shadowElevation = 8.dp
+            AnimatedVisibility(
+                visible = uiState.hasChanges,
+                enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
+                exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .navigationBarsPadding()
-                        .padding(horizontal = 20.dp, vertical = 14.dp)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = Color.White,
+                    shadowElevation = 8.dp
                 ) {
-                    EduMindButton(
-                        text = "Lưu thay đổi",
-                        enabled = uiState.isSaveEnabled,
-                        loading = uiState.isSaving,
-                        onClick = onSaveClick,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 20.dp, vertical = 16.dp)
+                    ) {
+                        EduMindButton(
+                            text = "Lưu thay đổi",
+                            enabled = uiState.isSaveEnabled,
+                            loading = uiState.isSaving,
+                            onClick = onSaveClick,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         },
@@ -265,46 +280,25 @@ fun EditProfileContent(
 
                 // Error message nếu có
                 uiState.errorMessage?.let { errorMsg ->
-                    Text(
-                        text = errorMsg,
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 12.sp,
-                        color = Error600,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-
-            // Toast thông báo đã lưu thành công
-            AnimatedVisibility(
-                visible = uiState.isSaveSuccess,
-                enter = fadeIn() + slideInVertically(initialOffsetY = { 50 }),
-                exit = fadeOut() + slideOutVertically(targetOffsetY = { 50 }),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(bottom = 20.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .background(Color(0xE6171717), RoundedCornerShape(12.dp))
-                        .padding(horizontal = 16.dp, vertical = 10.dp)
-                ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.CheckCircle,
+                            imageVector = Icons.Filled.Error,
                             contentDescription = null,
-                            tint = Color(0xFF34D399),
-                            modifier = Modifier.size(16.dp)
+                            tint = Error600,
+                            modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "Đã cập nhật hồ sơ",
+                            text = errorMsg,
                             fontFamily = EduMindFontFamily,
                             fontWeight = FontWeight.Medium,
                             fontSize = 12.sp,
-                            color = Color.White
+                            color = Error600
                         )
                     }
                 }

@@ -20,7 +20,7 @@ class FakeProfileRepository @Inject constructor() : ProfileRepository {
     var shouldReturnError: Boolean = false
 
     override suspend fun getProfile(): Result<UserProfile> {
-        delay(300)
+        delay(600)
         if (shouldReturnError) {
             return Result.failure(Exception("Không thể tải thông tin hồ sơ. Vui lòng thử lại."))
         }

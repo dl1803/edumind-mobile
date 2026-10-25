@@ -91,6 +91,24 @@ class ProfileViewModelTest {
     }
 
     @Test
+    fun loadProfile_withShowLoadingFalse_doesNotFlashLoadingState() = runTest(testDispatcher) {
+        val updatedUser = sampleUser.copy(fullName = "Nguyễn Văn Đổi Mới")
+        coEvery { profileRepository.getProfile() } returns Result.success(sampleUser)
+
+        viewModel = ProfileViewModel(profileRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value is ProfileUiState.Success)
+
+        coEvery { profileRepository.getProfile() } returns Result.success(updatedUser)
+        viewModel.loadProfile(showLoading = false)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is ProfileUiState.Success)
+        assertEquals("Nguyễn Văn Đổi Mới", (state as ProfileUiState.Success).user.fullName)
+    }
+
+    @Test
     fun logout_success_emitsLogoutEvent() = runTest(testDispatcher) {
         coEvery { profileRepository.getProfile() } returns Result.success(sampleUser)
         coEvery { profileRepository.logout() } returns Result.success(Unit)

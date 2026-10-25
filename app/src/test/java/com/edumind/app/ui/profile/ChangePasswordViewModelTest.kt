@@ -71,27 +71,37 @@ class ChangePasswordViewModelTest {
     fun validation_newPasswordCriteria() {
         viewModel.onNewPasswordChange("short1")
         assertFalse(viewModel.uiState.value.hasMinLength)
-        assertTrue(viewModel.uiState.value.hasLetterAndDigit)
         assertFalse(viewModel.uiState.value.isNewPasswordValid)
 
         viewModel.onNewPasswordChange("passwordwithnonumbers")
         assertTrue(viewModel.uiState.value.hasMinLength)
-        assertFalse(viewModel.uiState.value.hasLetterAndDigit)
+        assertFalse(viewModel.uiState.value.hasDigit)
         assertFalse(viewModel.uiState.value.isNewPasswordValid)
 
+        // Thiếu ký tự đặc biệt
         viewModel.onNewPasswordChange("ValidPass123")
         assertTrue(viewModel.uiState.value.hasMinLength)
-        assertTrue(viewModel.uiState.value.hasLetterAndDigit)
+        assertTrue(viewModel.uiState.value.hasUpperAndLower)
+        assertTrue(viewModel.uiState.value.hasDigit)
+        assertFalse(viewModel.uiState.value.hasSpecialChar)
+        assertFalse(viewModel.uiState.value.isNewPasswordValid)
+
+        // Đạt đủ 4 tiêu chí
+        viewModel.onNewPasswordChange("ValidPass@123")
+        assertTrue(viewModel.uiState.value.hasMinLength)
+        assertTrue(viewModel.uiState.value.hasUpperAndLower)
+        assertTrue(viewModel.uiState.value.hasDigit)
+        assertTrue(viewModel.uiState.value.hasSpecialChar)
         assertTrue(viewModel.uiState.value.isNewPasswordValid)
     }
 
     @Test
     fun validation_confirmPasswordMatching() {
-        viewModel.onNewPasswordChange("ValidPass123")
-        viewModel.onConfirmPasswordChange("DiffPass123")
+        viewModel.onNewPasswordChange("ValidPass@123")
+        viewModel.onConfirmPasswordChange("DiffPass@123")
         assertFalse(viewModel.uiState.value.isConfirmMatching)
 
-        viewModel.onConfirmPasswordChange("ValidPass123")
+        viewModel.onConfirmPasswordChange("ValidPass@123")
         assertTrue(viewModel.uiState.value.isConfirmMatching)
     }
 
@@ -99,15 +109,17 @@ class ChangePasswordViewModelTest {
     fun validation_isSaveEnabledLogic() {
         assertFalse(viewModel.uiState.value.isSaveEnabled)
 
-        // Same current and new password
-        viewModel.onCurrentPasswordChange("ValidPass123")
-        viewModel.onNewPasswordChange("ValidPass123")
-        viewModel.onConfirmPasswordChange("ValidPass123")
+        // Trùng mật khẩu cũ và mới
+        viewModel.onCurrentPasswordChange("ValidPass@123")
+        viewModel.onNewPasswordChange("ValidPass@123")
+        viewModel.onConfirmPasswordChange("ValidPass@123")
+        assertTrue(viewModel.uiState.value.isSameAsOldPassword)
         assertFalse(viewModel.uiState.value.isSaveEnabled)
 
-        // Valid different new password
-        viewModel.onNewPasswordChange("NewPass123")
-        viewModel.onConfirmPasswordChange("NewPass123")
+        // Hợp lệ và khác nhau
+        viewModel.onNewPasswordChange("NewPass@123")
+        viewModel.onConfirmPasswordChange("NewPass@123")
+        assertFalse(viewModel.uiState.value.isSameAsOldPassword)
         assertTrue(viewModel.uiState.value.isSaveEnabled)
     }
 
@@ -122,11 +134,11 @@ class ChangePasswordViewModelTest {
 
     @Test
     fun changePassword_success_clearsFieldsAndSetsSuccess() = runTest(testDispatcher) {
-        coEvery { profileRepository.changePassword("OldPass123", "NewPass123") } returns Result.success(Unit)
+        coEvery { profileRepository.changePassword("OldPass@123", "NewPass@123") } returns Result.success(Unit)
 
-        viewModel.onCurrentPasswordChange("OldPass123")
-        viewModel.onNewPasswordChange("NewPass123")
-        viewModel.onConfirmPasswordChange("NewPass123")
+        viewModel.onCurrentPasswordChange("OldPass@123")
+        viewModel.onNewPasswordChange("NewPass@123")
+        viewModel.onConfirmPasswordChange("NewPass@123")
         viewModel.changePassword()
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -146,8 +158,8 @@ class ChangePasswordViewModelTest {
         coEvery { profileRepository.changePassword(any(), any()) } returns Result.failure(Exception(errorMsg))
 
         viewModel.onCurrentPasswordChange("WrongPass123")
-        viewModel.onNewPasswordChange("NewPass123")
-        viewModel.onConfirmPasswordChange("NewPass123")
+        viewModel.onNewPasswordChange("NewPass@123")
+        viewModel.onConfirmPasswordChange("NewPass@123")
         viewModel.changePassword()
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -163,9 +175,9 @@ class ChangePasswordViewModelTest {
         val errorMsg = "Lỗi kết nối máy chủ."
         coEvery { profileRepository.changePassword(any(), any()) } returns Result.failure(Exception(errorMsg))
 
-        viewModel.onCurrentPasswordChange("OldPass123")
-        viewModel.onNewPasswordChange("NewPass123")
-        viewModel.onConfirmPasswordChange("NewPass123")
+        viewModel.onCurrentPasswordChange("OldPass@123")
+        viewModel.onNewPasswordChange("NewPass@123")
+        viewModel.onConfirmPasswordChange("NewPass@123")
         viewModel.changePassword()
         testDispatcher.scheduler.advanceUntilIdle()
 
@@ -178,11 +190,11 @@ class ChangePasswordViewModelTest {
 
     @Test
     fun resetSuccess_resetsFlagToFalse() = runTest(testDispatcher) {
-        coEvery { profileRepository.changePassword(any(), any()) } returns Result.success(Unit)
+        coEvery { profileRepository.changePassword("OldPass@123", "NewPass@123") } returns Result.success(Unit)
 
-        viewModel.onCurrentPasswordChange("OldPass123")
-        viewModel.onNewPasswordChange("NewPass123")
-        viewModel.onConfirmPasswordChange("NewPass123")
+        viewModel.onCurrentPasswordChange("OldPass@123")
+        viewModel.onNewPasswordChange("NewPass@123")
+        viewModel.onConfirmPasswordChange("NewPass@123")
         viewModel.changePassword()
         testDispatcher.scheduler.advanceUntilIdle()
         assertTrue(viewModel.uiState.value.isSuccess)

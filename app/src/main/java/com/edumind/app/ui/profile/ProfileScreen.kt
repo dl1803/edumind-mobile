@@ -1,5 +1,7 @@
 package com.edumind.app.ui.profile
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -34,7 +37,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import coil.compose.AsyncImage
 import com.edumind.app.data.model.response.UserProfile
 import com.edumind.app.ui.common.ErrorView
@@ -53,6 +60,19 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.loadProfile(showLoading = false)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.logoutEvent.collect {
@@ -65,82 +85,165 @@ fun ProfileScreen(
             .fillMaxSize()
             .background(BgCanvasMobile)
     ) {
-        when (val state = uiState) {
-            is ProfileUiState.Loading -> {
-                ProfileLoadingSkeleton()
-            }
+        Crossfade(
+            targetState = uiState,
+            animationSpec = tween(300),
+            label = "profileStateTransition"
+        ) { state ->
+            when (state) {
+                is ProfileUiState.Loading -> {
+                    ProfileLoadingSkeleton()
+                }
 
-            is ProfileUiState.Error -> {
-                ErrorView(
-                    message = state.message,
-                    onRetry = { viewModel.retry() },
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+                is ProfileUiState.Error -> {
+                    ErrorView(
+                        message = state.message,
+                        onRetry = { viewModel.retry() },
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
 
-            is ProfileUiState.Success -> {
-                ProfileContent(
-                    user = state.user,
-                    unreadCount = state.unreadNotificationCount,
-                    onEditProfileClick = onEditProfileClick,
-                    onChangePasswordClick = onChangePasswordClick,
-                    onPaymentHistoryClick = onPaymentHistoryClick,
-                    onNotificationsClick = onNotificationsClick,
-                    onSettingsClick = onSettingsClick,
-                    onLogoutClick = { showLogoutDialog = true }
-                )
+                is ProfileUiState.Success -> {
+                    ProfileContent(
+                        user = state.user,
+                        unreadCount = state.unreadNotificationCount,
+                        onEditProfileClick = onEditProfileClick,
+                        onChangePasswordClick = onChangePasswordClick,
+                        onPaymentHistoryClick = onPaymentHistoryClick,
+                        onNotificationsClick = onNotificationsClick,
+                        onSettingsClick = onSettingsClick,
+                        onLogoutClick = { showLogoutDialog = true }
+                    )
+                }
             }
         }
 
         if (showLogoutDialog) {
-            AlertDialog(
+            Dialog(
                 onDismissRequest = { showLogoutDialog = false },
-                title = {
-                    Text(
-                        text = "Xác nhận đăng xuất",
-                        fontFamily = EduMindFontFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Neutral900
-                    )
-                },
-                text = {
-                    Text(
-                        text = "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này trên thiết bị?",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 13.sp,
-                        color = Neutral600
-                    )
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showLogoutDialog = false
-                            viewModel.logout()
-                        }
+                properties = DialogProperties(usePlatformDefaultWidth = false)
+            ) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        // Warning Icon (icon đỏ với nền đỏ đậm hơn chuẩn Error100, viền Error200)
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(Error100, RoundedCornerShape(16.dp))
+                                .border(1.dp, Error200, RoundedCornerShape(16.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Outlined.Logout,
+                                contentDescription = null,
+                                tint = Error600,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Title
                         Text(
-                            text = "Đăng xuất",
+                            text = "Đăng xuất khỏi EduMind?",
                             fontFamily = EduMindFontFamily,
                             fontWeight = FontWeight.Bold,
-                            color = Error600
+                            fontSize = 18.sp,
+                            color = Neutral950,
+                            textAlign = TextAlign.Center
                         )
-                    }
-                },
-                dismissButton = {
-                    TextButton(
-                        onClick = { showLogoutDialog = false }
-                    ) {
+
+                        Spacer(modifier = Modifier.height(6.dp))
+
+                        // Body description
                         Text(
-                            text = "Hủy bỏ",
+                            text = "Bạn có chắc chắn muốn đăng xuất tài khoản trên thiết bị này?",
                             fontFamily = EduMindFontFamily,
-                            color = Neutral600
+                            fontSize = 13.sp,
+                            lineHeight = 19.sp,
+                            color = Neutral500,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 8.dp)
                         )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Buttons Vertical Stack
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Nút 1: Xác nhận đăng xuất
+                            Button(
+                                onClick = {
+                                    showLogoutDialog = false
+                                    viewModel.logout()
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Error600,
+                                    contentColor = Color.White
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Outlined.Logout,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = "Xác nhận đăng xuất",
+                                        fontFamily = EduMindFontFamily,
+                                        fontWeight = FontWeight.SemiBold,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+
+                            // Nút 2: Hủy bỏ
+                            Button(
+                                onClick = { showLogoutDialog = false },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Neutral100,
+                                    contentColor = Neutral700
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+                            ) {
+                                Text(
+                                    text = "Hủy bỏ",
+                                    fontFamily = EduMindFontFamily,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
                     }
-                },
-                containerColor = Color.White,
-                shape = RoundedCornerShape(16.dp)
-            )
+                }
+            }
         }
     }
 }
@@ -297,7 +400,7 @@ private fun ProfileContent(
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
-                            .size(26.dp)
+                            .size(28.dp)
                             .clip(CircleShape)
                             .background(Primary700)
                             .border(2.dp, Color.White, CircleShape)
@@ -308,12 +411,12 @@ private fun ProfileContent(
                             imageVector = Icons.Outlined.PhotoCamera,
                             contentDescription = "Đổi ảnh đại diện",
                             tint = Color.White,
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
                 // Tên người dùng (Đã bỏ icon tích tím theo yêu cầu)
                 Text(
@@ -482,7 +585,7 @@ private fun ProfileMenuItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .padding(horizontal = 14.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -555,28 +658,111 @@ private fun ProfileMenuItem(
 
 @Composable
 private fun ProfileLoadingSkeleton() {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .background(Color.White)
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End
+        // Lớp nền tím pastel chuyển sắc đồng bộ màn hình thật
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(480.dp)
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0.0f to Color(0xFFEDE9FE),
+                            0.28f to Color(0xFFF3E8FF),
+                            0.60f to Color(0xFFFAF5FF),
+                            1.0f to Color.White
+                        )
+                    )
+                )
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            SkeletonBox(modifier = Modifier.size(36.dp), shape = CircleShape)
+            // Nút chuông góc phải
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.End
+            ) {
+                SkeletonBox(modifier = Modifier.size(36.dp), shape = CircleShape)
+            }
+
+            // Avatar & Thông tin cá nhân
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 4.dp)
+            ) {
+                SkeletonBox(modifier = Modifier.size(76.dp), shape = CircleShape)
+                Spacer(modifier = Modifier.height(2.dp))
+                SkeletonBox(modifier = Modifier.width(150.dp).height(20.dp), shape = RoundedCornerShape(6.dp))
+                SkeletonBox(modifier = Modifier.width(180.dp).height(14.dp), shape = RoundedCornerShape(4.dp))
+
+                Row(
+                    modifier = Modifier.padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SkeletonBox(modifier = Modifier.width(68.dp).height(22.dp), shape = RoundedCornerShape(12.dp))
+                    SkeletonBox(modifier = Modifier.width(110.dp).height(22.dp), shape = RoundedCornerShape(12.dp))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Card danh mục chức năng (khung 6 dòng đồng bộ với menu thật)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = CardDefaults.outlinedCardBorder()
+            ) {
+                Column(
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    repeat(6) { index ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            SkeletonBox(modifier = Modifier.size(42.dp), shape = RoundedCornerShape(14.dp))
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                SkeletonBox(
+                                    modifier = Modifier.fillMaxWidth(0.45f).height(14.dp),
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                                SkeletonBox(
+                                    modifier = Modifier.fillMaxWidth(0.7f).height(10.dp),
+                                    shape = RoundedCornerShape(4.dp)
+                                )
+                            }
+                            SkeletonBox(modifier = Modifier.size(12.dp), shape = RoundedCornerShape(2.dp))
+                        }
+                        if (index < 5) {
+                            HorizontalDivider(color = Color(0xFFF5F5F5))
+                        }
+                    }
+                }
+            }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        SkeletonBox(modifier = Modifier.size(76.dp), shape = CircleShape)
-        SkeletonBox(modifier = Modifier.width(140.dp).height(18.dp), shape = RoundedCornerShape(4.dp))
-        SkeletonBox(modifier = Modifier.width(180.dp).height(14.dp), shape = RoundedCornerShape(4.dp))
-
-        Spacer(modifier = Modifier.height(16.dp))
-        SkeletonBox(modifier = Modifier.fillMaxWidth().height(260.dp), shape = RoundedCornerShape(16.dp))
     }
 }
 
