@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -39,6 +40,7 @@ import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.edumind.app.data.model.response.CourseSummary
 import com.edumind.app.ui.theme.EduMindFontFamily
+import com.edumind.app.ui.theme.EduMindTheme
 import com.edumind.app.ui.theme.NebulaTextBrush
 import com.edumind.app.ui.theme.Neutral100
 import com.edumind.app.ui.theme.Neutral200
@@ -68,7 +70,6 @@ fun CourseCard(
         border = androidx.compose.foundation.BorderStroke(1.dp, Neutral200.copy(alpha = 0.6f))
     ) {
         Column {
-            // Thumbnail 16:9 hỗ trợ cả JPG và SVG
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -87,19 +88,17 @@ fun CourseCard(
                 )
             }
 
-            // Nội dung Card
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(12.dp)
             ) {
-                // Tiêu đề khóa học: cố định đúng 2 dòng, nếu lố thì dùng '...'
                 Text(
                     text = course.title,
                     fontFamily = EduMindFontFamily,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp,
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
                     color = Neutral900,
                     minLines = 2,
                     maxLines = 2,
@@ -108,11 +107,11 @@ fun CourseCard(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                // Tên giảng viên
                 Text(
                     text = course.instructorName,
                     fontFamily = EduMindFontFamily,
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
+                    lineHeight = 16.sp,
                     color = Neutral500,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -128,14 +127,16 @@ fun CourseCard(
                         Text(
                             text = if (progress >= 100) "Hoàn thành" else "Tiến độ",
                             fontFamily = EduMindFontFamily,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
                             color = if (progress >= 100) Success600 else Neutral500,
                             fontWeight = FontWeight.Medium
                         )
                         Text(
                             text = "$progress%",
                             fontFamily = EduMindFontFamily,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
                             color = Primary700,
                             fontWeight = FontWeight.Bold
                         )
@@ -155,7 +156,6 @@ fun CourseCard(
                 } else {
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    // Hàng đánh giá: bên trái là điểm sao, bên phải là số lượt đánh giá
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -166,13 +166,14 @@ fun CourseCard(
                                 imageVector = Icons.Filled.Star,
                                 contentDescription = null,
                                 tint = Warning600,
-                                modifier = Modifier.size(13.dp)
+                                modifier = Modifier.size(12.dp)
                             )
-                            Spacer(modifier = Modifier.width(3.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = course.rating.toString(),
                                 fontFamily = EduMindFontFamily,
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
+                                lineHeight = 16.sp,
                                 color = Neutral700,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -181,13 +182,13 @@ fun CourseCard(
                         Text(
                             text = "${course.reviewCount} đánh giá",
                             fontFamily = EduMindFontFamily,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
                             color = Neutral500,
                             fontWeight = FontWeight.Normal
                         )
                     }
 
-                    // Dấu gạch ngang nhạt ngăn cách giá tiền với phần trên
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(
                         modifier = Modifier
@@ -197,7 +198,6 @@ fun CourseCard(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
 
-                    // Giá tiền (Gradient 3 dải màu Nebula) hoặc Chữ Miễn phí (Màu xanh nổi bật Success600) nằm góc phải
                     Box(
                         modifier = Modifier.fillMaxWidth(),
                         contentAlignment = Alignment.CenterEnd
@@ -207,7 +207,8 @@ fun CourseCard(
                                 text = "Miễn phí",
                                 fontFamily = EduMindFontFamily,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
                                 color = Success600
                             )
                         } else {
@@ -215,7 +216,8 @@ fun CourseCard(
                                 text = course.priceVnd.toVnd(),
                                 fontFamily = EduMindFontFamily,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
+                                fontSize = 14.sp,
+                                lineHeight = 20.sp,
                                 style = TextStyle(brush = NebulaTextBrush)
                             )
                         }
@@ -223,5 +225,44 @@ fun CourseCard(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CourseCardPaidPreview() {
+    EduMindTheme {
+        CourseCard(
+            course = CourseSummary(
+                id = "course-1",
+                title = "Lập trình Android Jetpack Compose từ cơ bản đến nâng cao",
+                instructorName = "Nguyễn Văn A",
+                thumbnailUrl = "",
+                rating = 4.8f,
+                reviewCount = 120,
+                priceVnd = 499000L
+            ),
+            onClick = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun CourseCardProgressPreview() {
+    EduMindTheme {
+        CourseCard(
+            course = CourseSummary(
+                id = "course-2",
+                title = "Thiết kế UI/UX ứng dụng di động chuẩn Design System",
+                instructorName = "Trần Thị B",
+                thumbnailUrl = "",
+                rating = 4.9f,
+                reviewCount = 85,
+                priceVnd = 0L
+            ),
+            progress = 65,
+            onClick = {}
+        )
     }
 }
