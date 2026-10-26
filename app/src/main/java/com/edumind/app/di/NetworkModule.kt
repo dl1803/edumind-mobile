@@ -7,9 +7,11 @@ import androidx.security.crypto.MasterKey
 import com.edumind.app.BuildConfig
 import com.edumind.app.data.local.prefs.TokenManager
 import com.edumind.app.data.remote.api.AuthApiService
+import com.edumind.app.data.remote.api.CourseApiService
 import com.edumind.app.data.remote.mock.FakeAuthApiService
 import com.edumind.app.data.remote.interceptor.AuthInterceptor
 import com.edumind.app.data.remote.interceptor.TokenAuthenticator
+import com.edumind.app.util.ClockProvider
 import com.edumind.app.util.Constants
 import dagger.Module
 import dagger.Provides
@@ -131,7 +133,13 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideClockProvider(): com.edumind.app.util.ClockProvider {
-        return com.edumind.app.util.ClockProvider { System.currentTimeMillis() }
+    fun provideCourseApiService(retrofit: Retrofit): CourseApiService {
+        return retrofit.create(CourseApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideClockProvider(): ClockProvider {
+        return ClockProvider { System.currentTimeMillis() }
     }
 }
