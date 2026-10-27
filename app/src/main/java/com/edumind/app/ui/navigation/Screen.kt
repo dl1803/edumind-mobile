@@ -31,6 +31,8 @@ sealed class Screen(val route: String) {
         fun createRoute(courseId: String): String = "course_progress_detail/$courseId"
     }
     data object Notification : Screen("notification")
+    data object EditProfile : Screen("edit_profile")
+    data object ChangePassword : Screen("change_password")
 
     companion object {
         const val ARG_COURSE_ID = "courseId"

@@ -13,7 +13,9 @@ data class UserProfile(
     @SerializedName("avatar_url")
     val avatarUrl: String?,
     @SerializedName("role")
-    val role: String // "student" hoặc "admin"
+    val role: String, // "student" hoặc "admin"
+    @SerializedName("created_at")
+    val createdAt: String? = null
 )
 
 // Response Đăng nhập

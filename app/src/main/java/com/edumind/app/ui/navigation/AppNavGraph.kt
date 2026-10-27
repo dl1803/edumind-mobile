@@ -39,6 +39,8 @@ import com.edumind.app.ui.home.HomeScreen
 import com.edumind.app.ui.search.SearchScreen
 import com.edumind.app.ui.library.MyCoursesScreen
 import com.edumind.app.ui.onboarding.OnboardingScreen
+import com.edumind.app.ui.profile.ChangePasswordScreen
+import com.edumind.app.ui.profile.EditProfileScreen
 import com.edumind.app.ui.profile.ProfileScreen
 import com.edumind.app.ui.progress.ProgressScreen
 import com.edumind.app.ui.splash.SplashDestination
@@ -257,7 +259,77 @@ fun AppNavGraph(
                 }
 
                 composable(Screen.Profile.route) {
-                    ProfileScreen()
+                    ProfileScreen(
+                        onEditProfileClick = {
+                            navController.navigate(Screen.EditProfile.route)
+                        },
+                        onChangePasswordClick = {
+                            navController.navigate(Screen.ChangePassword.route)
+                        },
+                        onNotificationsClick = {
+                            navController.navigate(Screen.Notification.route)
+                        },
+                        onLogoutSuccess = {
+                            navController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
+                composable(Screen.EditProfile.route) {
+                    EditProfileScreen(
+                        onBackClick = { navController.popBackStack() }
+                    )
+                }
+
+                composable(Screen.ChangePassword.route) {
+                    ChangePasswordScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onForgotPasswordClick = {
+                            navController.navigate(Screen.ForgotPassword.route)
+                        }
+                    )
+                }
+
+                composable(Screen.Notification.route) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.White)
+                            .statusBarsPadding()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                text = "Thông báo",
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Neutral900
+                            )
+                            Text(
+                                text = "Trung tâm thông báo đang được phát triển",
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 13.sp,
+                                color = Neutral500,
+                                textAlign = TextAlign.Center
+                            )
+                            androidx.compose.material3.OutlinedButton(
+                                onClick = { navController.popBackStack() }
+                            ) {
+                                Text(
+                                    text = "Quay lại",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
                 }
 
                 composable(
