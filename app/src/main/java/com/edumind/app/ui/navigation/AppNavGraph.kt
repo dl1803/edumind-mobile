@@ -39,6 +39,7 @@ import com.edumind.app.ui.home.HomeScreen
 import com.edumind.app.ui.search.SearchScreen
 import com.edumind.app.ui.library.MyCoursesScreen
 import com.edumind.app.ui.onboarding.OnboardingScreen
+import com.edumind.app.ui.player.PlayerScreen
 import com.edumind.app.ui.profile.ChangePasswordScreen
 import com.edumind.app.ui.profile.EditProfileScreen
 import com.edumind.app.ui.profile.ProfileScreen
@@ -345,44 +346,20 @@ fun AppNavGraph(
                     arguments = listOf(
                         navArgument(Screen.ARG_LESSON_ID) { type = NavType.StringType }
                     )
-                ) { backStackEntry ->
-                    val lessonId = backStackEntry.arguments?.getString(Screen.ARG_LESSON_ID) ?: ""
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.White)
-                            .statusBarsPadding()
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            Text(
-                                text = "Trình phát Video Bài học",
-                                fontFamily = EduMindFontFamily,
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Neutral900
-                            )
-                            Text(
-                                text = "Mã bài học: $lessonId (Tính năng phát video M-12)",
-                                fontFamily = EduMindFontFamily,
-                                fontSize = 13.sp,
-                                color = Neutral500
-                            )
-                            androidx.compose.material3.OutlinedButton(
-                                onClick = { navController.popBackStack() }
-                            ) {
-                                Text(
-                                    text = "Quay lại",
-                                    fontFamily = EduMindFontFamily,
-                                    fontSize = 14.sp
-                                )
-                            }
-                        }
-                    }
+                ) {
+                    PlayerScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onNavigateToAiSummary = { },
+                        onNavigateToAiChat = { }
+                    )
+                }
+
+                composable(Screen.PlayerPoc.route) {
+                    PlayerScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onNavigateToAiSummary = { },
+                        onNavigateToAiChat = { }
+                    )
                 }
 
                 composable(
