@@ -3,6 +3,7 @@ package com.edumind.app.di
 import com.edumind.app.repository.AuthRepository
 import com.edumind.app.repository.AuthRepositoryImpl
 import com.edumind.app.repository.CourseRepository
+import com.edumind.app.repository.CourseRepositoryImpl
 import com.edumind.app.repository.FakeCourseRepository
 import com.edumind.app.repository.FakeHomeRepository
 import com.edumind.app.repository.FakeProfileRepository
@@ -35,7 +36,7 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCourseRepository(
-        fakeCourseRepository: FakeCourseRepository
+        courseRepositoryImpl: CourseRepositoryImpl
     ): CourseRepository
 
     @Binds

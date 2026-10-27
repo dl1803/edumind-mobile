@@ -6,6 +6,7 @@ import com.edumind.app.data.model.response.CourseDetail
 import com.edumind.app.data.model.response.CourseSummary
 import com.edumind.app.data.model.response.MyCourse
 import com.edumind.app.data.model.response.PagedResponse
+import com.edumind.app.data.model.response.toDomain
 import com.edumind.app.data.remote.api.CourseApiService
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -61,8 +62,23 @@ class CourseRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCourseDetail(courseId: String): Result<CourseDetail> {
-        return Result.failure(UnsupportedOperationException("Endpoint chi tiết khóa học sẽ được tích hợp tại Ngày 22"))
+        return try {
+            val response = courseApiService.getCourseDetail(courseId)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.success(body.toDomain())
+            } else {
+                when (response.code()) {
+                    404 -> Result.failure(Exception("Khóa học không tồn tại hoặc đã bị gỡ bỏ"))
+                    403 -> Result.failure(Exception("Bạn không có quyền truy cập khóa học này"))
+                    else -> Result.failure(Exception("Không thể tải thông tin khóa học (Mã ${response.code()})"))
+                }
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
+
 
     override suspend fun enrollCourse(courseId: String): Result<Boolean> {
         return Result.failure(UnsupportedOperationException("Endpoint đăng ký khóa học sẽ được tích hợp tại Ngày 24"))

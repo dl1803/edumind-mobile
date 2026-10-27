@@ -1,10 +1,12 @@
 package com.edumind.app.data.remote.api
 
 import com.edumind.app.data.model.response.Category
+import com.edumind.app.data.model.response.CourseDetailResponse
 import com.edumind.app.data.model.response.CourseSummary
 import com.edumind.app.data.model.response.PagedResponse
 import retrofit2.Response
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface CourseApiService {
@@ -22,4 +24,9 @@ interface CourseApiService {
 
     @GET("api/categories")
     suspend fun getCategories(): Response<List<Category>>
+
+    @GET("api/courses/{course_id}")
+    suspend fun getCourseDetail(
+        @Path("course_id") courseId: String
+    ): Response<CourseDetailResponse>
 }
