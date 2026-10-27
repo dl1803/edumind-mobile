@@ -60,7 +60,7 @@ fun BottomNavBar(
                     ambientColor = Color(0x1F000000)
                 )
                 .clip(RoundedCornerShape(26.dp))
-                .background(Color.White.copy(alpha = 0.92f))
+                .background(Color.White)
                 .border(
                     width = 1.dp,
                     color = Color(0xFF8B5CF6).copy(alpha = 0.20f),

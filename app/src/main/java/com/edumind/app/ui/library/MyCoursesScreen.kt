@@ -26,8 +26,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Explore
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import com.edumind.app.ui.common.SkeletonBox
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -48,6 +48,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.edumind.app.data.model.response.ContinueLearningItem
 import com.edumind.app.data.model.response.MyCourse
 import com.edumind.app.ui.common.ErrorView
+import com.edumind.app.ui.theme.BgCanvasMobile
 import com.edumind.app.ui.theme.EduMindFontFamily
 import com.edumind.app.ui.theme.NebulaGradient
 import com.edumind.app.ui.theme.Neutral100
@@ -72,42 +73,61 @@ fun MyCoursesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFFAFAFA))
+            .background(BgCanvasMobile)
     ) {
-        TopAppBarHeader()
+        // Hiệu ứng Ambient Glow nhẹ trên đầu màn hình đồng bộ với Home và Tiến độ
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(260.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            Color(0x1A8B5CF6),
+                            Color(0x0DE0E7FF),
+                            Color.Transparent
+                        )
+                    )
+                )
+        )
 
-        when (val state = uiState) {
-            is MyCoursesUiState.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = Primary700)
+        Column(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (uiState is MyCoursesUiState.Loading) {
+                TopAppBarHeaderSkeleton()
+            } else {
+                TopAppBarHeader()
+            }
+
+            when (val state = uiState) {
+                is MyCoursesUiState.Loading -> {
+                    MyCoursesLoadingSkeleton()
                 }
-            }
 
-            is MyCoursesUiState.Error -> {
-                ErrorView(
-                    message = state.message,
-                    onRetry = { viewModel.loadMyCourses() },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+                is MyCoursesUiState.Error -> {
+                    ErrorView(
+                        message = state.message,
+                        onRetry = { viewModel.loadMyCourses() },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
 
-            is MyCoursesUiState.Empty -> {
-                EmptyAllCoursesView(onExploreClick = onExploreClick)
-            }
+                is MyCoursesUiState.Empty -> {
+                    EmptyAllCoursesView(onExploreClick = onExploreClick)
+                }
 
-            is MyCoursesUiState.Success -> {
-                SuccessContent(
-                    state = state,
-                    onFilterSelect = { viewModel.onFilterChanged(it) },
-                    onCourseClick = onCourseClick,
-                    onResumeLearningClick = onResumeLearningClick
-                )
+                is MyCoursesUiState.Success -> {
+                    SuccessContent(
+                        state = state,
+                        onFilterSelect = { viewModel.onFilterChanged(it) },
+                        onCourseClick = onCourseClick,
+                        onResumeLearningClick = onResumeLearningClick
+                    )
+                }
             }
         }
     }
@@ -118,9 +138,8 @@ private fun TopAppBarHeader() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
             .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -142,20 +161,256 @@ private fun TopAppBarHeader() {
                     modifier = Modifier.size(20.dp)
                 )
             }
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text(
                     text = "Khóa học của tôi",
                     fontFamily = EduMindFontFamily,
-                    fontSize = 18.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     color = Neutral900
                 )
                 Text(
                     text = "Thư viện học tập cá nhân",
                     fontFamily = EduMindFontFamily,
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = Neutral500
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopAppBarHeaderSkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SkeletonBox(
+                modifier = Modifier.size(36.dp),
+                shape = RoundedCornerShape(12.dp)
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                SkeletonBox(
+                    modifier = Modifier
+                        .width(120.dp)
+                        .height(16.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+                SkeletonBox(
+                    modifier = Modifier
+                        .width(140.dp)
+                        .height(12.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MyCoursesLoadingSkeleton() {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp)
+    ) {
+        // 1. Filter Chips Skeleton
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SkeletonBox(
+                    modifier = Modifier
+                        .width(72.dp)
+                        .height(32.dp),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                SkeletonBox(
+                    modifier = Modifier
+                        .width(96.dp)
+                        .height(32.dp),
+                    shape = RoundedCornerShape(16.dp)
+                )
+                SkeletonBox(
+                    modifier = Modifier
+                        .width(108.dp)
+                        .height(32.dp),
+                    shape = RoundedCornerShape(16.dp)
+                )
+            }
+        }
+
+        // 2. Quick Resume Card Skeleton
+        item {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color.White)
+                    .border(1.dp, Neutral200, RoundedCornerShape(18.dp))
+                    .padding(16.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SkeletonBox(
+                            modifier = Modifier
+                                .width(90.dp)
+                                .height(20.dp),
+                            shape = RoundedCornerShape(6.dp)
+                        )
+                        SkeletonBox(
+                            modifier = Modifier
+                                .width(36.dp)
+                                .height(14.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                    }
+                    SkeletonBox(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(16.dp),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    SkeletonBox(
+                        modifier = Modifier
+                            .fillMaxWidth(0.55f)
+                            .height(12.dp),
+                        shape = RoundedCornerShape(4.dp)
+                    )
+                    SkeletonBox(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp),
+                        shape = RoundedCornerShape(3.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SkeletonBox(
+                            modifier = Modifier
+                                .width(110.dp)
+                                .height(12.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        SkeletonBox(
+                            modifier = Modifier
+                                .width(104.dp)
+                                .height(32.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                    }
+                }
+            }
+        }
+
+        // 3. Section Header Skeleton
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp, bottom = 2.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SkeletonBox(
+                    modifier = Modifier
+                        .width(160.dp)
+                        .height(14.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+                SkeletonBox(
+                    modifier = Modifier
+                        .width(120.dp)
+                        .height(12.dp),
+                    shape = RoundedCornerShape(4.dp)
+                )
+            }
+        }
+
+        // 4. List Course Cards Skeleton (3 items)
+        items(3) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Color.White)
+                    .border(1.dp, Neutral200, RoundedCornerShape(18.dp))
+                    .padding(14.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SkeletonBox(
+                        modifier = Modifier.size(92.dp),
+                        shape = RoundedCornerShape(14.dp)
+                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        SkeletonBox(
+                            modifier = Modifier
+                                .width(60.dp)
+                                .height(12.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        SkeletonBox(
+                            modifier = Modifier
+                                .fillMaxWidth(0.9f)
+                                .height(14.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        SkeletonBox(
+                            modifier = Modifier
+                                .fillMaxWidth(0.65f)
+                                .height(11.dp),
+                            shape = RoundedCornerShape(4.dp)
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        SkeletonBox(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp),
+                            shape = RoundedCornerShape(3.dp)
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            SkeletonBox(
+                                modifier = Modifier
+                                    .width(36.dp)
+                                    .height(10.dp),
+                                shape = RoundedCornerShape(3.dp)
+                            )
+                            SkeletonBox(
+                                modifier = Modifier
+                                    .width(56.dp)
+                                    .height(12.dp),
+                                shape = RoundedCornerShape(4.dp)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -172,7 +427,7 @@ private fun SuccessContent(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 80.dp),
+        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 120.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         item {
@@ -737,7 +992,8 @@ private fun EmptyAllCoursesView(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 24.dp)
+            .padding(bottom = 60.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
