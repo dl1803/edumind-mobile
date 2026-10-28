@@ -45,6 +45,7 @@ import androidx.compose.material.icons.filled.VideoLibrary
 import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.TabRowDefaults
@@ -130,11 +131,19 @@ fun CourseDetailScreen(
         }
 
         is CourseDetailUiState.Error -> {
-            ErrorView(
-                message = state.message,
-                onRetry = viewModel::retry,
-                modifier = modifier.fillMaxSize()
-            )
+            Box(
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(Color.White),
+                contentAlignment = Alignment.Center
+            ) {
+                ErrorView(
+                    title = "Khóa học chưa sẵn sàng",
+                    message = state.message,
+                    onRetry = viewModel::retry,
+                    onClose = onNavigateBack
+                )
+            }
         }
 
         is CourseDetailUiState.Success -> {
@@ -327,37 +336,32 @@ private fun CourseHeaderMedia(
             modifier = Modifier
                 .fillMaxWidth()
                 .statusBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .height(44.dp)
+                .padding(horizontal = 16.dp)
+                .align(Alignment.TopCenter),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .clickable(onClick = onBack),
-                contentAlignment = Alignment.Center
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.size(32.dp)
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Quay lại",
-                    tint = Color.White
+                    tint = Primary700,
+                    modifier = Modifier.size(20.dp)
                 )
             }
 
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(Color.Black.copy(alpha = 0.4f))
-                    .clickable(onClick = onShare),
-                contentAlignment = Alignment.Center
+            IconButton(
+                onClick = onShare,
+                modifier = Modifier.size(32.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = "Chia sẻ",
-                    tint = Color.White,
+                    tint = Primary700,
                     modifier = Modifier.size(20.dp)
                 )
             }

@@ -117,7 +117,7 @@ fun WeeklyBarChart(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(116.dp),
+                    .height(122.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
@@ -127,37 +127,53 @@ fun WeeklyBarChart(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(
-                            text = "${item.minutes}p",
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 9.5.sp,
-                            fontWeight = if (item.isToday) FontWeight.Bold else FontWeight.Normal,
-                            color = if (item.isToday) Primary700 else if (item.minutes == 0) Neutral300 else Neutral400
-                        )
-                        Spacer(modifier = Modifier.height(6.dp))
                         Box(
                             modifier = Modifier
-                                .width(16.dp)
-                                .height(barHeight)
-                                .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
-                                .then(
-                                    if (item.isToday) Modifier.background(NebulaBrush)
-                                    else if (item.minutes > 0) Modifier.background(Primary200)
-                                    else Modifier.background(Neutral100)
+                                .fillMaxWidth()
+                                .height(98.dp),
+                            contentAlignment = Alignment.BottomCenter
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "${item.minutes}p",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 9.5.sp,
+                                    fontWeight = if (item.isToday) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (item.isToday) Primary700 else if (item.minutes == 0) Neutral300 else Neutral400
                                 )
-                        )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .width(16.dp)
+                                        .height(barHeight)
+                                        .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
+                                        .then(
+                                            if (item.isToday) Modifier.background(NebulaBrush)
+                                            else if (item.minutes > 0) Modifier.background(Primary200)
+                                            else Modifier.background(Neutral100)
+                                        )
+                                )
+                            }
+                        }
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text(
-                            text = if (item.isToday) "${item.dayOfWeek} (19/09)" else item.dayOfWeek,
-                            fontFamily = EduMindFontFamily,
-                            fontSize = if (item.isToday) 9.5.sp else 10.sp,
-                            fontWeight = if (item.isToday) FontWeight.Bold else FontWeight.Medium,
-                            color = if (item.isToday) Primary700 else if (item.minutes == 0) Neutral400 else Neutral500,
-                            maxLines = 1,
-                            softWrap = false,
-                            overflow = TextOverflow.Visible,
-                            modifier = Modifier.wrapContentWidth(unbounded = true)
-                        )
+                        Box(
+                            modifier = Modifier.height(18.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (item.isToday) "${item.dayOfWeek} (19/09)" else item.dayOfWeek,
+                                fontFamily = EduMindFontFamily,
+                                fontSize = if (item.isToday) 9.5.sp else 10.sp,
+                                fontWeight = if (item.isToday) FontWeight.Bold else FontWeight.Medium,
+                                color = if (item.isToday) Primary700 else if (item.minutes == 0) Neutral400 else Neutral500,
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Visible,
+                                modifier = Modifier.wrapContentWidth(unbounded = true)
+                            )
+                        }
                     }
                 }
             }
