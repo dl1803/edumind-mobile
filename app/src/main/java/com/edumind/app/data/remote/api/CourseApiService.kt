@@ -1,6 +1,6 @@
 package com.edumind.app.data.remote.api
 
-import com.edumind.app.data.model.response.Category
+import com.edumind.app.data.model.response.CategoryListResponse
 import com.edumind.app.data.model.response.CourseDetailResponse
 import com.edumind.app.data.model.response.CourseSummary
 import com.edumind.app.data.model.response.PagedResponse
@@ -11,7 +11,7 @@ import retrofit2.http.Query
 
 interface CourseApiService {
 
-    @GET("api/courses")
+    @GET("courses")
     suspend fun getCourses(
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 20,
@@ -22,10 +22,10 @@ interface CourseApiService {
         @Query("sort_by") sortBy: String? = "newest"
     ): Response<PagedResponse<CourseSummary>>
 
-    @GET("api/categories")
-    suspend fun getCategories(): Response<List<Category>>
+    @GET("categories")
+    suspend fun getCategories(): Response<CategoryListResponse>
 
-    @GET("api/courses/{course_id}")
+    @GET("courses/{course_id}")
     suspend fun getCourseDetail(
         @Path("course_id") courseId: String
     ): Response<CourseDetailResponse>

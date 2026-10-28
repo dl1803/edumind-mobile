@@ -50,13 +50,13 @@ data class ContinueLearningItem(
  */
 data class CourseSummary(
     @SerializedName("id")
-    val id: String,
+    val id: String = "",
     @SerializedName("title")
-    val title: String,
+    val title: String = "",
     @SerializedName("thumbnail_url")
-    val thumbnailUrl: String,
+    val thumbnailUrl: String? = null,
     @SerializedName("instructor_name")
-    val instructorName: String,
+    val instructorName: String? = null,
     @SerializedName("instructor_avatar_url")
     val instructorAvatarUrl: String? = null,
     @SerializedName("rating_avg")

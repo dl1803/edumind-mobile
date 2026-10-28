@@ -8,9 +8,9 @@ data class CourseDetailResponse(
     @SerializedName("title")
     val title: String,
     @SerializedName("description")
-    val description: String,
+    val description: String? = null,
     @SerializedName("thumbnail_url")
-    val thumbnailUrl: String,
+    val thumbnailUrl: String? = null,
     @SerializedName("price")
     val price: Long = 0L,
     @SerializedName("original_price")
@@ -22,9 +22,9 @@ data class CourseDetailResponse(
     @SerializedName("enrolled_count")
     val enrolledCount: Int = 0,
     @SerializedName("category")
-    val category: CategoryDto,
+    val category: CategoryDto? = null,
     @SerializedName("instructor")
-    val instructor: InstructorProfileDto,
+    val instructor: InstructorProfileDto? = null,
     @SerializedName("is_enrolled")
     val isEnrolled: Boolean = false,
     @SerializedName("progress_percent")
@@ -43,18 +43,18 @@ data class CourseDetailResponse(
 
 data class CategoryDto(
     @SerializedName("id")
-    val id: String,
+    val id: String = "",
     @SerializedName("name")
-    val name: String
+    val name: String = ""
 )
 
 data class InstructorProfileDto(
     @SerializedName("id")
-    val id: String,
+    val id: String = "",
     @SerializedName("name")
-    val name: String,
+    val name: String = "",
     @SerializedName("title")
-    val title: String,
+    val title: String = "",
     @SerializedName("bio")
     val bio: String? = null,
     @SerializedName("avatar_url")
@@ -91,21 +91,20 @@ data class LessonSummaryDto(
     val hasExercise: Boolean = false
 )
 
-
 fun CourseDetailResponse.toDomain(): CourseDetail {
     val durationHours = totalDuration / 3600
     return CourseDetail(
         id = id,
         title = title,
-        categoryName = category.name,
-        thumbnailUrl = thumbnailUrl,
+        categoryName = category?.name ?: "Tổng hợp",
+        thumbnailUrl = thumbnailUrl ?: "",
         priceVnd = price,
         originalPriceVnd = originalPrice,
         rating = ratingAvg ?: 0f,
         reviewCount = ratingCount ?: 0,
         studentCount = enrolledCount,
         totalHours = durationHours.coerceAtLeast(1),
-        description = description,
+        description = description ?: "",
         keyFeatures = listOf(
             "Thời lượng học thực chiến $totalLessons bài giảng",
             "Trợ giảng AI hỗ trợ giải đáp 24/7",
@@ -118,11 +117,11 @@ fun CourseDetailResponse.toDomain(): CourseDetail {
         ),
         requirements = listOf("Máy tính có kết nối Internet", "Tư duy logic cơ bản"),
         instructor = InstructorSummary(
-            id = instructor.id,
-            name = instructor.name,
-            title = instructor.title,
-            avatarUrl = instructor.avatarUrl,
-            bio = instructor.bio,
+            id = instructor?.id ?: "",
+            name = instructor?.name ?: "Giảng viên EduMind",
+            title = instructor?.title ?: "Giảng viên chuyên môn",
+            avatarUrl = instructor?.avatarUrl,
+            bio = instructor?.bio,
             rating = ratingAvg ?: 4.9f
         ),
         sections = chapters.map { ch ->
