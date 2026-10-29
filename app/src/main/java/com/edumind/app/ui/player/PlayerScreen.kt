@@ -25,6 +25,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.alpha
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -448,16 +449,15 @@ fun PlayerScreenContent(
         }
 
         // Nút tròn nổi EduAI (Nebula Gradient) ở góc dưới phải
-        FloatingActionButton(
-            onClick = onNavigateToAiChat,
-            shape = CircleShape,
-            containerColor = Color.Transparent,
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = 20.dp, bottom = 24.dp)
                 .size(56.dp)
                 .clip(CircleShape)
                 .background(NebulaGradient)
+                .clickable(onClick = onNavigateToAiChat),
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
@@ -510,7 +510,7 @@ private fun LessonContentTab(onSeek: (Long) -> Unit) {
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
                     .border(1.dp, Neutral200, RoundedCornerShape(16.dp))
-                    .padding(14.dp),
+                    .padding(12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -522,9 +522,9 @@ private fun LessonContentTab(onSeek: (Long) -> Unit) {
                         imageVector = Icons.Filled.CheckCircle,
                         contentDescription = "Đã xong",
                         tint = Success600,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(18.dp)
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
                     Column {
                         Text(
                             text = "Bài 02: Cú pháp Print & Thụt lề (Indentation)",
@@ -686,23 +686,14 @@ private fun LessonContentTab(onSeek: (Long) -> Unit) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Assignment,
-                        contentDescription = null,
-                        tint = Neutral400,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "BÀI TẬP",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp,
-                        color = Neutral400
-                    )
-                }
+                Text(
+                    text = "BÀI TẬP",
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp,
+                    color = Neutral400
+                )
                 Text(
                     text = "10 câu",
                     fontFamily = EduMindFontFamily,
@@ -794,33 +785,30 @@ private fun LessonContentTab(onSeek: (Long) -> Unit) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .alpha(0.75f)
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
                     .border(1.dp, Neutral200, RoundedCornerShape(16.dp))
-                    .padding(14.dp),
+                    .padding(12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val isLocked = true
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.weight(1f)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(Neutral100),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "04",
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Neutral600
+                    if (isLocked) {
+                        Icon(
+                            imageVector = Icons.Default.Lock,
+                            contentDescription = "Khóa",
+                            tint = Neutral400,
+                            modifier = Modifier.size(18.dp)
                         )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    } else {
+                        Spacer(modifier = Modifier.width(26.dp))
                     }
-                    Spacer(modifier = Modifier.width(10.dp))
                     Column {
                         Text(
                             text = "Bài 04: Cấu trúc rẽ nhánh If - Elif - Else",
@@ -838,12 +826,6 @@ private fun LessonContentTab(onSeek: (Long) -> Unit) {
                         )
                     }
                 }
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Khóa",
-                    tint = Neutral300,
-                    modifier = Modifier.size(16.dp)
-                )
             }
         }
 

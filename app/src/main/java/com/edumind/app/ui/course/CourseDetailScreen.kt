@@ -42,6 +42,9 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -62,6 +65,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -89,6 +95,7 @@ import com.edumind.app.ui.theme.Error600
 import com.edumind.app.ui.theme.NebulaBrush
 import com.edumind.app.ui.theme.Neutral100
 import com.edumind.app.ui.theme.Neutral200
+import com.edumind.app.ui.theme.Neutral300
 import com.edumind.app.ui.theme.Neutral400
 import com.edumind.app.ui.theme.Neutral50
 import com.edumind.app.ui.theme.Neutral500
@@ -251,6 +258,7 @@ fun CourseDetailScreen(
                         1 -> CourseSyllabusTab(
                             sections = course.sections,
                             isEnrolled = course.isEnrolled,
+                            totalHours = course.totalHours,
                             expandedIds = state.expandedSectionIds,
                             onToggleSection = viewModel::onToggleSection,
                             onToggleExpandAll = viewModel::onToggleExpandAll,
@@ -440,7 +448,7 @@ private fun CourseHeaderMedia(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "Xem thử video",
+                        text = "Xem trước",
                         fontFamily = EduMindFontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
@@ -1069,6 +1077,7 @@ private fun CourseIntroTab(
 private fun CourseSyllabusTab(
     sections: List<CourseSection>,
     isEnrolled: Boolean,
+    totalHours: Int = 0,
     expandedIds: Set<String>,
     onToggleSection: (String) -> Unit,
     onToggleExpandAll: () -> Unit,
@@ -1080,16 +1089,109 @@ private fun CourseSyllabusTab(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Banner Học thử miễn phí Bài 1 (Chỉ hiện khi Chưa mua)
+        if (!isEnrolled) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(
+                                Color(0xFFEFF6FF).copy(alpha = 0.85f),
+                                Color(0xFFFAF5FF).copy(alpha = 0.85f),
+                                Color(0xFFFDF2F8).copy(alpha = 0.65f)
+                            )
+                        )
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = Primary200.copy(alpha = 0.8f),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                    .clickable {
+                        val firstTrial = sections.firstOrNull()?.lessons?.firstOrNull { it.isFreePreview }
+                            ?: sections.firstOrNull()?.lessons?.firstOrNull()
+                        if (firstTrial != null) {
+                            onLessonClick(firstTrial.id, true)
+                        }
+                    }
+                    .padding(horizontal = 14.dp, vertical = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(NebulaBrush),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "Học thử miễn phí Bài 1",
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Neutral900
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Trải nghiệm chất lượng video & Trợ giảng AI",
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 10.sp,
+                                color = Neutral500
+                            )
+                        }
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color.White)
+                            .border(1.dp, Primary200, RoundedCornerShape(8.dp))
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "Xem thử",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Primary700
+                        )
+                    }
+                }
+            }
+        }
+
         val totalSections = sections.size
         val totalLessons = sections.sumOf { it.lessons.size }
+        val hoursText = if (totalHours > 0) "${totalHours}h tổng cộng" else "14h tổng cộng"
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "$totalSections Chương • $totalLessons Bài giảng • 14h tổng cộng",
+                text = "$totalSections Chương • $totalLessons Bài giảng • $hoursText",
                 fontFamily = EduMindFontFamily,
                 fontSize = 12.sp,
                 color = Neutral500
@@ -1107,7 +1209,9 @@ private fun CourseSyllabusTab(
 
         sections.forEachIndexed { index, section ->
             val isExpanded = expandedIds.contains(section.id)
+            val isCompletedChapter = isEnrolled && index == 0
             val isCurrentChapter = isEnrolled && index == 1
+            val isLockedChapter = !isEnrolled && index > 0
 
             Column(
                 modifier = Modifier
@@ -1115,7 +1219,7 @@ private fun CourseSyllabusTab(
                     .clip(RoundedCornerShape(16.dp))
                     .background(Color.White)
                     .border(
-                        width = 1.dp,
+                        width = if (isCurrentChapter) 1.5.dp else 1.dp,
                         color = if (isCurrentChapter) Primary200 else Neutral200,
                         shape = RoundedCornerShape(16.dp)
                     )
@@ -1123,45 +1227,90 @@ private fun CourseSyllabusTab(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(if (isCurrentChapter) Primary50.copy(alpha = 0.7f) else Neutral50)
-                        .clickable { onToggleSection(section.id) }
-                        .padding(14.dp),
+                        .background(
+                            if (isCurrentChapter) Primary50.copy(alpha = 0.7f) else Neutral50
+                        )
+                        .clickable {
+                            if (isLockedChapter) {
+                                onLessonClick("", false)
+                            } else {
+                                onToggleSection(section.id)
+                            }
+                        }
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = section.title,
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isCurrentChapter) Primary700 else Neutral900
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = if (index == 0 && isEnrolled) {
-                                "${section.lessons.size} bài giảng • 45 phút • Đã hoàn thành 100%"
-                            } else if (isCurrentChapter) {
-                                "${section.lessons.size} bài giảng • 1h 20p • Đang học (1/4)"
-                            } else {
-                                "${section.lessons.size} bài giảng • 45 phút"
-                            },
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = if (index == 0 && isEnrolled) Success700 else if (isCurrentChapter) Primary700 else Neutral500
-                        )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        if (isLockedChapter) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = null,
+                                tint = Neutral400,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        } else {
+                            Spacer(modifier = Modifier.width(23.dp))
+                        }
+
+                        Column {
+                            Text(
+                                text = section.title,
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = if (isCurrentChapter) Primary700 else Neutral900
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = when {
+                                    isCompletedChapter -> "${section.lessons.size} bài giảng • 45 phút • Đã hoàn thành 100%"
+                                    isCurrentChapter -> "${section.lessons.size} bài giảng • 1h 20p • Đang học (1/4)"
+                                    !isEnrolled && index == 0 -> "${section.lessons.size} bài giảng • 45 phút • 1 bài học thử"
+                                    else -> "${section.lessons.size} bài giảng • ${section.durationSummary.ifBlank { "1h 20p" }}"
+                                },
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 10.sp,
+                                fontWeight = if (isCompletedChapter || isCurrentChapter) FontWeight.Medium else FontWeight.Normal,
+                                color = when {
+                                    isCompletedChapter -> Success700
+                                    isCurrentChapter -> Primary700
+                                    else -> Neutral500
+                                }
+                            )
+                        }
                     }
 
-                    Icon(
-                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = null,
-                        tint = if (isCurrentChapter) Primary700 else Neutral500,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    if (isLockedChapter) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(Neutral100)
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = "Đã khóa",
+                                fontFamily = EduMindFontFamily,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Neutral400
+                            )
+                        }
+                    } else {
+                        Icon(
+                            imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            contentDescription = null,
+                            tint = if (isCurrentChapter) Primary700 else Neutral500,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
 
-                AnimatedVisibility(visible = isExpanded) {
+                AnimatedVisibility(visible = isExpanded && !isLockedChapter) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1170,12 +1319,30 @@ private fun CourseSyllabusTab(
                         section.lessons.forEachIndexed { lessonIndex, lesson ->
                             val isCompleted = isEnrolled && (index == 0 || (index == 1 && lessonIndex == 0))
                             val isCurrent = isEnrolled && index == 1 && lessonIndex == 1
-                            val isUnlocked = isEnrolled || lesson.isFreePreview
+                            val isFreeTrial = !isEnrolled && index == 0 && lessonIndex == 0
+                            val isUnlocked = isEnrolled || isFreeTrial
 
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(if (isCurrent) Primary50 else Color.White)
+                                    .background(
+                                        when {
+                                            isFreeTrial -> Primary50.copy(alpha = 0.5f)
+                                            isCurrent -> Primary50.copy(alpha = 0.7f)
+                                            else -> Color.White
+                                        }
+                                    )
+                                    .then(
+                                        if (isFreeTrial || isCurrent) {
+                                            Modifier.drawBehind {
+                                                drawRect(
+                                                    color = Primary600,
+                                                    topLeft = Offset.Zero,
+                                                    size = Size(4.dp.toPx(), size.height)
+                                                )
+                                            }
+                                        } else Modifier
+                                    )
                                     .clickable { onLessonClick(lesson.id, isUnlocked) }
                                     .padding(horizontal = 14.dp, vertical = 12.dp),
                                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1185,93 +1352,163 @@ private fun CourseSyllabusTab(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f)
                                 ) {
-                                    if (isCompleted) {
-                                        Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = null,
-                                            tint = Success600,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    } else if (isCurrent) {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .clip(CircleShape)
-                                                .background(NebulaBrush),
-                                            contentAlignment = Alignment.Center
-                                        ) {
+                                    when {
+                                        isCompleted -> {
                                             Icon(
-                                                imageVector = Icons.Default.PlayArrow,
+                                                imageVector = Icons.Default.CheckCircle,
                                                 contentDescription = null,
-                                                tint = Color.White,
-                                                modifier = Modifier.size(12.dp)
+                                                tint = Success600,
+                                                modifier = Modifier.size(18.dp)
                                             )
                                         }
-                                    } else if (isUnlocked) {
-                                        Icon(
-                                            imageVector = Icons.Default.PlayArrow,
-                                            contentDescription = null,
-                                            tint = Primary700,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    } else {
-                                        Icon(
-                                            imageVector = Icons.Default.Lock,
-                                            contentDescription = null,
-                                            tint = Neutral400,
-                                            modifier = Modifier.size(16.dp)
-                                        )
+                                        isCurrent -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(26.dp)
+                                                    .clip(CircleShape)
+                                                    .background(NebulaBrush),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.PlayArrow,
+                                                    contentDescription = null,
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(11.dp)
+                                                )
+                                            }
+                                        }
+                                        isFreeTrial -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(28.dp)
+                                                    .clip(CircleShape)
+                                                    .background(NebulaBrush),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.PlayArrow,
+                                                    contentDescription = null,
+                                                    tint = Color.White,
+                                                    modifier = Modifier.size(12.dp)
+                                                )
+                                            }
+                                        }
+                                        else -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(28.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Neutral100),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Lock,
+                                                    contentDescription = null,
+                                                    tint = Neutral400,
+                                                    modifier = Modifier.size(13.dp)
+                                                )
+                                            }
+                                        }
                                     }
 
                                     Spacer(modifier = Modifier.width(12.dp))
 
-                                    Column {
+                                    Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = lesson.title,
                                             fontFamily = EduMindFontFamily,
                                             fontSize = 12.sp,
-                                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isCurrent) Neutral950 else if (isUnlocked) Neutral900 else Neutral700
+                                            fontWeight = if (isFreeTrial || isCurrent) FontWeight.Bold else FontWeight.Medium,
+                                            color = when {
+                                                isCurrent -> Color(0xFF2E1065)
+                                                isFreeTrial -> Neutral900
+                                                isUnlocked -> Neutral900
+                                                else -> Neutral500
+                                            },
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                         Spacer(modifier = Modifier.height(2.dp))
-                                        Text(
-                                            text = if (isCurrent) "Đang học dở" else "${if (lesson.type == LessonType.VIDEO) "Video" else "Quiz"} • ${lesson.durationText}",
-                                            fontFamily = EduMindFontFamily,
-                                            fontSize = 10.sp,
-                                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                                            color = if (isCurrent) Primary700 else Neutral400
-                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = when {
+                                                    isCurrent -> "Đang học dở"
+                                                    lesson.type == LessonType.QUIZ -> "Quiz kiểm tra • ${lesson.durationText}"
+                                                    else -> "Video • ${lesson.durationText}"
+                                                },
+                                                fontFamily = EduMindFontFamily,
+                                                fontSize = 10.sp,
+                                                fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+                                                color = if (isCurrent) Primary700 else Neutral400
+                                            )
+                                            if (isFreeTrial) {
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Box(
+                                                    modifier = Modifier
+                                                        .clip(RoundedCornerShape(4.dp))
+                                                        .background(Color(0xFFEDE9FE))
+                                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "Học thử miễn phí",
+                                                        fontFamily = EduMindFontFamily,
+                                                        fontSize = 9.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color(0xFF6D28D9)
+                                                    )
+                                                }
+                                            }
+                                        }
                                     }
                                 }
 
-                                if (isCurrent) {
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(NebulaBrush)
-                                            .padding(horizontal = 10.dp, vertical = 4.dp)
-                                    ) {
-                                        Text(
-                                            text = "Tiếp tục",
-                                            fontFamily = EduMindFontFamily,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
+                                when {
+                                    isCurrent -> {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(NebulaBrush)
+                                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                        ) {
+                                            Text(
+                                                text = "Tiếp tục",
+                                                fontFamily = EduMindFontFamily,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                        }
+                                    }
+                                    isFreeTrial -> {
+                                        Box(
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(8.dp))
+                                                .background(NebulaBrush)
+                                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        ) {
+                                            Text(
+                                                text = "Học ngay",
+                                                fontFamily = EduMindFontFamily,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = Color.White
+                                            )
+                                        }
+                                    }
+                                    isCompleted -> {
+                                        Icon(
+                                            imageVector = if (lesson.type == LessonType.QUIZ) Icons.Outlined.CheckCircle else Icons.Outlined.PlayArrow,
+                                            contentDescription = null,
+                                            tint = if (lesson.type == LessonType.QUIZ) Primary600 else Neutral400,
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
-                                } else if (!isEnrolled && lesson.isFreePreview) {
-                                    Box(
-                                        modifier = Modifier
-                                            .clip(RoundedCornerShape(6.dp))
-                                            .background(Color(0xFFEFF6FF))
-                                            .padding(horizontal = 8.dp, vertical = 3.dp)
-                                    ) {
-                                        Text(
-                                            text = "Học thử",
-                                            fontFamily = EduMindFontFamily,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = Primary700
+                                    !isUnlocked -> {
+                                        Icon(
+                                            imageVector = if (lesson.type == LessonType.QUIZ) Icons.Outlined.CheckCircle else Icons.Outlined.Lock,
+                                            contentDescription = null,
+                                            tint = if (lesson.type == LessonType.QUIZ) Neutral400 else Neutral300,
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 }
@@ -1388,54 +1625,66 @@ private fun CourseReviewsTab(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.Top
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(NebulaBrush),
-                            contentAlignment = Alignment.Center
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(NebulaBrush),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
                             Text(
                                 text = "Viết đánh giá của bạn",
                                 fontFamily = EduMindFontFamily,
-                                fontSize = 12.sp,
+                                fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Neutral950
                             )
-                            Text(
-                                text = "Đủ điều kiện gửi nhận xét (≥20% tiến độ)",
-                                fontFamily = EduMindFontFamily,
-                                fontSize = 10.sp,
-                                color = Neutral500
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(Success100)
+                                    .border(1.dp, Color(0xFFA7F3D0), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Success700,
+                                    modifier = Modifier.size(10.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
+                                Text(
+                                    text = "Tiến độ ${course.progressPercent}%",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Success700
+                                )
+                            }
                         }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Success100)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Tiến độ ${course.progressPercent}%",
+                            text = "Đủ điều kiện gửi nhận xét (≥20% tiến độ)",
                             fontFamily = EduMindFontFamily,
                             fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Success700
+                            color = Neutral500
                         )
                     }
                 }
@@ -1449,13 +1698,25 @@ private fun CourseReviewsTab(
                         .clickable(onClick = onWriteReviewClick),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "Viết đánh giá ngay",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Viết đánh giá ngay",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         } else {
@@ -1497,11 +1758,18 @@ private fun CourseReviewsTab(
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isSelected) Primary700 else Color.White)
-                        .border(
-                            width = 1.dp,
-                            color = if (isSelected) Primary700 else Neutral200,
-                            shape = RoundedCornerShape(16.dp)
+                        .then(
+                            if (isSelected) {
+                                Modifier.background(NebulaBrush)
+                            } else {
+                                Modifier
+                                    .background(Color.White)
+                                    .border(
+                                        width = 1.dp,
+                                        color = Neutral200,
+                                        shape = RoundedCornerShape(16.dp)
+                                    )
+                            }
                         )
                         .clickable { selectedFilterTag = chipText }
                         .padding(horizontal = 12.dp, vertical = 6.dp)
@@ -1732,17 +2000,19 @@ private fun CourseStickyCtaBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = if (isFree) "Miễn phí" else course.priceVnd.toVnd(),
-                fontFamily = EduMindFontFamily,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                style = if (isFree) {
-                    TextStyle(color = Success600)
-                } else {
-                    TextStyle(brush = NebulaBrush)
-                }
-            )
+            Column {
+                Text(
+                    text = if (isFree) "Miễn phí" else course.priceVnd.toVnd(),
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    style = if (isFree) {
+                        TextStyle(color = Success600)
+                    } else {
+                        TextStyle(brush = NebulaBrush)
+                    }
+                )
+            }
 
             Box(
                 modifier = Modifier
