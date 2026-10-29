@@ -85,6 +85,22 @@ class CourseDetailViewModel @Inject constructor(
         }
     }
 
+    fun toggleEnrolledMode() {
+        _uiState.update { current ->
+            if (current is CourseDetailUiState.Success) {
+                val newEnrolled = !current.course.isEnrolled
+                current.copy(
+                    course = current.course.copy(
+                        isEnrolled = newEnrolled,
+                        progressPercent = if (newEnrolled) 35 else 0,
+                        lastLessonId = if (newEnrolled) "l_2_2" else null,
+                        lastLessonTitle = if (newEnrolled) "Bài 5: Vòng lặp For và While" else null
+                    )
+                )
+            } else current
+        }
+    }
+
     fun onEnrollFreeCourse(onSuccess: () -> Unit) {
         val currentState = _uiState.value as? CourseDetailUiState.Success ?: return
         if (currentState.isEnrolling) return
@@ -98,7 +114,12 @@ class CourseDetailViewModel @Inject constructor(
                         if (current is CourseDetailUiState.Success) {
                             current.copy(
                                 isEnrolling = false,
-                                course = current.course.copy(isEnrolled = true)
+                                course = current.course.copy(
+                                    isEnrolled = true,
+                                    progressPercent = 35,
+                                    lastLessonId = "l_2_2",
+                                    lastLessonTitle = "Bài 5: Vòng lặp For và While"
+                                )
                             )
                         } else current
                     }
