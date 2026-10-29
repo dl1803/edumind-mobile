@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -47,6 +49,8 @@ import com.edumind.app.ui.theme.Neutral200
 import com.edumind.app.ui.theme.Neutral500
 import com.edumind.app.ui.theme.Neutral700
 import com.edumind.app.ui.theme.Neutral900
+import com.edumind.app.ui.theme.Primary100
+import com.edumind.app.ui.theme.Primary600
 import com.edumind.app.ui.theme.Primary700
 import com.edumind.app.ui.theme.Success600
 import com.edumind.app.ui.theme.Warning600
@@ -74,18 +78,36 @@ fun CourseCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f)
-                    .background(Neutral100)
+                    .background(Neutral100),
+                contentAlignment = Alignment.Center
             ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(course.thumbnailUrl)
-                        .decoderFactory(SvgDecoder.Factory())
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = course.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.matchParentSize()
-                )
+                if (course.thumbnailUrl.isNullOrBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .background(Primary100.copy(alpha = 0.6f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.MenuBook,
+                            contentDescription = null,
+                            tint = Primary600,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                } else {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(course.thumbnailUrl)
+                            .decoderFactory(SvgDecoder.Factory())
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = course.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.matchParentSize()
+                    )
+                }
             }
 
             Column(
@@ -108,7 +130,7 @@ fun CourseCard(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Text(
-                    text = course.instructorName,
+                    text = course.instructorName ?: "Giảng viên EduMind",
                     fontFamily = EduMindFontFamily,
                     fontSize = 12.sp,
                     lineHeight = 16.sp,
@@ -170,7 +192,7 @@ fun CourseCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = course.rating.toString(),
+                                text = String.format("%.1f", course.rating),
                                 fontFamily = EduMindFontFamily,
                                 fontSize = 12.sp,
                                 lineHeight = 16.sp,

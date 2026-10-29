@@ -224,7 +224,7 @@ class SearchViewModelTest {
                 priceMin = 0L,
                 priceMax = 0L,
                 minRating = 4.5f,
-                sortBy = "popular"
+                sortBy = "recommended"
             )
         }
     }

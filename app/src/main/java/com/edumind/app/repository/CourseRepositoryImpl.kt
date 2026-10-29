@@ -6,6 +6,7 @@ import com.edumind.app.data.model.response.CourseDetail
 import com.edumind.app.data.model.response.CourseSummary
 import com.edumind.app.data.model.response.MyCourse
 import com.edumind.app.data.model.response.PagedResponse
+import com.edumind.app.data.model.response.toDomain
 import com.edumind.app.data.remote.api.CourseApiService
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -39,10 +40,15 @@ class CourseRepositoryImpl @Inject constructor(
             if (response.isSuccessful && body != null) {
                 Result.success(body)
             } else {
-                Result.failure(Exception("Lỗi tải danh sách khóa học (${response.code()}): ${response.message()}"))
+                val errorMsg = when (response.code()) {
+                    404 -> "Không tìm thấy danh sách khóa học phù hợp."
+                    401 -> "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+                    else -> "Không thể tải danh sách khóa học lúc này. Vui lòng thử lại sau."
+                }
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Không thể kết nối đến máy chủ. Vui lòng kiểm tra đường truyền mạng."))
         }
     }
 
@@ -51,17 +57,32 @@ class CourseRepositoryImpl @Inject constructor(
             val response = courseApiService.getCategories()
             val body = response.body()
             if (response.isSuccessful && body != null) {
-                Result.success(body)
+                Result.success(body.data)
             } else {
-                Result.failure(Exception("Lỗi tải danh mục (${response.code()}): ${response.message()}"))
+                Result.failure(Exception("Không thể tải danh mục khóa học lúc này."))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            Result.failure(Exception("Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng."))
         }
     }
 
     override suspend fun getCourseDetail(courseId: String): Result<CourseDetail> {
-        return Result.failure(UnsupportedOperationException("Endpoint chi tiết khóa học sẽ được tích hợp tại Ngày 22"))
+        return try {
+            val response = courseApiService.getCourseDetail(courseId)
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                Result.success(body.toDomain())
+            } else {
+                val errorMsg = when (response.code()) {
+                    404 -> "Khóa học này hiện không khả dụng hoặc đã bị gỡ bỏ."
+                    403 -> "Bạn chưa có quyền truy cập vào nội dung khóa học này."
+                    else -> "Không thể tải thông tin khóa học lúc này. Vui lòng thử lại sau."
+                }
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng."))
+        }
     }
 
     override suspend fun enrollCourse(courseId: String): Result<Boolean> {

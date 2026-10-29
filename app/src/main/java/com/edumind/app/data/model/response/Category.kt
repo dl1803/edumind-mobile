@@ -13,3 +13,8 @@ data class Category(
     @SerializedName("course_count")
     val courseCount: Int = 0
 )
+
+data class CategoryListResponse(
+    @SerializedName("data")
+    val data: List<Category> = emptyList()
+)

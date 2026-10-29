@@ -140,53 +140,67 @@ fun ExploreScreen(
                             ExploreSkeletonGrid()
                         }
 
-                    is ExploreUiState.Empty -> {
-                        ExploreEmptyState(
-                            onClearFilters = { viewModel.onClearAllFilters() },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-
-                    is ExploreUiState.Error -> {
-                        ErrorView(
-                            message = state.message,
-                            onRetry = { viewModel.retry() },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-
-                    is ExploreUiState.Success -> {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            state = gridState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            items(
-                                items = state.courses,
-                                key = { it.id }
-                            ) { course ->
-                                CourseCard(
-                                    course = course,
-                                    onClick = { onCourseClick(course.id) }
+                        is ExploreUiState.Empty -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(bottom = 80.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                ExploreEmptyState(
+                                    onClearFilters = { viewModel.onClearAllFilters() }
                                 )
                             }
+                        }
 
-                            if (state.isLoadingMore) {
-                                item(span = { GridItemSpan(2) }) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 16.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        CircularProgressIndicator(
-                                            modifier = Modifier.size(24.dp),
-                                            color = Primary600,
-                                            strokeWidth = 2.5.dp
-                                        )
+                        is ExploreUiState.Error -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(bottom = 80.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                ErrorView(
+                                    title = "Chưa thể tải danh sách khóa học",
+                                    message = state.message,
+                                    onRetry = { viewModel.retry() }
+                                )
+                            }
+                        }
+
+                        is ExploreUiState.Success -> {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(2),
+                                state = gridState,
+                                modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 120.dp),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                items(
+                                    items = state.courses,
+                                    key = { it.id }
+                                ) { course ->
+                                    CourseCard(
+                                        course = course,
+                                        onClick = { onCourseClick(course.id) }
+                                    )
+                                }
+
+                                if (state.isLoadingMore) {
+                                    item(span = { GridItemSpan(2) }) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(24.dp),
+                                                color = Primary600,
+                                                strokeWidth = 2.5.dp
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -195,7 +209,6 @@ fun ExploreScreen(
                 }
             }
         }
-    }
 
         if (showFilterSheet) {
             FilterBottomSheet(

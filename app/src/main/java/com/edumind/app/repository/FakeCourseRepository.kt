@@ -137,7 +137,7 @@ class FakeCourseRepository @Inject constructor() : CourseRepository {
                 "cat_ai" -> "AI/ML"
                 else -> "Lập trình"
             },
-            thumbnailUrl = courseSummary.thumbnailUrl,
+            thumbnailUrl = courseSummary.thumbnailUrl ?: "",
             priceVnd = courseSummary.priceVnd,
             originalPriceVnd = originalPrice,
             rating = courseSummary.rating,
@@ -163,7 +163,7 @@ class FakeCourseRepository @Inject constructor() : CourseRepository {
             ),
             instructor = InstructorSummary(
                 id = "ins_${courseSummary.id}",
-                name = courseSummary.instructorName,
+                name = courseSummary.instructorName ?: "Giảng viên EduMind",
                 title = "Chuyên gia đào tạo công nghệ",
                 rating = courseSummary.rating,
                 courseCount = 8,
