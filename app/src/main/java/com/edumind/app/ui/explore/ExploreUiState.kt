@@ -20,7 +20,7 @@ enum class RatingFilterOption(val label: String, val minRating: Float?) {
 
 enum class SortOption(val value: String, val label: String) {
     NEWEST("newest", "Mới nhất (Mặc định)"),
-    POPULAR("popular", "Phổ biến nhất"),
+    POPULAR("recommended", "Phổ biến nhất"),
     PRICE_ASC("price_asc", "Giá tăng dần"),
     PRICE_DESC("price_desc", "Giá giảm dần")
 }

@@ -124,27 +124,103 @@ fun CourseDetailResponse.toDomain(): CourseDetail {
             bio = instructor?.bio,
             rating = ratingAvg ?: 4.9f
         ),
-        sections = chapters.map { ch ->
-            CourseSection(
-                id = ch.id,
-                title = ch.title,
-                durationSummary = "${ch.lessons.size} bài học",
-                lessons = ch.lessons.map { l ->
+        sections = if (chapters.size >= 2) {
+            chapters.map { ch ->
+                CourseSection(
+                    id = ch.id,
+                    title = ch.title,
+                    durationSummary = "${ch.lessons.size} bài học",
+                    lessons = ch.lessons.mapIndexed { lIdx, l ->
+                        val mins = l.duration / 60
+                        val secs = l.duration % 60
+                        CourseLesson(
+                            id = l.id,
+                            title = l.title,
+                            durationText = if (l.duration > 0) String.format("%02d:%02d", mins, secs) else "12:45",
+                            type = if (l.hasQuiz) LessonType.QUIZ else LessonType.VIDEO,
+                            isFreePreview = !l.isLocked || lIdx == 0,
+                            isCompleted = l.isCompleted ?: false,
+                            isCurrent = false
+                        )
+                    }
+                )
+            }
+        } else {
+            val ch1Lessons = if (chapters.isNotEmpty() && chapters[0].lessons.isNotEmpty()) {
+                chapters[0].lessons.mapIndexed { lIdx, l ->
                     val mins = l.duration / 60
                     val secs = l.duration % 60
                     CourseLesson(
                         id = l.id,
                         title = l.title,
-                        durationText = String.format("%02d:%02d", mins, secs),
+                        durationText = if (l.duration > 0) String.format("%02d:%02d", mins, secs) else if (lIdx == 0) "12:45" else "18:30",
                         type = if (l.hasQuiz) LessonType.QUIZ else LessonType.VIDEO,
-                        isFreePreview = !l.isLocked,
-                        isCompleted = l.isCompleted ?: false,
+                        isFreePreview = lIdx == 0,
+                        isCompleted = isEnrolled,
                         isCurrent = false
                     )
+                }.toMutableList().apply {
+                    if (size < 3) {
+                        add(
+                            CourseLesson(
+                                id = "l_1_3",
+                                title = "Bài 3: Trắc nghiệm kiểm tra Chương 1",
+                                durationText = "15 phút",
+                                type = LessonType.QUIZ,
+                                isFreePreview = false,
+                                isCompleted = isEnrolled
+                            )
+                        )
+                    }
                 }
+            } else {
+                listOf(
+                    CourseLesson("l_1_1", "Bài 1: Giới thiệu Python & Cài VS Code", "12:45", LessonType.VIDEO, isFreePreview = true, isCompleted = isEnrolled),
+                    CourseLesson("l_1_2", "Bài 2: Kiểu dữ liệu & Biến số", "18:30", LessonType.VIDEO, isFreePreview = false, isCompleted = isEnrolled),
+                    CourseLesson("l_1_3", "Bài 3: Trắc nghiệm kiểm tra Chương 1", "15 phút", LessonType.QUIZ, isFreePreview = false, isCompleted = isEnrolled)
+                )
+            }
+
+            listOf(
+                CourseSection(
+                    id = "sec_1",
+                    title = chapters.firstOrNull()?.title ?: "Chương 1: Tổng quan & Cài đặt môi trường",
+                    durationSummary = "3 bài giảng • 45 phút",
+                    lessons = ch1Lessons
+                ),
+                CourseSection(
+                    id = "sec_2",
+                    title = "Chương 2: Cú pháp & Cấu trúc điều khiển",
+                    durationSummary = "4 bài giảng • 1h 20p",
+                    lessons = listOf(
+                        CourseLesson("l_2_1", "Bài 4: Câu lệnh If-Else & Phép toán logic", "16:10", LessonType.VIDEO, isFreePreview = false, isCompleted = isEnrolled),
+                        CourseLesson("l_2_2", "Bài 5: Vòng lặp For và While", "22:00", LessonType.VIDEO, isFreePreview = false, isCompleted = false, isCurrent = isEnrolled),
+                        CourseLesson("l_2_3", "Bài 6: Xử lý chuỗi & Danh sách mảng", "25:15", LessonType.VIDEO, isFreePreview = false, isCompleted = false),
+                        CourseLesson("l_2_4", "Bài 7: Bài tập ôn luyện Chương 2", "15 phút", LessonType.QUIZ, isFreePreview = false, isCompleted = false)
+                    )
+                ),
+                CourseSection(
+                    id = "sec_3",
+                    title = "Chương 3: Hàm & Module trong Python",
+                    durationSummary = "5 bài giảng • 2 giờ 15 phút",
+                    lessons = listOf(
+                        CourseLesson("l_3_1", "Bài 8: Định nghĩa hàm def và tham số", "20:00", LessonType.VIDEO, isFreePreview = false),
+                        CourseLesson("l_3_2", "Bài 9: Lambda function và Scope biến", "24:30", LessonType.VIDEO, isFreePreview = false)
+                    )
+                ),
+                CourseSection(
+                    id = "sec_4",
+                    title = "Chương 4: Lập trình hướng đối tượng (OOP)",
+                    durationSummary = "6 bài giảng • 3 giờ",
+                    lessons = listOf(
+                        CourseLesson("l_4_1", "Bài 10: Class, Object và hàm khởi tạo __init__", "32:00", LessonType.VIDEO, isFreePreview = false)
+                    )
+                )
             )
         },
         isEnrolled = isEnrolled,
-        progressPercent = progressPercent?.toInt() ?: 0
+        progressPercent = if (isEnrolled) 35 else 0,
+        lastLessonId = if (isEnrolled) "l_2_2" else null,
+        lastLessonTitle = if (isEnrolled) "Bài 5: Vòng lặp For và While" else null
     )
 }
