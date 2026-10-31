@@ -218,10 +218,29 @@ class FakeCourseRepository @Inject constructor() : CourseRepository {
         return Result.success(detail)
     }
 
-    override suspend fun enrollCourse(courseId: String): Result<Boolean> {
+    override suspend fun enroll(courseId: String): EnrollResult {
         delay(400)
+        if (simulateError) {
+            return EnrollResult.Failure("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.")
+        }
+        if (enrolledCourseIds.contains(courseId)) {
+            return EnrollResult.AlreadyEnrolled
+        }
+        val foundPair = allCourses.find { it.second.id == courseId }
+        val price = foundPair?.second?.priceVnd ?: 0L
+        if (price > 0L) {
+            return EnrollResult.PaymentRequired
+        }
         enrolledCourseIds.add(courseId)
-        return Result.success(true)
+        return EnrollResult.Success(firstLessonId = "l_1_1")
+    }
+
+    override suspend fun enrollCourse(courseId: String): Result<Boolean> {
+        return when (val res = enroll(courseId)) {
+            is EnrollResult.Success, is EnrollResult.AlreadyEnrolled -> Result.success(true)
+            is EnrollResult.PaymentRequired -> Result.failure(Exception("Khóa học có phí, vui lòng mua để học"))
+            is EnrollResult.Failure -> Result.failure(Exception(res.message))
+        }
     }
 
     private val quickResumeData = ContinueLearningItem(
