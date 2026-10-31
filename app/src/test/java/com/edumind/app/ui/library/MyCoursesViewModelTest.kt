@@ -199,4 +199,20 @@ class MyCoursesViewModelTest {
 
         assertTrue(viewModel.uiState.value is MyCoursesUiState.Success)
     }
+
+    @Test
+    fun `loadMyCourses voi showLoading false khong chuyen state ve Loading`() = runTest {
+        coEvery { courseRepository.getMyCourses() } returns Result.success(sampleCourses)
+        coEvery { courseRepository.getQuickResumeItem() } returns Result.success(sampleResumeItem)
+
+        viewModel = MyCoursesViewModel(courseRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value is MyCoursesUiState.Success)
+
+        viewModel.loadMyCourses(showLoading = false)
+        assertTrue(viewModel.uiState.value is MyCoursesUiState.Success)
+
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertTrue(viewModel.uiState.value is MyCoursesUiState.Success)
+    }
 }

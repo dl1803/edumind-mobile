@@ -109,16 +109,11 @@ class CourseDetailViewModel @Inject constructor(
         val currentState = _uiState.value as? CourseDetailUiState.Success ?: return
         if (currentState.isEnrolling) return
 
-        viewModelScope.launch {
-            _uiState.update { (it as CourseDetailUiState.Success).copy(isEnrolling = true) }
+        _uiState.update { (it as CourseDetailUiState.Success).copy(isEnrolling = true) }
 
+        viewModelScope.launch {
             val result = try {
-                val legacyRes = try { courseRepository.enrollCourse(courseId) } catch (_: Exception) { null }
-                if (legacyRes != null && legacyRes.isFailure) {
-                    EnrollResult.Failure(legacyRes.exceptionOrNull()?.localizedMessage ?: "Ghi danh thất bại")
-                } else {
-                    courseRepository.enroll(courseId)
-                }
+                courseRepository.enroll(courseId)
             } catch (e: Exception) {
                 EnrollResult.Failure(e.localizedMessage ?: "Ghi danh thất bại")
             }
