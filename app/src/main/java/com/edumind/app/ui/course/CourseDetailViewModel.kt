@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.edumind.app.repository.CourseRepository
+import com.edumind.app.repository.EnrollResult
 import com.edumind.app.ui.navigation.Screen
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -101,42 +102,91 @@ class CourseDetailViewModel @Inject constructor(
         }
     }
 
-    fun onEnrollFreeCourse(onSuccess: () -> Unit) {
+    fun onEnrollClick(
+        onSuccess: (firstLessonId: String?) -> Unit = {},
+        onPaymentRequired: () -> Unit = {}
+    ) {
         val currentState = _uiState.value as? CourseDetailUiState.Success ?: return
         if (currentState.isEnrolling) return
 
         viewModelScope.launch {
             _uiState.update { (it as CourseDetailUiState.Success).copy(isEnrolling = true) }
-            val result = courseRepository.enrollCourse(courseId)
-            result.fold(
-                onSuccess = {
+
+            val result = try {
+                val legacyRes = try { courseRepository.enrollCourse(courseId) } catch (_: Exception) { null }
+                if (legacyRes != null && legacyRes.isFailure) {
+                    EnrollResult.Failure(legacyRes.exceptionOrNull()?.localizedMessage ?: "Ghi danh thất bại")
+                } else {
+                    courseRepository.enroll(courseId)
+                }
+            } catch (e: Exception) {
+                EnrollResult.Failure(e.localizedMessage ?: "Ghi danh thất bại")
+            }
+
+            when (result) {
+                is EnrollResult.Success -> {
                     _uiState.update { current ->
                         if (current is CourseDetailUiState.Success) {
                             current.copy(
                                 isEnrolling = false,
                                 course = current.course.copy(
                                     isEnrolled = true,
-                                    progressPercent = 35,
-                                    lastLessonId = "l_2_2",
-                                    lastLessonTitle = "Bài 5: Vòng lặp For và While"
-                                )
+                                    progressPercent = current.course.progressPercent,
+                                    lastLessonId = result.firstLessonId ?: current.course.lastLessonId ?: "l_1_1",
+                                    lastLessonTitle = current.course.lastLessonTitle ?: "Bài 1: Bắt đầu bài giảng"
+                                ),
+                                userMessage = "Đăng ký khóa học thành công!"
                             )
                         } else current
                     }
-                    onSuccess()
-                },
-                onFailure = { error ->
+                    onSuccess(result.firstLessonId)
+                }
+                is EnrollResult.AlreadyEnrolled -> {
                     _uiState.update { current ->
                         if (current is CourseDetailUiState.Success) {
                             current.copy(
                                 isEnrolling = false,
-                                userMessage = error.localizedMessage ?: "Đăng ký thất bại"
+                                course = current.course.copy(isEnrolled = true),
+                                userMessage = "Bạn đã đăng ký khóa học này trước đó."
+                            )
+                        } else current
+                    }
+                    onSuccess(null)
+                }
+                is EnrollResult.PaymentRequired -> {
+                    _uiState.update { current ->
+                        if (current is CourseDetailUiState.Success) {
+                            current.copy(
+                                isEnrolling = false,
+                                userMessage = "Khóa học có phí, vui lòng thanh toán để mở khóa."
+                            )
+                        } else current
+                    }
+                    onPaymentRequired()
+                }
+                is EnrollResult.Failure -> {
+                    _uiState.update { current ->
+                        if (current is CourseDetailUiState.Success) {
+                            current.copy(
+                                isEnrolling = false,
+                                userMessage = result.message
                             )
                         } else current
                     }
                 }
-            )
+            }
         }
+    }
+
+    fun onEnrollFreeCourse(
+        onSuccess: (firstLessonId: String?) -> Unit = {},
+        onPaymentRequired: () -> Unit = {}
+    ) {
+        onEnrollClick(onSuccess, onPaymentRequired)
+    }
+
+    fun onEnrollFreeCourse(onSuccess: () -> Unit) {
+        onEnrollClick(onSuccess = { onSuccess() })
     }
 
     fun clearUserMessage() {
