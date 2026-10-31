@@ -165,6 +165,7 @@ class FakeCourseRepository @Inject constructor() : CourseRepository {
                 id = "ins_${courseSummary.id}",
                 name = courseSummary.instructorName ?: "Giảng viên EduMind",
                 title = "Chuyên gia đào tạo công nghệ",
+                bio = "Hơn 10 năm kinh nghiệm nghiên cứu và giảng dạy chuyên sâu trong lĩnh vực Công nghệ Thông tin, từng tham gia dẫn dắt nhiều dự án chuyển đổi số quy mô lớn và cố vấn cho hàng ngàn học viên tốt nghiệp thành công.",
                 rating = courseSummary.rating,
                 courseCount = 8,
                 studentCount = courseSummary.reviewCount * 10
