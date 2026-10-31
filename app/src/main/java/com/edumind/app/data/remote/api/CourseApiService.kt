@@ -3,9 +3,12 @@ package com.edumind.app.data.remote.api
 import com.edumind.app.data.model.response.CategoryListResponse
 import com.edumind.app.data.model.response.CourseDetailResponse
 import com.edumind.app.data.model.response.CourseSummary
+import com.edumind.app.data.model.response.EnrollmentResponseDto
+import com.edumind.app.data.model.response.MyCoursesResponseDto
 import com.edumind.app.data.model.response.PagedResponse
 import retrofit2.Response
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -29,4 +32,14 @@ interface CourseApiService {
     suspend fun getCourseDetail(
         @Path("course_id") courseId: String
     ): Response<CourseDetailResponse>
+
+    @POST("courses/{course_id}/enroll")
+    suspend fun enroll(
+        @Path("course_id") courseId: String
+    ): Response<EnrollmentResponseDto>
+
+    @GET("my-courses")
+    suspend fun getMyCourses(
+        @Query("status") status: String? = null
+    ): Response<MyCoursesResponseDto>
 }
