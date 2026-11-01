@@ -63,6 +63,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -102,6 +103,7 @@ fun PlayerScreen(
     viewModel: PlayerViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val loadState by viewModel.loadState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -120,6 +122,12 @@ fun PlayerScreen(
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
+    }
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_PAUSE) {
@@ -129,60 +137,162 @@ fun PlayerScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         }
     }
 
-    PlayerScreenContent(
-        state = state,
-        onBackClick = {
-            if (isLandscape) {
-                activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            } else {
-                onBackClick()
-            }
-        },
-        onNavigateToAiSummary = onNavigateToAiSummary,
-        onNavigateToAiChat = onNavigateToAiChat,
-        onTogglePlayPause = { viewModel.togglePlayPause() },
-        onSeek = { targetMs -> viewModel.seekTo(targetMs) },
-        onSeekRelative = { offsetMs -> viewModel.seekRelative(offsetMs) },
-        onOverlayClick = { viewModel.toggleControlsVisibility() },
-        onToggleFullscreen = {
-            activity?.let { act ->
-                if (isLandscape) {
-                    act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                } else {
-                    act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                }
-            }
-        },
-        isLandscape = isLandscape,
-        videoSurface = {
-            var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
-
-            DisposableEffect(Unit) {
-                onDispose {
-                    playerViewRef?.player = null
-                }
-            }
-
-            AndroidView(
-                factory = { ctx ->
-                    PlayerView(ctx).apply {
-                        useController = false
-                        resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                        player = viewModel.exoPlayer
-                    }.also { playerViewRef = it }
-                },
-                update = { playerView ->
-                    playerView.player = viewModel.exoPlayer
-                    playerViewRef = playerView
-                },
-                modifier = Modifier.fillMaxSize()
+    // Xử lý các trạng thái phân quyền, video xử lý hoặc lỗi tải bài giảng
+    when (val currentLoad = loadState) {
+        is LessonLoadState.Forbidden -> {
+            PlayerStateCard(
+                title = "Nội dung có tính phí",
+                message = currentLoad.message,
+                buttonText = "Quay lại khóa học",
+                onButtonClick = onBackClick
             )
         }
-    )
+        is LessonLoadState.Processing -> {
+            PlayerStateCard(
+                title = "Video đang được xử lý",
+                message = currentLoad.message,
+                buttonText = "Quay lại",
+                onButtonClick = onBackClick
+            )
+        }
+        is LessonLoadState.Error -> {
+            PlayerStateCard(
+                title = "Không thể tải bài giảng",
+                message = currentLoad.message,
+                buttonText = "Thử lại",
+                onButtonClick = { viewModel.retry() }
+            )
+        }
+        LessonLoadState.Loading,
+        is LessonLoadState.Ready -> {
+            PlayerScreenContent(
+                state = state,
+                onBackClick = {
+                    if (isLandscape) {
+                        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    } else {
+                        onBackClick()
+                    }
+                },
+                onNavigateToAiSummary = onNavigateToAiSummary,
+                onNavigateToAiChat = onNavigateToAiChat,
+                onTogglePlayPause = { viewModel.togglePlayPause() },
+                onSeek = { targetMs -> viewModel.seekTo(targetMs) },
+                onSeekRelative = { offsetMs -> viewModel.seekRelative(offsetMs) },
+                onOverlayClick = { viewModel.toggleControlsVisibility() },
+                onToggleFullscreen = {
+                    activity?.let { act ->
+                        if (isLandscape) {
+                            act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                        } else {
+                            act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                        }
+                    }
+                },
+                isLandscape = isLandscape,
+                videoSurface = {
+                    if (loadState is LessonLoadState.Loading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            androidx.compose.material3.CircularProgressIndicator(
+                                color = Primary600,
+                                modifier = Modifier.size(40.dp)
+                            )
+                        }
+                    } else {
+                        var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
+
+                        DisposableEffect(Unit) {
+                            onDispose {
+                                playerViewRef?.player = null
+                            }
+                        }
+
+                        AndroidView(
+                            factory = { ctx ->
+                                PlayerView(ctx).apply {
+                                    useController = false
+                                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                                    player = viewModel.exoPlayer
+                                }.also { playerViewRef = it }
+                            },
+                            update = { playerView ->
+                                playerView.player = viewModel.exoPlayer
+                                playerViewRef = playerView
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayerStateCard(
+    title: String,
+    message: String,
+    buttonText: String,
+    onButtonClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Neutral950)
+            .statusBarsPadding()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color.White)
+                .padding(24.dp)
+        ) {
+            Text(
+                text = title,
+                fontFamily = EduMindFontFamily,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = Neutral900,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = message,
+                fontFamily = EduMindFontFamily,
+                fontSize = 14.sp,
+                color = Neutral600,
+                textAlign = TextAlign.Center
+            )
+            androidx.compose.material3.Button(
+                onClick = onButtonClick,
+                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                    containerColor = Primary700
+                ),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+            ) {
+                Text(
+                    text = buttonText,
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
+            }
+        }
+    }
 }
 
 @Composable

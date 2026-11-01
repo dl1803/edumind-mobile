@@ -8,6 +8,7 @@ import com.edumind.app.BuildConfig
 import com.edumind.app.data.local.prefs.TokenManager
 import com.edumind.app.data.remote.api.AuthApiService
 import com.edumind.app.data.remote.api.CourseApiService
+import com.edumind.app.data.remote.api.LessonApiService
 import com.edumind.app.data.remote.api.ProgressApiService
 import com.edumind.app.data.remote.mock.FakeAuthApiService
 import com.edumind.app.data.remote.interceptor.AuthInterceptor
@@ -142,6 +143,12 @@ object NetworkModule {
     @Singleton
     fun provideProgressApiService(retrofit: Retrofit): ProgressApiService {
         return retrofit.create(ProgressApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLessonApiService(retrofit: Retrofit): LessonApiService {
+        return retrofit.create(LessonApiService::class.java)
     }
 
     @Provides

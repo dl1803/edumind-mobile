@@ -1078,7 +1078,7 @@ private fun EmptyAllCoursesView(
                 modifier = Modifier.size(18.dp)
             )
             Text(
-                text = "Khám phá khóa học",
+                text = "Khám phá khóa học ngay",
                 fontFamily = EduMindFontFamily,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,

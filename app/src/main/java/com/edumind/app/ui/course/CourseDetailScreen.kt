@@ -57,8 +57,12 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -127,6 +131,19 @@ fun CourseDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshCourseDetail()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     when (val state = uiState) {
         is CourseDetailUiState.Loading -> {
@@ -254,7 +271,7 @@ fun CourseDetailScreen(
                         0 -> CourseIntroTab(
                             course = course,
                             onContinueLearning = {
-                                val target = course.lastLessonId ?: "l_2_2"
+                                val target = course.lastLessonId ?: course.sections.firstOrNull()?.lessons?.firstOrNull()?.id ?: ""
                                 onNavigateToPlayer(target)
                             }
                         )
@@ -265,12 +282,8 @@ fun CourseDetailScreen(
                             expandedIds = state.expandedSectionIds,
                             onToggleSection = viewModel::onToggleSection,
                             onToggleExpandAll = viewModel::onToggleExpandAll,
-                            onLessonClick = { lessonId, isUnlocked ->
-                                if (isUnlocked) {
-                                    onNavigateToPlayer(lessonId)
-                                } else {
-                                    Toast.makeText(context, "Vui lòng mua khóa học để mở khóa bài học này", Toast.LENGTH_SHORT).show()
-                                }
+                            onLessonClick = { lessonId, _ ->
+                                onNavigateToPlayer(lessonId)
                             }
                         )
                         2 -> CourseReviewsTab(
@@ -298,7 +311,7 @@ fun CourseDetailScreen(
                     onContinueClick = {
                         val targetLesson = course.lastLessonId
                             ?: course.sections.firstOrNull()?.lessons?.firstOrNull()?.id
-                            ?: "l_1_1"
+                            ?: ""
                         onNavigateToPlayer(targetLesson)
                     },
                     modifier = Modifier.align(Alignment.BottomCenter)
@@ -653,29 +666,39 @@ private fun CourseIntroTab(
                         )
                     }
 
+                    val isCompleted = course.progressPercent >= 100
                     Text(
                         text = "${course.progressPercent}% hoàn thành",
                         fontFamily = EduMindFontFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Primary700
+                        color = if (isCompleted) Success700 else Primary700
                     )
                 }
 
+                val isCompleted = course.progressPercent >= 100
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(Neutral100)
+                        .background(if (isCompleted) Success100 else Neutral100)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(fraction = (course.progressPercent / 100f).coerceIn(0.05f, 1f))
-                            .height(8.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(NebulaBrush)
-                    )
+                    if (course.progressPercent > 0) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(fraction = (course.progressPercent / 100f).coerceIn(0f, 1f))
+                                .height(8.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(
+                                    if (isCompleted) {
+                                        Brush.horizontalGradient(listOf(Success600, Success700))
+                                    } else {
+                                        NebulaBrush
+                                    }
+                                )
+                        )
+                    }
                 }
 
                 Row(
@@ -1261,8 +1284,9 @@ private fun CourseSyllabusTab(
 
         sections.forEachIndexed { index, section ->
             val isExpanded = expandedIds.contains(section.id)
-            val isCompletedChapter = isEnrolled && index == 0
-            val isCurrentChapter = isEnrolled && index == 1
+            val completedCount = section.lessons.count { it.isCompleted }
+            val isCompletedChapter = section.lessons.isNotEmpty() && completedCount == section.lessons.size
+            val isCurrentChapter = isEnrolled && !isCompletedChapter && index == 0
             val isLockedChapter = !isEnrolled && index > 0
 
             Column(
@@ -1369,8 +1393,8 @@ private fun CourseSyllabusTab(
                             .background(Color.White)
                     ) {
                         section.lessons.forEachIndexed { lessonIndex, lesson ->
-                            val isCompleted = isEnrolled && (index == 0 || (index == 1 && lessonIndex == 0))
-                            val isCurrent = isEnrolled && index == 1 && lessonIndex == 1
+                            val isCompleted = lesson.isCompleted
+                            val isCurrent = isEnrolled && !isCompleted && lesson.isCurrent
                             val isFreeTrial = !isEnrolled && index == 0 && lessonIndex == 0
                             val isUnlocked = isEnrolled || isFreeTrial
 
@@ -1442,6 +1466,22 @@ private fun CourseSyllabusTab(
                                                     contentDescription = null,
                                                     tint = Color.White,
                                                     modifier = Modifier.size(12.dp)
+                                                )
+                                            }
+                                        }
+                                        isUnlocked -> {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(26.dp)
+                                                    .clip(CircleShape)
+                                                    .background(Neutral100),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.PlayArrow,
+                                                    contentDescription = null,
+                                                    tint = Neutral500,
+                                                    modifier = Modifier.size(11.dp)
                                                 )
                                             }
                                         }

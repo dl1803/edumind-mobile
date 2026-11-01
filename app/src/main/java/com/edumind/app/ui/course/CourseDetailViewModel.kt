@@ -54,6 +54,24 @@ class CourseDetailViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Tự động làm mới dữ liệu tiến độ trong nền khi người dùng quay lại màn hình
+     * (không hiển thị lại loading spinner toàn màn hình để giữ mượt UX).
+     */
+    fun refreshCourseDetail() {
+        if (courseId.isBlank()) return
+        if (_uiState.value !is CourseDetailUiState.Success) return
+        viewModelScope.launch {
+            courseRepository.getCourseDetail(courseId).onSuccess { detail ->
+                _uiState.update { current ->
+                    if (current is CourseDetailUiState.Success) {
+                        current.copy(course = detail)
+                    } else current
+                }
+            }
+        }
+    }
+
     fun onTabSelected(tabIndex: Int) {
         _uiState.update { current ->
             if (current is CourseDetailUiState.Success) {

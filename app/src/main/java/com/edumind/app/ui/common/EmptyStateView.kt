@@ -23,6 +23,7 @@ fun EmptyStateView(
     @DrawableRes illustration: Int = R.drawable.ic_empty_state,
     actionText: String? = null,
     onAction: (() -> Unit)? = null,
+    actionContent: (@Composable () -> Unit)? = null
 ) {
     Column(
         modifier = modifier.fillMaxWidth().padding(horizontal = 24.dp),
@@ -40,7 +41,10 @@ fun EmptyStateView(
             Spacer(modifier = Modifier.height(8.dp))
             Text(text = message, fontSize = 14.sp, color = Neutral700, textAlign = TextAlign.Center)
         }
-        if (actionText != null && onAction != null) {
+        if (actionContent != null) {
+            Spacer(modifier = Modifier.height(24.dp))
+            actionContent()
+        } else if (actionText != null && onAction != null) {
             Spacer(modifier = Modifier.height(20.dp))
             EduMindButton(
                 text = actionText,

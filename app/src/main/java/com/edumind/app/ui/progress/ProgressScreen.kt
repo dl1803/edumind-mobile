@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Explore
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.School
 import androidx.compose.material3.*
@@ -125,9 +126,35 @@ fun ProgressScreen(
                     EmptyStateView(
                         title = "Chưa có dữ liệu tiến độ",
                         message = "Bắt đầu bài giảng đầu tiên để kích hoạt biểu đồ thời lượng học tập và chuỗi ngày học tập của bạn!",
-                        actionText = "Khám phá khóa học ngay",
-                        onAction = onExploreClick,
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(bottom = 80.dp)
+                            .offset(y = (-24).dp),
+                        actionContent = {
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(NebulaGradient)
+                                    .clickable(onClick = onExploreClick)
+                                    .padding(horizontal = 28.dp, vertical = 13.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Explore,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = "Khám phá khóa học ngay",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     )
                 }
 
@@ -135,7 +162,10 @@ fun ProgressScreen(
                     ErrorView(
                         message = state.message,
                         onRetry = { viewModel.retry() },
-                        modifier = Modifier.align(Alignment.Center)
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(bottom = 80.dp)
+                            .offset(y = (-24).dp)
                     )
                 }
 
@@ -589,14 +619,18 @@ private fun CourseProgressItem(
     onClick: () -> Unit,
     onPlayClick: () -> Unit
 ) {
+    val isCompleted = course.progressPercent >= 100f
+    val cardBackground = if (isCompleted) Color(0xFFF0FDF4) else Color.White
+    val cardBorderColor = if (isCompleted) Color(0xFFBBF7D0) else Color(0xFFE5E5E5).copy(alpha = 0.8f)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color(0xFFE5E5E5).copy(alpha = 0.8f))
+        colors = CardDefaults.cardColors(containerColor = cardBackground),
+        border = BorderStroke(1.dp, cardBorderColor)
     ) {
         Row(
             modifier = Modifier
@@ -641,7 +675,7 @@ private fun CourseProgressItem(
                         fontFamily = EduMindFontFamily,
                         fontSize = 10.5.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Primary700
+                        color = if (isCompleted) Success700 else Primary700
                     )
                 }
                 Spacer(modifier = Modifier.height(6.dp))
@@ -650,15 +684,23 @@ private fun CourseProgressItem(
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp))
-                        .background(Neutral100)
+                        .background(if (isCompleted) Success100 else Neutral100)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(fraction = (course.progressPercent / 100f).coerceIn(0f, 1f))
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(NebulaBrush)
-                    )
+                    if (course.progressPercent > 0f) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(fraction = (course.progressPercent / 100f).coerceIn(0.02f, 1f))
+                                .fillMaxHeight()
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(
+                                    if (isCompleted) {
+                                        Brush.horizontalGradient(listOf(Success600, Success700))
+                                    } else {
+                                        NebulaBrush
+                                    }
+                                )
+                        )
+                    }
                 }
             }
 
@@ -666,14 +708,14 @@ private fun CourseProgressItem(
                 modifier = Modifier
                     .size(32.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFF5F3FF))
+                    .background(if (isCompleted) Success100 else Color(0xFFF5F3FF))
                     .clickable { onPlayClick() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Filled.PlayArrow,
-                    contentDescription = "Học tiếp",
-                    tint = Primary700,
+                    imageVector = if (isCompleted) Icons.Filled.CheckCircle else Icons.Filled.PlayArrow,
+                    contentDescription = if (isCompleted) "Đã hoàn thành" else "Học tiếp",
+                    tint = if (isCompleted) Success700 else Primary700,
                     modifier = Modifier.size(16.dp)
                 )
             }
