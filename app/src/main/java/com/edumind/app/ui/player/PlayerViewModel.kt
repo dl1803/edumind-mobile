@@ -2,6 +2,7 @@ package com.edumind.app.ui.player
 
 import android.content.Context
 import android.util.Log
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -10,6 +11,12 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsManifest
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.edumind.app.data.model.response.LessonDetail
+import com.edumind.app.repository.LessonAccessDeniedException
+import com.edumind.app.repository.LessonNotFoundException
+import com.edumind.app.repository.LessonRepository
+import com.edumind.app.repository.VideoProcessingException
+import com.edumind.app.ui.navigation.Screen
 import com.edumind.app.util.Constants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -25,9 +32,19 @@ import javax.inject.Inject
 
 private const val TAG = "PlayerViewModel"
 
+sealed interface LessonLoadState {
+    data object Loading : LessonLoadState
+    data class Ready(val lesson: LessonDetail) : LessonLoadState
+    data class Forbidden(val message: String) : LessonLoadState
+    data class Processing(val message: String) : LessonLoadState
+    data class Error(val message: String) : LessonLoadState
+}
+
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
-    @ApplicationContext context: Context
+    @ApplicationContext context: Context,
+    private val savedStateHandle: SavedStateHandle,
+    private val lessonRepository: LessonRepository
 ) : ViewModel() {
 
     val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
@@ -37,12 +54,70 @@ class PlayerViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(PocPlayerState())
     val uiState: StateFlow<PocPlayerState> = _uiState.asStateFlow()
 
+    private val _loadState = MutableStateFlow<LessonLoadState>(LessonLoadState.Loading)
+    val loadState: StateFlow<LessonLoadState> = _loadState.asStateFlow()
+
     private var tickerJob: Job? = null
     private var controlsTimeoutJob: Job? = null
+    private var currentLessonId: String? = null
 
     init {
         setupPlayerListener()
-        load(Constants.SAMPLE_HLS_URL)
+        val navLessonId = savedStateHandle.get<String>(Screen.ARG_LESSON_ID)
+        currentLessonId = navLessonId
+        if (!navLessonId.isNullOrBlank()) {
+            fetchLesson(navLessonId)
+        } else {
+            // Tuyến dự phòng debug / preview
+            load(Constants.SAMPLE_HLS_URL)
+        }
+    }
+
+    fun fetchLesson(lessonId: String) {
+        viewModelScope.launch {
+            _loadState.value = LessonLoadState.Loading
+            lessonRepository.getLessonDetail(lessonId).fold(
+                onSuccess = { lesson ->
+                    _loadState.value = LessonLoadState.Ready(lesson)
+                    _uiState.update { it.copy(title = lesson.title) }
+
+                    val streamUrl = resolvePlaybackUrl(lesson)
+                    load(streamUrl)
+
+                    if (lesson.lastPositionMs > 0L) {
+                        seekTo(lesson.lastPositionMs)
+                    }
+                },
+                onFailure = { error ->
+                    when (error) {
+                        is LessonAccessDeniedException -> {
+                            _loadState.value = LessonLoadState.Forbidden(error.message ?: "Chưa đăng ký khóa học")
+                        }
+                        is VideoProcessingException -> {
+                            _loadState.value = LessonLoadState.Processing(error.message ?: "Video đang xử lý")
+                        }
+                        is LessonNotFoundException -> {
+                            _loadState.value = LessonLoadState.Error(error.message ?: "Bài giảng không tồn tại")
+                        }
+                        else -> {
+                            _loadState.value = LessonLoadState.Error(error.localizedMessage ?: "Lỗi tải bài giảng")
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    /**
+     * Giải quyết URL phát video.
+     * Tại Ngày 25 lấy trực tiếp từ LessonDetail; tại Ngày 36 sẽ bọc bởi VideoUrlManager (quản lý TTL và renew).
+     */
+    private fun resolvePlaybackUrl(lesson: LessonDetail): String {
+        return lesson.hlsStreamUrl.ifBlank { Constants.SAMPLE_HLS_URL }
+    }
+
+    fun retry() {
+        currentLessonId?.let { fetchLesson(it) }
     }
 
     private fun setupPlayerListener() {
