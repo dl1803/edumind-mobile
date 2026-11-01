@@ -11,6 +11,7 @@ import com.edumind.app.repository.FakeProgressRepository
 import com.edumind.app.repository.HomeRepository
 import com.edumind.app.repository.ProfileRepository
 import com.edumind.app.repository.ProgressRepository
+import com.edumind.app.repository.ProgressRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -42,7 +43,7 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindProgressRepository(
-        fakeProgressRepository: FakeProgressRepository
+        progressRepositoryImpl: ProgressRepositoryImpl
     ): ProgressRepository
 
     @Binds

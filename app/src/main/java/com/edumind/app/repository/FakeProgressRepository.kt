@@ -82,4 +82,14 @@ class FakeProgressRepository @Inject constructor() : ProgressRepository {
         currentGoalMinutes = minutes
         return Result.success(Unit)
     }
+
+    override suspend fun saveProgress(
+        lessonId: String,
+        positionMs: Long,
+        totalDurationMs: Long,
+        completed: Boolean
+    ): Result<Float> {
+        delay(100)
+        return Result.success(65f)
+    }
 }
