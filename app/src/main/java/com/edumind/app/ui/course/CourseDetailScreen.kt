@@ -3,6 +3,7 @@ package com.edumind.app.ui.course
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -47,6 +48,7 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Tab
@@ -60,6 +62,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -286,14 +289,16 @@ fun CourseDetailScreen(
                         Toast.makeText(context, "Chuyển tới cổng thanh toán...", Toast.LENGTH_SHORT).show()
                     },
                     onEnrollFreeClick = {
-                        viewModel.onEnrollFreeCourse {
-                            Toast.makeText(context, "Đăng ký khóa học thành công!", Toast.LENGTH_SHORT).show()
-                        }
+                        viewModel.onEnrollClick(
+                            onPaymentRequired = {
+                                Toast.makeText(context, "Khóa học có phí, vui lòng mua để mở khóa", Toast.LENGTH_SHORT).show()
+                            }
+                        )
                     },
                     onContinueClick = {
                         val targetLesson = course.lastLessonId
                             ?: course.sections.firstOrNull()?.lessons?.firstOrNull()?.id
-                            ?: "l_2_2"
+                            ?: "l_1_1"
                         onNavigateToPlayer(targetLesson)
                     },
                     modifier = Modifier.align(Alignment.BottomCenter)
@@ -1024,8 +1029,13 @@ private fun CourseIntroTab(
                             .background(Color.White),
                         contentAlignment = Alignment.Center
                     ) {
+                        val initials = remember(course.instructor.name) {
+                            val parts = course.instructor.name.trim().split("\\s+".toRegex())
+                            if (parts.size >= 2) "${parts.first().take(1)}${parts.last().take(1)}".uppercase()
+                            else course.instructor.name.take(2).uppercase()
+                        }
                         Text(
-                            text = "LN",
+                            text = initials.ifBlank { "GV" },
                             fontFamily = EduMindFontFamily,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.ExtraBold,
@@ -1045,7 +1055,7 @@ private fun CourseIntroTab(
                         color = Neutral900
                     )
                     Text(
-                        text = "Giảng viên Khoa CNTT — ĐHQG Hà Nội",
+                        text = course.instructor.title.ifBlank { "Giảng viên chuyên môn" },
                         fontFamily = EduMindFontFamily,
                         fontSize = 11.sp,
                         color = Neutral500
@@ -1067,6 +1077,48 @@ private fun CourseIntroTab(
                         fontSize = 10.sp,
                         color = Neutral400
                     )
+                }
+            }
+
+            val bioText = course.instructor.bio
+            if (!bioText.isNullOrBlank()) {
+                var isExpanded by rememberSaveable { mutableStateOf(false) }
+
+                HorizontalDivider(
+                    color = Neutral200.copy(alpha = 0.6f),
+                    thickness = 1.dp
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize()
+                ) {
+                    Text(
+                        text = bioText,
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Normal,
+                        lineHeight = 19.sp,
+                        color = Neutral600,
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    if (bioText.length > 120) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isExpanded) "Thu gọn ↑" else "Xem thêm ↓",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Primary700,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .clickable { isExpanded = !isExpanded }
+                                .padding(vertical = 2.dp, horizontal = 2.dp)
+                        )
+                    }
                 }
             }
         }
@@ -2025,23 +2077,32 @@ private fun CourseStickyCtaBar(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = if (isFree) "Đăng ký miễn phí" else "Mua khóa học",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
+                if (isEnrolling) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
+                } else {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (isFree) "Đăng ký miễn phí" else "Mua khóa học",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }
     }
 }
+

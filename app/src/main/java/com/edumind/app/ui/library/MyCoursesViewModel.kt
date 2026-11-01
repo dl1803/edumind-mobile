@@ -23,9 +23,11 @@ class MyCoursesViewModel @Inject constructor(
         loadMyCourses()
     }
 
-    fun loadMyCourses() {
+    fun loadMyCourses(showLoading: Boolean = true) {
         viewModelScope.launch {
-            _uiState.value = MyCoursesUiState.Loading
+            if (showLoading || _uiState.value !is MyCoursesUiState.Success) {
+                _uiState.value = MyCoursesUiState.Loading
+            }
 
             val coursesResult = courseRepository.getMyCourses()
             val resumeResult = courseRepository.getQuickResumeItem()
@@ -37,13 +39,13 @@ class MyCoursesViewModel @Inject constructor(
                     } else {
                         val inProgress = courses.filter { it.progressPercent < 100 }
                         val completed = courses.filter { it.progressPercent == 100 }
-                        val defaultFilter = MyCoursesFilter.ALL
+                        val currentFilter = (_uiState.value as? MyCoursesUiState.Success)?.selectedFilter ?: MyCoursesFilter.ALL
 
                         _uiState.value = MyCoursesUiState.Success(
                             allCourses = courses,
-                            displayedCourses = filterCourses(courses, defaultFilter),
+                            displayedCourses = filterCourses(courses, currentFilter),
                             quickResumeItem = resumeResult.getOrNull(),
-                            selectedFilter = defaultFilter,
+                            selectedFilter = currentFilter,
                             allCount = courses.size,
                             inProgressCount = inProgress.size,
                             completedCount = completed.size
@@ -51,9 +53,11 @@ class MyCoursesViewModel @Inject constructor(
                     }
                 },
                 onFailure = { error ->
-                    _uiState.value = MyCoursesUiState.Error(
-                        error.localizedMessage ?: "Không thể tải danh sách khóa học. Vui lòng thử lại sau."
-                    )
+                    if (_uiState.value !is MyCoursesUiState.Success) {
+                        _uiState.value = MyCoursesUiState.Error(
+                            error.localizedMessage ?: "Không thể tải danh sách khóa học. Vui lòng thử lại sau."
+                        )
+                    }
                 }
             )
         }

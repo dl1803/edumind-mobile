@@ -85,12 +85,55 @@ class CourseRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun enroll(courseId: String): EnrollResult {
+        return try {
+            val response = courseApiService.enroll(courseId)
+            when (response.code()) {
+                200, 201 -> {
+                    val body = response.body()
+                    EnrollResult.Success(body?.firstLessonId)
+                }
+                409 -> EnrollResult.AlreadyEnrolled
+                400, 403 -> EnrollResult.PaymentRequired
+                else -> {
+                    val msg = when (response.code()) {
+                        401 -> "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+                        404 -> "Không tìm thấy khóa học để đăng ký."
+                        else -> "Ghi danh khóa học thất bại. Vui lòng thử lại sau."
+                    }
+                    EnrollResult.Failure(msg)
+                }
+            }
+        } catch (e: Exception) {
+            EnrollResult.Failure("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng.")
+        }
+    }
+
     override suspend fun enrollCourse(courseId: String): Result<Boolean> {
-        return Result.failure(UnsupportedOperationException("Endpoint đăng ký khóa học sẽ được tích hợp tại Ngày 24"))
+        return when (val res = enroll(courseId)) {
+            is EnrollResult.Success, is EnrollResult.AlreadyEnrolled -> Result.success(true)
+            is EnrollResult.PaymentRequired -> Result.failure(Exception("Khóa học có phí, vui lòng mua để học"))
+            is EnrollResult.Failure -> Result.failure(Exception(res.message))
+        }
     }
 
     override suspend fun getMyCourses(): Result<List<MyCourse>> {
-        return Result.failure(UnsupportedOperationException("Endpoint khóa học của tôi sẽ được tích hợp tại Ngày 24"))
+        return try {
+            val response = courseApiService.getMyCourses()
+            val body = response.body()
+            if (response.isSuccessful && body != null) {
+                val courses = body.data.map { it.toDomain() }
+                Result.success(courses)
+            } else {
+                val errorMsg = when (response.code()) {
+                    401 -> "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+                    else -> "Không thể tải danh sách khóa học của bạn."
+                }
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng."))
+        }
     }
 
     override suspend fun getQuickResumeItem(): Result<ContinueLearningItem?> {

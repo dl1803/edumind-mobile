@@ -7,8 +7,10 @@ import com.edumind.app.data.model.response.CourseSection
 import com.edumind.app.data.model.response.InstructorSummary
 import com.edumind.app.data.model.response.LessonType
 import com.edumind.app.repository.CourseRepository
+import com.edumind.app.repository.EnrollResult
 import com.edumind.app.ui.navigation.Screen
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -170,7 +172,7 @@ class CourseDetailViewModelTest {
 
     @Test
     fun `onEnrollFreeCourse success marks course as enrolled and invokes callback`() = runTest {
-        coEvery { courseRepository.enrollCourse(sampleCourseId) } returns Result.success(true)
+        coEvery { courseRepository.enroll(sampleCourseId) } returns EnrollResult.Success("l_1_1")
 
         val savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_COURSE_ID to sampleCourseId))
         val viewModel = CourseDetailViewModel(savedStateHandle, courseRepository)
@@ -191,7 +193,7 @@ class CourseDetailViewModelTest {
 
     @Test
     fun `onEnrollFreeCourse failure sets userMessage and resets isEnrolling`() = runTest {
-        coEvery { courseRepository.enrollCourse(sampleCourseId) } returns Result.failure(Exception("Ghi danh thất bại"))
+        coEvery { courseRepository.enroll(sampleCourseId) } returns EnrollResult.Failure("Ghi danh thất bại")
 
         val savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_COURSE_ID to sampleCourseId))
         val viewModel = CourseDetailViewModel(savedStateHandle, courseRepository)
@@ -207,5 +209,118 @@ class CourseDetailViewModelTest {
         viewModel.clearUserMessage()
         val clearedState = viewModel.uiState.value as CourseDetailUiState.Success
         assertNull(clearedState.userMessage)
+    }
+
+    @Test
+    fun `onEnrollClick with EnrollResult Success updates enrolled state and invokes onSuccess`() = runTest {
+        coEvery { courseRepository.enroll(sampleCourseId) } returns EnrollResult.Success(firstLessonId = "l_1_1")
+
+        val savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_COURSE_ID to sampleCourseId))
+        val viewModel = CourseDetailViewModel(savedStateHandle, courseRepository)
+        advanceUntilIdle()
+
+        var receivedLessonId: String? = null
+        var successCallbackInvoked = false
+        viewModel.onEnrollClick(
+            onSuccess = { lessonId ->
+                successCallbackInvoked = true
+                receivedLessonId = lessonId
+            }
+        )
+        advanceUntilIdle()
+
+        assertTrue(successCallbackInvoked)
+        assertEquals("l_1_1", receivedLessonId)
+
+        val state = viewModel.uiState.value as CourseDetailUiState.Success
+        assertFalse(state.isEnrolling)
+        assertTrue(state.course.isEnrolled)
+        assertEquals("l_1_1", state.course.lastLessonId)
+        assertEquals("Đăng ký khóa học thành công!", state.userMessage)
+    }
+
+    @Test
+    fun `onEnrollClick with EnrollResult AlreadyEnrolled handles 409 conflict gracefully`() = runTest {
+        coEvery { courseRepository.enroll(sampleCourseId) } returns EnrollResult.AlreadyEnrolled
+
+        val savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_COURSE_ID to sampleCourseId))
+        val viewModel = CourseDetailViewModel(savedStateHandle, courseRepository)
+        advanceUntilIdle()
+
+        var successCallbackInvoked = false
+        viewModel.onEnrollClick(
+            onSuccess = {
+                successCallbackInvoked = true
+            }
+        )
+        advanceUntilIdle()
+
+        assertTrue(successCallbackInvoked)
+        val state = viewModel.uiState.value as CourseDetailUiState.Success
+        assertFalse(state.isEnrolling)
+        assertTrue(state.course.isEnrolled)
+        assertEquals("Bạn đã đăng ký khóa học này trước đó.", state.userMessage)
+    }
+
+    @Test
+    fun `onEnrollClick with EnrollResult PaymentRequired invokes onPaymentRequired callback`() = runTest {
+        coEvery { courseRepository.enroll(sampleCourseId) } returns EnrollResult.PaymentRequired
+
+        val savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_COURSE_ID to sampleCourseId))
+        val viewModel = CourseDetailViewModel(savedStateHandle, courseRepository)
+        advanceUntilIdle()
+
+        var paymentCallbackInvoked = false
+        var successCallbackInvoked = false
+        viewModel.onEnrollClick(
+            onSuccess = { successCallbackInvoked = true },
+            onPaymentRequired = { paymentCallbackInvoked = true }
+        )
+        advanceUntilIdle()
+
+        assertTrue(paymentCallbackInvoked)
+        assertFalse(successCallbackInvoked)
+
+        val state = viewModel.uiState.value as CourseDetailUiState.Success
+        assertFalse(state.isEnrolling)
+        assertFalse(state.course.isEnrolled)
+        assertEquals("Khóa học có phí, vui lòng thanh toán để mở khóa.", state.userMessage)
+    }
+
+    @Test
+    fun `onEnrollClick with EnrollResult Failure sets error message and resets isEnrolling`() = runTest {
+        val errorMessage = "Không tìm thấy khóa học để đăng ký."
+        coEvery { courseRepository.enroll(sampleCourseId) } returns EnrollResult.Failure(errorMessage)
+
+        val savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_COURSE_ID to sampleCourseId))
+        val viewModel = CourseDetailViewModel(savedStateHandle, courseRepository)
+        advanceUntilIdle()
+
+        viewModel.onEnrollClick()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as CourseDetailUiState.Success
+        assertFalse(state.isEnrolling)
+        assertFalse(state.course.isEnrolled)
+        assertEquals(errorMessage, state.userMessage)
+    }
+
+    @Test
+    fun `onEnrollClick prevents duplicate requests when already enrolling`() = runTest {
+        coEvery { courseRepository.enroll(sampleCourseId) } coAnswers {
+            kotlinx.coroutines.delay(500)
+            EnrollResult.Success("l_1_1")
+        }
+
+        val savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_COURSE_ID to sampleCourseId))
+        val viewModel = CourseDetailViewModel(savedStateHandle, courseRepository)
+        advanceUntilIdle()
+
+        viewModel.onEnrollClick()
+        viewModel.onEnrollClick()
+
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { courseRepository.enroll(sampleCourseId) }
     }
 }
