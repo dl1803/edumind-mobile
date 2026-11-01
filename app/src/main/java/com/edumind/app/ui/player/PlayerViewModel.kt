@@ -15,6 +15,7 @@ import com.edumind.app.data.model.response.LessonDetail
 import com.edumind.app.repository.LessonAccessDeniedException
 import com.edumind.app.repository.LessonNotFoundException
 import com.edumind.app.repository.LessonRepository
+import com.edumind.app.repository.ProgressRepository
 import com.edumind.app.repository.VideoProcessingException
 import com.edumind.app.ui.navigation.Screen
 import com.edumind.app.util.Constants
@@ -44,7 +45,8 @@ sealed interface LessonLoadState {
 class PlayerViewModel @Inject constructor(
     @ApplicationContext context: Context,
     private val savedStateHandle: SavedStateHandle,
-    private val lessonRepository: LessonRepository
+    private val lessonRepository: LessonRepository,
+    private val progressRepository: ProgressRepository
 ) : ViewModel() {
 
     val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
@@ -108,6 +110,26 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    fun saveCurrentProgress(completed: Boolean = false) {
+        val lessonId = currentLessonId ?: return
+        val pos = exoPlayer.currentPosition
+        val dur = exoPlayer.duration
+        if (dur > 0L && pos >= 0L) {
+            viewModelScope.launch {
+                progressRepository.saveProgress(
+                    lessonId = lessonId,
+                    positionMs = pos,
+                    totalDurationMs = dur,
+                    completed = completed
+                ).onSuccess { percent ->
+                    Log.d(TAG, "Progress saved successfully: $percent% (pos: ${pos}ms / ${dur}ms)")
+                }.onFailure { e ->
+                    Log.e(TAG, "Failed to save progress: ${e.message}")
+                }
+            }
+        }
+    }
+
     /**
      * Giải quyết URL phát video.
      * Tại Ngày 25 lấy trực tiếp từ LessonDetail; tại Ngày 36 sẽ bọc bởi VideoUrlManager (quản lý TTL và renew).
@@ -129,6 +151,7 @@ class PlayerViewModel @Inject constructor(
                     scheduleControlsAutoHide()
                 } else {
                     stopPositionTicker()
+                    saveCurrentProgress()
                 }
             }
 
@@ -138,6 +161,8 @@ class PlayerViewModel @Inject constructor(
 
                 if (playbackState == Player.STATE_READY) {
                     Log.d(TAG, "ExoPlayer READY - HlsManifest: $isHls, duration: ${exoPlayer.duration}ms")
+                } else if (playbackState == Player.STATE_ENDED) {
+                    saveCurrentProgress(completed = true)
                 }
 
                 _uiState.update {
@@ -183,6 +208,7 @@ class PlayerViewModel @Inject constructor(
         if (exoPlayer.isPlaying) {
             exoPlayer.pause()
         }
+        saveCurrentProgress()
     }
 
     fun seekTo(positionMs: Long) {
@@ -190,6 +216,7 @@ class PlayerViewModel @Inject constructor(
         exoPlayer.seekTo(clamped)
         _uiState.update { it.copy(positionMs = clamped) }
         scheduleControlsAutoHide()
+        saveCurrentProgress()
     }
 
     fun seekRelative(offsetMs: Long) {
@@ -216,12 +243,17 @@ class PlayerViewModel @Inject constructor(
     private fun startPositionTicker() {
         tickerJob?.cancel()
         tickerJob = viewModelScope.launch {
+            var tickCount = 0
             while (isActive) {
                 _uiState.update {
                     it.copy(
                         positionMs = exoPlayer.currentPosition.coerceAtLeast(0L),
                         durationMs = exoPlayer.duration.coerceAtLeast(0L)
                     )
+                }
+                tickCount++
+                if (tickCount % 20 == 0) { // Mỗi 10 giây lưu 1 lần (20 * 500ms = 10s)
+                    saveCurrentProgress()
                 }
                 delay(500)
             }
@@ -235,6 +267,7 @@ class PlayerViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
+        saveCurrentProgress()
         stopPositionTicker()
         controlsTimeoutJob?.cancel()
         exoPlayer.release()
