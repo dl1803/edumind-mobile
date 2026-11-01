@@ -26,7 +26,9 @@ class ProgressViewModel @Inject constructor(
 
     fun loadProgress() {
         viewModelScope.launch {
-            _uiState.value = ProgressUiState.Loading
+            if (_uiState.value !is ProgressUiState.Success) {
+                _uiState.value = ProgressUiState.Loading
+            }
             progressRepository.getProgressOverview().fold(
                 onSuccess = { response ->
                     if (response.courses.isEmpty() && response.totalHoursWatched == 0f) {
@@ -43,15 +45,18 @@ class ProgressViewModel @Inject constructor(
                     }
                 },
                 onFailure = { error ->
-                    _uiState.value = ProgressUiState.Error(
-                        message = error.localizedMessage ?: "Đã xảy ra lỗi khi tải tiến độ học tập."
-                    )
+                    if (_uiState.value !is ProgressUiState.Success) {
+                        _uiState.value = ProgressUiState.Error(
+                            message = error.localizedMessage ?: "Đã xảy ra lỗi khi tải tiến độ học tập."
+                        )
+                    }
                 }
             )
         }
     }
 
     fun retry() {
+        _uiState.value = ProgressUiState.Loading
         loadProgress()
     }
 

@@ -3,6 +3,7 @@ package com.edumind.app.repository
 import com.edumind.app.data.model.request.SaveProgressRequest
 import com.edumind.app.data.model.response.LearningProgressResponse
 import com.edumind.app.data.remote.api.ProgressApiService
+import com.edumind.app.util.ApiErrorParser
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,7 +19,14 @@ class ProgressRepositoryImpl @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                val errorMsg = response.errorBody()?.string() ?: "Lỗi tải tổng quan tiến độ (${response.code()})"
+                val errorMsg = when (response.code()) {
+                    404 -> "Dữ liệu tiến độ học tập hiện chưa khả dụng trên máy chủ hoặc máy chủ đang cập nhật."
+                    401 -> "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+                    else -> {
+                        val parsed = ApiErrorParser.parseError(response.code(), response.errorBody())
+                        parsed.message.ifBlank { "Không thể tải tiến độ học tập lúc này (${response.code()})." }
+                    }
+                }
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: IOException) {
@@ -54,7 +62,14 @@ class ProgressRepositoryImpl @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!.courseProgressPercent)
             } else {
-                val errorMsg = response.errorBody()?.string() ?: "Lỗi lưu tiến độ (${response.code()})"
+                val errorMsg = when (response.code()) {
+                    404 -> "Không tìm thấy bài giảng để lưu tiến độ."
+                    401 -> "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+                    else -> {
+                        val parsed = ApiErrorParser.parseError(response.code(), response.errorBody())
+                        parsed.message.ifBlank { "Lỗi lưu tiến độ (${response.code()})." }
+                    }
+                }
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: IOException) {
@@ -64,4 +79,3 @@ class ProgressRepositoryImpl @Inject constructor(
         }
     }
 }
-

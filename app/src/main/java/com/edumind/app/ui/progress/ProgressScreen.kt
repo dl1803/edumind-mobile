@@ -51,6 +51,10 @@ import com.edumind.app.ui.common.EmptyStateView
 import com.edumind.app.ui.common.ErrorView
 import com.edumind.app.ui.common.SkeletonBox
 import com.edumind.app.ui.progress.components.GoalAdjustmentBottomSheet
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.edumind.app.ui.progress.components.WeeklyBarChart
 import com.edumind.app.ui.theme.*
 
@@ -63,6 +67,19 @@ fun ProgressScreen(
     viewModel: ProgressViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.loadProgress()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     Box(
         modifier = Modifier
