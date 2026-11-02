@@ -1,5 +1,7 @@
 package com.edumind.app.repository
 
+import com.edumind.app.data.local.db.dao.PlaybackPositionDao
+import com.edumind.app.data.local.db.entity.PlaybackPositionEntity
 import com.edumind.app.data.model.request.SaveProgressRequest
 import com.edumind.app.data.model.response.LearningProgressResponse
 import com.edumind.app.data.remote.api.ProgressApiService
@@ -10,7 +12,8 @@ import javax.inject.Singleton
 
 @Singleton
 class ProgressRepositoryImpl @Inject constructor(
-    private val progressApiService: ProgressApiService
+    private val progressApiService: ProgressApiService,
+    private val playbackPositionDao: PlaybackPositionDao
 ) : ProgressRepository {
 
     override suspend fun getProgressOverview(): Result<LearningProgressResponse> {
@@ -40,26 +43,43 @@ class ProgressRepositoryImpl @Inject constructor(
         return Result.success(Unit)
     }
 
+    override suspend fun getPlaybackPosition(lessonId: String): PlaybackPositionEntity? {
+        return playbackPositionDao.getByLessonId(lessonId)
+    }
+
     override suspend fun saveProgress(
         lessonId: String,
         positionMs: Long,
         totalDurationMs: Long,
         completed: Boolean
     ): Result<Float> {
-        return try {
-            val positionSec = (positionMs / 1000f).coerceAtLeast(0f)
-            val durationSec = (totalDurationMs / 1000f).coerceAtLeast(0f)
-            val isCompleted = completed || (durationSec > 0f && positionSec >= durationSec * 0.9f)
+        val positionSec = (positionMs / 1000f).coerceAtLeast(0f)
+        val durationSec = (totalDurationMs / 1000f).coerceAtLeast(0f)
+        val isCompleted = completed || (durationSec > 0f && positionSec >= durationSec * 0.9f)
+        val now = System.currentTimeMillis()
 
+        // 1. Luôn lưu vào cơ sở dữ liệu cục bộ trước (synced = false)
+        val localEntity = PlaybackPositionEntity(
+            lessonId = lessonId,
+            positionMs = positionMs,
+            durationMs = totalDurationMs,
+            completed = isCompleted,
+            updatedAt = now,
+            synced = false
+        )
+        playbackPositionDao.upsert(localEntity)
+
+        // 2. Thử gửi lên máy chủ qua mạng
+        return try {
             val request = SaveProgressRequest(
                 lessonId = lessonId,
                 currentPosition = positionSec,
                 totalDuration = durationSec,
                 completed = isCompleted
             )
-
             val response = progressApiService.saveProgress(request)
             if (response.isSuccessful && response.body() != null) {
+                playbackPositionDao.markSynced(lessonId)
                 Result.success(response.body()!!.courseProgressPercent)
             } else {
                 val errorMsg = when (response.code()) {
@@ -73,7 +93,32 @@ class ProgressRepositoryImpl @Inject constructor(
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: IOException) {
-            Result.failure(Exception("Lỗi mạng khi lưu tiến độ.", e))
+            // Lỗi mạng: Dữ liệu đã an toàn ở cục bộ, trả về thành công để không gián đoạn giao diện
+            val estimatedPercent = if (durationSec > 0f) (positionSec / durationSec * 100f).coerceIn(0f, 100f) else 0f
+            Result.success(estimatedPercent)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun syncPending(): Result<Unit> {
+        return try {
+            val pendingList = playbackPositionDao.getUnsynced()
+            for (item in pendingList) {
+                val positionSec = (item.positionMs / 1000f).coerceAtLeast(0f)
+                val durationSec = (item.durationMs / 1000f).coerceAtLeast(0f)
+                val request = SaveProgressRequest(
+                    lessonId = item.lessonId,
+                    currentPosition = positionSec,
+                    totalDuration = durationSec,
+                    completed = item.completed
+                )
+                val response = progressApiService.saveProgress(request)
+                if (response.isSuccessful) {
+                    playbackPositionDao.markSynced(item.lessonId)
+                }
+            }
+            Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
