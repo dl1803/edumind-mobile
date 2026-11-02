@@ -6,6 +6,7 @@ import com.edumind.app.data.local.db.AppDatabase
 import com.edumind.app.data.local.db.dao.ChatHistoryDao
 import com.edumind.app.data.local.db.dao.CourseCacheDao
 import com.edumind.app.data.local.db.dao.NoteDao
+import com.edumind.app.data.local.db.dao.PlaybackPositionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,7 +27,9 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
-        ).build()
+        )
+            .addMigrations(AppDatabase.MIGRATION_1_2)
+            .build()
     }
 
     @Provides
@@ -42,5 +45,10 @@ object DatabaseModule {
     @Provides
     fun provideChatHistoryDao(database: AppDatabase): ChatHistoryDao {
         return database.chatHistoryDao()
+    }
+
+    @Provides
+    fun providePlaybackPositionDao(database: AppDatabase): PlaybackPositionDao {
+        return database.playbackPositionDao()
     }
 }
