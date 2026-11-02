@@ -1,6 +1,17 @@
 package com.edumind.app.ui.player
 
 import androidx.media3.common.Player
+import androidx.media3.common.TrackGroup
+
+data class QualityOption(
+    val height: Int,
+    val bitrate: Int,
+    val trackGroup: TrackGroup,
+    val trackIndex: Int
+) {
+    val label: String
+        get() = "${height}p"
+}
 
 data class PocPlayerState(
     val isPlaying: Boolean = false,
