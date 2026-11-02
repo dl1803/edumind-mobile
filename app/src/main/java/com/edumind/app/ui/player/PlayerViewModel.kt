@@ -26,6 +26,7 @@ import com.edumind.app.ui.navigation.Screen
 import com.edumind.app.util.Constants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -79,6 +80,7 @@ class PlayerViewModel @Inject constructor(
     private var tickerJob: Job? = null
     private var controlsTimeoutJob: Job? = null
     private var currentLessonId: String? = null
+    private var currentStreamUrl: String? = null
 
     init {
         setupPlayerListener()
@@ -97,8 +99,13 @@ class PlayerViewModel @Inject constructor(
         connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
         networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                viewModelScope.launch {
+                viewModelScope.launch(Dispatchers.Main) {
                     progressRepository.syncPending()
+                    if (exoPlayer.playerError != null || exoPlayer.playbackState == Player.STATE_IDLE) {
+                        delay(300)
+                        Log.d(TAG, "Network restored, auto recovering ExoPlayer...")
+                        retryPlayback(autoPlay = exoPlayer.playWhenReady)
+                    }
                 }
             }
         }
@@ -280,7 +287,8 @@ class PlayerViewModel @Inject constructor(
                         playbackState = playbackState,
                         isBuffering = isBuffering,
                         durationMs = exoPlayer.duration.coerceAtLeast(0L),
-                        isHlsManifest = isHls
+                        isHlsManifest = isHls,
+                        errorMessage = if (playbackState == Player.STATE_READY) null else it.errorMessage
                     )
                 }
             }
@@ -298,6 +306,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun load(url: String) {
+        currentStreamUrl = url
         val mediaItem = MediaItem.fromUri(url)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
@@ -305,8 +314,32 @@ class PlayerViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
+    fun retryPlayback(autoPlay: Boolean = true) {
+        val targetPos = exoPlayer.currentPosition.coerceAtLeast(0L)
+        val url = currentStreamUrl
+        if (url != null) {
+            val mediaItem = MediaItem.fromUri(url)
+            exoPlayer.setMediaItem(mediaItem, targetPos)
+            exoPlayer.prepare()
+            if (autoPlay) {
+                exoPlayer.play()
+            }
+        } else {
+            exoPlayer.prepare()
+            if (targetPos > 0L) {
+                exoPlayer.seekTo(targetPos)
+            }
+            if (autoPlay) {
+                exoPlayer.play()
+            }
+        }
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+
     fun togglePlayPause() {
-        if (exoPlayer.isPlaying) {
+        if (exoPlayer.playerError != null || exoPlayer.playbackState == Player.STATE_IDLE) {
+            retryPlayback(autoPlay = true)
+        } else if (exoPlayer.isPlaying) {
             exoPlayer.pause()
         } else {
             exoPlayer.play()
@@ -322,9 +355,19 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun seekTo(positionMs: Long) {
-        val clamped = positionMs.coerceIn(0L, exoPlayer.duration.coerceAtLeast(0L))
-        exoPlayer.seekTo(clamped)
-        _uiState.update { it.copy(positionMs = clamped) }
+        val duration = exoPlayer.duration.takeIf { it > 0L } ?: _uiState.value.durationMs
+        val clamped = positionMs.coerceIn(0L, duration.coerceAtLeast(0L))
+        if (exoPlayer.playerError != null || exoPlayer.playbackState == Player.STATE_IDLE) {
+            val url = currentStreamUrl
+            if (url != null) {
+                val mediaItem = MediaItem.fromUri(url)
+                exoPlayer.setMediaItem(mediaItem, clamped)
+                exoPlayer.prepare()
+            }
+        } else {
+            exoPlayer.seekTo(clamped)
+        }
+        _uiState.update { it.copy(positionMs = clamped, errorMessage = null) }
         scheduleControlsAutoHide()
         saveCurrentProgress()
     }
