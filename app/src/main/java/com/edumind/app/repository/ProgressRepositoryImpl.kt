@@ -105,17 +105,21 @@ class ProgressRepositoryImpl @Inject constructor(
         return try {
             val pendingList = playbackPositionDao.getUnsynced()
             for (item in pendingList) {
-                val positionSec = (item.positionMs / 1000f).coerceAtLeast(0f)
-                val durationSec = (item.durationMs / 1000f).coerceAtLeast(0f)
-                val request = SaveProgressRequest(
-                    lessonId = item.lessonId,
-                    currentPosition = positionSec,
-                    totalDuration = durationSec,
-                    completed = item.completed
-                )
-                val response = progressApiService.saveProgress(request)
-                if (response.isSuccessful) {
-                    playbackPositionDao.markSynced(item.lessonId)
+                try {
+                    val positionSec = (item.positionMs / 1000f).coerceAtLeast(0f)
+                    val durationSec = (item.durationMs / 1000f).coerceAtLeast(0f)
+                    val request = SaveProgressRequest(
+                        lessonId = item.lessonId,
+                        currentPosition = positionSec,
+                        totalDuration = durationSec,
+                        completed = item.completed
+                    )
+                    val response = progressApiService.saveProgress(request)
+                    if (response.isSuccessful) {
+                        playbackPositionDao.markSynced(item.lessonId)
+                    }
+                } catch (e: Exception) {
+                    // Tiếp tục đồng bộ các bản ghi tiếp theo nếu một bản ghi gặp lỗi mạng tạm thời
                 }
             }
             Result.success(Unit)

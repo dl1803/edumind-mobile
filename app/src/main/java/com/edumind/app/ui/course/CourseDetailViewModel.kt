@@ -155,16 +155,21 @@ class CourseDetailViewModel @Inject constructor(
                     onSuccess(result.firstLessonId)
                 }
                 is EnrollResult.AlreadyEnrolled -> {
+                    val defaultLessonId = currentState.course.lastLessonId
+                        ?: currentState.course.sections.firstOrNull()?.lessons?.firstOrNull()?.id
                     _uiState.update { current ->
                         if (current is CourseDetailUiState.Success) {
                             current.copy(
                                 isEnrolling = false,
-                                course = current.course.copy(isEnrolled = true),
+                                course = current.course.copy(
+                                    isEnrolled = true,
+                                    lastLessonId = current.course.lastLessonId ?: defaultLessonId
+                                ),
                                 userMessage = "Bạn đã đăng ký khóa học này trước đó."
                             )
                         } else current
                     }
-                    onSuccess(null)
+                    onSuccess(defaultLessonId)
                 }
                 is EnrollResult.PaymentRequired -> {
                     _uiState.update { current ->

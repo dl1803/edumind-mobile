@@ -128,14 +128,17 @@ class PlayerViewModel @Inject constructor(
                     load(streamUrl)
 
                     val localPosition = progressRepository.getPlaybackPosition(lesson.id)
-                    val candidatePositionMs = if (localPosition != null && localPosition.positionMs > 0L) {
+                    val serverPositionMs = lesson.lastPositionMs
+
+                    // Ưu tiên bản ghi chưa đồng bộ của máy hiện tại, hoặc mốc lớn nhất giữa server và local
+                    val candidatePositionMs = if (localPosition != null && !localPosition.synced && localPosition.positionMs > 0L) {
                         localPosition.positionMs
                     } else {
-                        lesson.lastPositionMs
+                        maxOf(localPosition?.positionMs ?: 0L, serverPositionMs)
                     }
 
                     val totalDurationMs = lesson.durationMs
-                    val isCompleted = localPosition?.completed == true
+                    val isCompleted = localPosition?.completed == true || (totalDurationMs > 0L && candidatePositionMs >= totalDurationMs * 0.9f)
                     val isNearStart = candidatePositionMs <= 5_000L
                     val isNearEnd = totalDurationMs > 0L && (totalDurationMs - candidatePositionMs <= 10_000L)
 
