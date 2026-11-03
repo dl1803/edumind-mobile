@@ -26,6 +26,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -33,10 +34,15 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -56,6 +62,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.edumind.app.ui.theme.EduMindFontFamily
 import com.edumind.app.ui.theme.EduMindTheme
+import com.edumind.app.ui.theme.Neutral600
+import com.edumind.app.ui.theme.Neutral700
+import com.edumind.app.ui.theme.Neutral900
+import com.edumind.app.ui.theme.Neutral950
 import com.edumind.app.ui.theme.Primary600
 import com.edumind.app.ui.theme.Primary700
 
@@ -69,7 +79,9 @@ fun PlayerControlsOverlay(
     onToggleFullscreen: () -> Unit,
     onOverlayClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isLandscape: Boolean = false
+    isLandscape: Boolean = false,
+    availableQualities: List<QualityOption> = emptyList(),
+    onQualityClick: () -> Unit = {}
 ) {
     Box(
         modifier = modifier
@@ -283,16 +295,18 @@ fun PlayerControlsOverlay(
                                 )
                             }
 
-                            IconButton(
-                                onClick = { },
-                                modifier = Modifier.size(24.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Settings,
-                                    contentDescription = "Cài đặt",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(17.dp)
-                                )
+                            if (availableQualities.isNotEmpty()) {
+                                IconButton(
+                                    onClick = onQualityClick,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Settings,
+                                        contentDescription = "Chất lượng video",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -477,6 +491,154 @@ fun NebulaVideoSeekbar(
                 .border(2.dp, Primary600, CircleShape)
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun QualitySelectionBottomSheet(
+    availableQualities: List<QualityOption>,
+    selectedQuality: QualityOption?,
+    onQualitySelected: (QualityOption?) -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = Neutral900,
+        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp)
+        ) {
+            Text(
+                text = "Chất lượng video",
+                fontFamily = EduMindFontFamily,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            // Tùy chọn Tự động
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        onQualitySelected(null)
+                        onDismiss()
+                    }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Tự động",
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 14.sp,
+                    color = if (selectedQuality == null) Primary600 else Color.White
+                )
+                if (selectedQuality == null) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Đang chọn",
+                        tint = Primary600,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            // Các tùy chọn độ phân giải cụ thể
+            availableQualities.forEach { option ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onQualitySelected(option)
+                            onDismiss()
+                        }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = option.label,
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 14.sp,
+                        color = if (selectedQuality == option) Primary600 else Color.White
+                    )
+                    if (selectedQuality == option) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Đang chọn",
+                            tint = Primary600,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun ResumePlaybackDialog(
+    positionMs: Long,
+    onConfirmResume: () -> Unit,
+    onRestart: () -> Unit
+) {
+    val totalSec = positionMs / 1000
+    val minutes = totalSec / 60
+    val seconds = totalSec % 60
+    val timeFormatted = String.format("%02d:%02d", minutes, seconds)
+
+    AlertDialog(
+        onDismissRequest = { },
+        title = {
+            Text(
+                text = "Tiếp tục bài học?",
+                fontFamily = EduMindFontFamily,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Neutral950
+            )
+        },
+        text = {
+            Text(
+                text = "Bạn đã xem đến $timeFormatted. Bạn có muốn tiếp tục từ mốc thời gian này không?",
+                fontFamily = EduMindFontFamily,
+                fontSize = 14.sp,
+                color = Neutral700
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirmResume,
+                colors = ButtonDefaults.textButtonColors(contentColor = Primary700)
+            ) {
+                Text(
+                    text = "Tiếp tục",
+                    fontFamily = EduMindFontFamily,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onRestart,
+                colors = ButtonDefaults.textButtonColors(contentColor = Neutral600)
+            ) {
+                Text(
+                    text = "Xem từ đầu",
+                    fontFamily = EduMindFontFamily
+                )
+            }
+        },
+        containerColor = Color.White,
+        shape = RoundedCornerShape(16.dp)
+    )
 }
 
 @Preview(name = "1. Đang phát (Playing - 04:15/15:30)", showBackground = true, backgroundColor = 0xFF000000)

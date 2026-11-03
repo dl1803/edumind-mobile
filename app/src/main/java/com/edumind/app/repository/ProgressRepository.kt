@@ -1,5 +1,6 @@
 package com.edumind.app.repository
 
+import com.edumind.app.data.local.db.entity.PlaybackPositionEntity
 import com.edumind.app.data.model.response.LearningProgressResponse
 
 interface ProgressRepository {
@@ -11,4 +12,6 @@ interface ProgressRepository {
         totalDurationMs: Long,
         completed: Boolean = false
     ): Result<Float>
+    suspend fun getPlaybackPosition(lessonId: String): PlaybackPositionEntity?
+    suspend fun syncPending(): Result<Unit>
 }

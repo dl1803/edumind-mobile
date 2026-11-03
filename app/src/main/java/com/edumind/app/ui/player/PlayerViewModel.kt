@@ -1,13 +1,18 @@
 package com.edumind.app.ui.player
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsManifest
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -21,6 +26,7 @@ import com.edumind.app.ui.navigation.Screen
 import com.edumind.app.util.Constants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,12 +65,26 @@ class PlayerViewModel @Inject constructor(
     private val _loadState = MutableStateFlow<LessonLoadState>(LessonLoadState.Loading)
     val loadState: StateFlow<LessonLoadState> = _loadState.asStateFlow()
 
+    private val _availableQualities = MutableStateFlow<List<QualityOption>>(emptyList())
+    val availableQualities: StateFlow<List<QualityOption>> = _availableQualities.asStateFlow()
+
+    private val _selectedQuality = MutableStateFlow<QualityOption?>(null)
+    val selectedQuality: StateFlow<QualityOption?> = _selectedQuality.asStateFlow()
+
+    private val _resumePromptPositionMs = MutableStateFlow<Long?>(null)
+    val resumePromptPositionMs: StateFlow<Long?> = _resumePromptPositionMs.asStateFlow()
+
+    private var connectivityManager: ConnectivityManager? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
+
     private var tickerJob: Job? = null
     private var controlsTimeoutJob: Job? = null
     private var currentLessonId: String? = null
+    private var currentStreamUrl: String? = null
 
     init {
         setupPlayerListener()
+        setupNetworkListener(context)
         val navLessonId = savedStateHandle.get<String>(Screen.ARG_LESSON_ID)
         currentLessonId = navLessonId
         if (!navLessonId.isNullOrBlank()) {
@@ -72,6 +92,27 @@ class PlayerViewModel @Inject constructor(
         } else {
             // Tuyến dự phòng debug / preview
             load(Constants.SAMPLE_HLS_URL)
+        }
+    }
+
+    private fun setupNetworkListener(context: Context) {
+        connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        networkCallback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                viewModelScope.launch(Dispatchers.Main) {
+                    progressRepository.syncPending()
+                    if (exoPlayer.playerError != null || exoPlayer.playbackState == Player.STATE_IDLE) {
+                        delay(300)
+                        Log.d(TAG, "Network restored, auto recovering ExoPlayer...")
+                        retryPlayback(autoPlay = exoPlayer.playWhenReady)
+                    }
+                }
+            }
+        }
+        try {
+            networkCallback?.let { connectivityManager?.registerDefaultNetworkCallback(it) }
+        } catch (e: Exception) {
+            Log.w(TAG, "Cannot register network callback: ${e.message}")
         }
     }
 
@@ -86,8 +127,27 @@ class PlayerViewModel @Inject constructor(
                     val streamUrl = resolvePlaybackUrl(lesson)
                     load(streamUrl)
 
-                    if (lesson.lastPositionMs > 0L) {
-                        seekTo(lesson.lastPositionMs)
+                    val localPosition = progressRepository.getPlaybackPosition(lesson.id)
+                    val candidatePositionMs = if (localPosition != null && localPosition.positionMs > 0L) {
+                        localPosition.positionMs
+                    } else {
+                        lesson.lastPositionMs
+                    }
+
+                    val totalDurationMs = lesson.durationMs
+                    val isCompleted = localPosition?.completed == true
+                    val isNearStart = candidatePositionMs <= 5_000L
+                    val isNearEnd = totalDurationMs > 0L && (totalDurationMs - candidatePositionMs <= 10_000L)
+
+                    if (!isCompleted && !isNearStart && !isNearEnd) {
+                        exoPlayer.pause()
+                        _resumePromptPositionMs.value = candidatePositionMs
+                    } else {
+                        _resumePromptPositionMs.value = null
+                        if (candidatePositionMs > 0L && !isCompleted) {
+                            seekTo(candidatePositionMs)
+                        }
+                        exoPlayer.play()
                     }
                 },
                 onFailure = { error ->
@@ -107,6 +167,37 @@ class PlayerViewModel @Inject constructor(
                     }
                 }
             )
+        }
+    }
+
+    fun confirmResume() {
+        val targetMs = _resumePromptPositionMs.value ?: 0L
+        seekTo(targetMs)
+        exoPlayer.play()
+        _resumePromptPositionMs.value = null
+    }
+
+    fun restartFromBeginning() {
+        seekTo(0L)
+        exoPlayer.play()
+        _resumePromptPositionMs.value = null
+    }
+
+    fun setQuality(option: QualityOption?) {
+        _selectedQuality.value = option
+        val parametersBuilder = exoPlayer.trackSelectionParameters.buildUpon()
+        if (option == null) {
+            exoPlayer.trackSelectionParameters = parametersBuilder
+                .clearOverridesOfType(C.TRACK_TYPE_VIDEO)
+                .build()
+        } else {
+            val override = TrackSelectionOverride(
+                option.trackGroup,
+                listOf(option.trackIndex)
+            )
+            exoPlayer.trackSelectionParameters = parametersBuilder
+                .setOverrideForType(override)
+                .build()
         }
     }
 
@@ -130,10 +221,6 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Giải quyết URL phát video.
-     * Tại Ngày 25 lấy trực tiếp từ LessonDetail; tại Ngày 36 sẽ bọc bởi VideoUrlManager (quản lý TTL và renew).
-     */
     private fun resolvePlaybackUrl(lesson: LessonDetail): String {
         return lesson.hlsStreamUrl.ifBlank { Constants.SAMPLE_HLS_URL }
     }
@@ -144,6 +231,36 @@ class PlayerViewModel @Inject constructor(
 
     private fun setupPlayerListener() {
         exoPlayer.addListener(object : Player.Listener {
+            override fun onTracksChanged(tracks: Tracks) {
+                val options = mutableListOf<QualityOption>()
+                for (group in tracks.groups) {
+                    if (group.type == C.TRACK_TYPE_VIDEO) {
+                        val mediaTrackGroup = group.mediaTrackGroup
+                        for (i in 0 until mediaTrackGroup.length) {
+                            if (group.isTrackSupported(i)) {
+                                val format = mediaTrackGroup.getFormat(i)
+                                if (format.height > 0) {
+                                    options.add(
+                                        QualityOption(
+                                            height = format.height,
+                                            bitrate = format.bitrate,
+                                            trackGroup = mediaTrackGroup,
+                                            trackIndex = i
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                val distinctOptions = options
+                    .groupBy { it.height }
+                    .map { it.value.maxByOrNull { opt -> opt.bitrate } ?: it.value.first() }
+                    .sortedByDescending { it.height }
+
+                _availableQualities.value = if (distinctOptions.size >= 2) distinctOptions else emptyList()
+            }
+
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _uiState.update { it.copy(isPlaying = isPlaying) }
                 if (isPlaying) {
@@ -170,7 +287,8 @@ class PlayerViewModel @Inject constructor(
                         playbackState = playbackState,
                         isBuffering = isBuffering,
                         durationMs = exoPlayer.duration.coerceAtLeast(0L),
-                        isHlsManifest = isHls
+                        isHlsManifest = isHls,
+                        errorMessage = if (playbackState == Player.STATE_READY) null else it.errorMessage
                     )
                 }
             }
@@ -188,6 +306,7 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun load(url: String) {
+        currentStreamUrl = url
         val mediaItem = MediaItem.fromUri(url)
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
@@ -195,8 +314,32 @@ class PlayerViewModel @Inject constructor(
         _uiState.update { it.copy(errorMessage = null) }
     }
 
+    fun retryPlayback(autoPlay: Boolean = true) {
+        val targetPos = exoPlayer.currentPosition.coerceAtLeast(0L)
+        val url = currentStreamUrl
+        if (url != null) {
+            val mediaItem = MediaItem.fromUri(url)
+            exoPlayer.setMediaItem(mediaItem, targetPos)
+            exoPlayer.prepare()
+            if (autoPlay) {
+                exoPlayer.play()
+            }
+        } else {
+            exoPlayer.prepare()
+            if (targetPos > 0L) {
+                exoPlayer.seekTo(targetPos)
+            }
+            if (autoPlay) {
+                exoPlayer.play()
+            }
+        }
+        _uiState.update { it.copy(errorMessage = null) }
+    }
+
     fun togglePlayPause() {
-        if (exoPlayer.isPlaying) {
+        if (exoPlayer.playerError != null || exoPlayer.playbackState == Player.STATE_IDLE) {
+            retryPlayback(autoPlay = true)
+        } else if (exoPlayer.isPlaying) {
             exoPlayer.pause()
         } else {
             exoPlayer.play()
@@ -212,9 +355,19 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun seekTo(positionMs: Long) {
-        val clamped = positionMs.coerceIn(0L, exoPlayer.duration.coerceAtLeast(0L))
-        exoPlayer.seekTo(clamped)
-        _uiState.update { it.copy(positionMs = clamped) }
+        val duration = exoPlayer.duration.takeIf { it > 0L } ?: _uiState.value.durationMs
+        val clamped = positionMs.coerceIn(0L, duration.coerceAtLeast(0L))
+        if (exoPlayer.playerError != null || exoPlayer.playbackState == Player.STATE_IDLE) {
+            val url = currentStreamUrl
+            if (url != null) {
+                val mediaItem = MediaItem.fromUri(url)
+                exoPlayer.setMediaItem(mediaItem, clamped)
+                exoPlayer.prepare()
+            }
+        } else {
+            exoPlayer.seekTo(clamped)
+        }
+        _uiState.update { it.copy(positionMs = clamped, errorMessage = null) }
         scheduleControlsAutoHide()
         saveCurrentProgress()
     }
@@ -252,7 +405,7 @@ class PlayerViewModel @Inject constructor(
                     )
                 }
                 tickCount++
-                if (tickCount % 20 == 0) { // Mỗi 10 giây lưu 1 lần (20 * 500ms = 10s)
+                if (tickCount % 30 == 0) { // Mỗi 15 giây lưu 1 lần (30 * 500ms = 15s)
                     saveCurrentProgress()
                 }
                 delay(500)
@@ -270,6 +423,11 @@ class PlayerViewModel @Inject constructor(
         saveCurrentProgress()
         stopPositionTicker()
         controlsTimeoutJob?.cancel()
+        try {
+            networkCallback?.let { connectivityManager?.unregisterNetworkCallback(it) }
+        } catch (e: Exception) {
+            Log.w(TAG, "Cannot unregister network callback: ${e.message}")
+        }
         exoPlayer.release()
         Log.d(TAG, "ExoPlayer instance has been safely released.")
     }

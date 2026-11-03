@@ -1,5 +1,6 @@
 package com.edumind.app.repository
 
+import com.edumind.app.data.local.db.entity.PlaybackPositionEntity
 import com.edumind.app.data.model.response.CourseProgress
 import com.edumind.app.data.model.response.DailyStudyTime
 import com.edumind.app.data.model.response.LearningProgressResponse
@@ -83,6 +84,10 @@ class FakeProgressRepository @Inject constructor() : ProgressRepository {
         return Result.success(Unit)
     }
 
+    override suspend fun getPlaybackPosition(lessonId: String): PlaybackPositionEntity? {
+        return null
+    }
+
     override suspend fun saveProgress(
         lessonId: String,
         positionMs: Long,
@@ -91,5 +96,9 @@ class FakeProgressRepository @Inject constructor() : ProgressRepository {
     ): Result<Float> {
         delay(100)
         return Result.success(65f)
+    }
+
+    override suspend fun syncPending(): Result<Unit> {
+        return Result.success(Unit)
     }
 }

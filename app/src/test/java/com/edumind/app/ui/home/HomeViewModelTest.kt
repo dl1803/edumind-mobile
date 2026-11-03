@@ -112,6 +112,26 @@ class HomeViewModelTest {
     }
 
     @Test
+    fun loadHomeData_continueLearningFailure_doesNotBreakMainContent() = runTest(testDispatcher) {
+        coEvery { homeRepository.getFeaturedCourses() } returns Result.success(sampleFeatured)
+        // Mục Tiếp tục học bị lỗi hoặc rớt mạng
+        coEvery { homeRepository.getContinueLearningItems() } returns Result.failure(RuntimeException("Lỗi mạng tiếp tục học"))
+        coEvery { homeRepository.getRecommendedCourses() } returns Result.success(sampleCourses)
+        coEvery { homeRepository.getNewCourses(any()) } returns Result.success(sampleCourses)
+        coEvery { homeRepository.getUnreadNotificationCount() } returns Result.success(2)
+
+        viewModel = HomeViewModel(homeRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertNull(state.errorMessage) // Không bị coi là lỗi chung toàn trang
+        assertEquals(0, state.continueLearningItems.size) // Fallback về danh sách rỗng an toàn
+        assertEquals(1, state.featuredCourses.size)
+        assertEquals(1, state.recommendedCourses.size)
+    }
+
+    @Test
     fun loadHomeData_mainContentFailure_setsErrorMessage() = runTest(testDispatcher) {
         coEvery { homeRepository.getFeaturedCourses() } returns Result.failure(RuntimeException("Lỗi máy chủ"))
         coEvery { homeRepository.getContinueLearningItems() } returns Result.success(emptyList())

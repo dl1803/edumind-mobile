@@ -104,6 +104,10 @@ fun PlayerScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val loadState by viewModel.loadState.collectAsState()
+    val availableQualities by viewModel.availableQualities.collectAsState()
+    val selectedQuality by viewModel.selectedQuality.collectAsState()
+    val resumePromptPositionMs by viewModel.resumePromptPositionMs.collectAsState()
+    var isQualitySheetVisible by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
@@ -163,7 +167,9 @@ fun PlayerScreen(
                 title = "Không thể tải bài giảng",
                 message = currentLoad.message,
                 buttonText = "Thử lại",
-                onButtonClick = { viewModel.retry() }
+                onButtonClick = { viewModel.retry() },
+                secondaryButtonText = "Quay lại",
+                onSecondaryButtonClick = onBackClick
             )
         }
         LessonLoadState.Loading,
@@ -193,6 +199,8 @@ fun PlayerScreen(
                     }
                 },
                 isLandscape = isLandscape,
+                availableQualities = availableQualities,
+                onQualityClick = { isQualitySheetVisible = true },
                 videoSurface = {
                     if (loadState is LessonLoadState.Loading) {
                         Box(
@@ -230,6 +238,27 @@ fun PlayerScreen(
                     }
                 }
             )
+
+            // Hộp thoại xác nhận tiếp tục xem bài học từ mốc dừng cũ
+            resumePromptPositionMs?.let { posMs ->
+                ResumePlaybackDialog(
+                    positionMs = posMs,
+                    onConfirmResume = { viewModel.confirmResume() },
+                    onRestart = { viewModel.restartFromBeginning() }
+                )
+            }
+
+            // Bảng trượt đáy chọn chất lượng video
+            if (isQualitySheetVisible) {
+                QualitySelectionBottomSheet(
+                    availableQualities = availableQualities,
+                    selectedQuality = selectedQuality,
+                    onQualitySelected = { quality ->
+                        viewModel.setQuality(quality)
+                    },
+                    onDismiss = { isQualitySheetVisible = false }
+                )
+            }
         }
     }
 }
@@ -239,7 +268,9 @@ private fun PlayerStateCard(
     title: String,
     message: String,
     buttonText: String,
-    onButtonClick: () -> Unit
+    onButtonClick: () -> Unit,
+    secondaryButtonText: String? = null,
+    onSecondaryButtonClick: (() -> Unit)? = null
 ) {
     Box(
         modifier = Modifier
@@ -291,6 +322,24 @@ private fun PlayerStateCard(
                     color = Color.White
                 )
             }
+            if (secondaryButtonText != null && onSecondaryButtonClick != null) {
+                androidx.compose.material3.OutlinedButton(
+                    onClick = onSecondaryButtonClick,
+                    shape = RoundedCornerShape(12.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, com.edumind.app.ui.theme.Neutral300),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(44.dp)
+                ) {
+                    Text(
+                        text = secondaryButtonText,
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Neutral700
+                    )
+                }
+            }
         }
     }
 }
@@ -307,6 +356,8 @@ fun PlayerScreenContent(
     onOverlayClick: () -> Unit = {},
     onToggleFullscreen: () -> Unit = {},
     isLandscape: Boolean = false,
+    availableQualities: List<QualityOption> = emptyList(),
+    onQualityClick: () -> Unit = {},
     videoSurface: @Composable () -> Unit = {}
 ) {
     var selectedMainTab by remember { mutableIntStateOf(0) }
@@ -328,7 +379,9 @@ fun PlayerScreenContent(
                 onBackClick = onBackClick,
                 onToggleFullscreen = onToggleFullscreen,
                 onOverlayClick = onOverlayClick,
-                isLandscape = true
+                isLandscape = true,
+                availableQualities = availableQualities,
+                onQualityClick = onQualityClick
             )
         }
     } else {
@@ -354,7 +407,9 @@ fun PlayerScreenContent(
                         onBackClick = onBackClick,
                         onToggleFullscreen = onToggleFullscreen,
                         onOverlayClick = onOverlayClick,
-                        isLandscape = false
+                        isLandscape = false,
+                        availableQualities = availableQualities,
+                        onQualityClick = onQualityClick
                     )
                 }
 
