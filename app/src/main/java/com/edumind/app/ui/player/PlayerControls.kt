@@ -81,7 +81,8 @@ fun PlayerControlsOverlay(
     modifier: Modifier = Modifier,
     isLandscape: Boolean = false,
     availableQualities: List<QualityOption> = emptyList(),
-    onQualityClick: () -> Unit = {}
+    onQualityClick: () -> Unit = {},
+    onChapterClick: () -> Unit = {}
 ) {
     Box(
         modifier = modifier
@@ -287,6 +288,24 @@ fun PlayerControlsOverlay(
                             ) {
                                 Text(
                                     text = "1.0x",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = (-0.3).sp,
+                                    color = Color.White
+                                )
+                            }
+
+                            // Nút mở Bảng trượt danh sách Mục lục
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .background(Color.White.copy(alpha = 0.2f))
+                                    .clickable(onClick = onChapterClick)
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "Mục lục",
                                     fontFamily = EduMindFontFamily,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
