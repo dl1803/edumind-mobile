@@ -1,6 +1,7 @@
 package com.edumind.app.data.remote.api
 
 import com.edumind.app.data.model.request.SaveProgressRequest
+import com.edumind.app.data.model.response.ContinueLearningListResponse
 import com.edumind.app.data.model.response.LearningProgressResponse
 import com.edumind.app.data.model.response.SaveProgressResponse
 import retrofit2.Response
@@ -17,5 +18,8 @@ interface ProgressApiService {
 
     @GET("progress/overview")
     suspend fun getProgressOverview(): Response<LearningProgressResponse>
+
+    @GET("progress/continue")
+    suspend fun getContinueLearning(): Response<ContinueLearningListResponse>
 }
 

@@ -54,11 +54,12 @@ class HomeViewModel @Inject constructor(
             val newCoursesResult = newCoursesDeferred.await()
             val unreadResult = unreadDeferred.await()
 
-            val firstFailure = listOf(featuredResult, continueResult, recommendedResult, newCoursesResult)
+            // Chỉ kiểm tra lỗi trên các phân đoạn cốt lõi của trang chủ:
+            val primaryFailure = listOf(featuredResult, recommendedResult, newCoursesResult)
                 .firstOrNull { it.isFailure }
 
-            if (firstFailure != null && _uiState.value.featuredCourses.isEmpty()) {
-                val errorMsg = firstFailure.exceptionOrNull()?.localizedMessage
+            if (primaryFailure != null && _uiState.value.featuredCourses.isEmpty()) {
+                val errorMsg = primaryFailure.exceptionOrNull()?.localizedMessage
                     ?: "Không thể tải dữ liệu trang chủ. Vui lòng thử lại."
                 _uiState.update {
                     it.copy(
@@ -73,10 +74,10 @@ class HomeViewModel @Inject constructor(
                         isLoading = false,
                         isRefreshing = false,
                         featuredCourses = featuredResult.getOrDefault(it.featuredCourses),
-                        continueLearningItems = continueResult.getOrDefault(it.continueLearningItems),
+                        // Tiếp tục học nhận danh sách thật hoặc rỗng an toàn:
+                        continueLearningItems = continueResult.getOrDefault(emptyList()),
                         recommendedCourses = recommendedResult.getOrDefault(it.recommendedCourses),
                         newCourses = newCoursesResult.getOrDefault(it.newCourses),
-                        // Unread notification: Lỗi thì giữ 0
                         unreadNotificationCount = unreadResult.getOrDefault(0),
                         errorMessage = null
                     )

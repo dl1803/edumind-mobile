@@ -3,12 +3,16 @@ package com.edumind.app.repository
 import com.edumind.app.data.model.response.ContinueLearningItem
 import com.edumind.app.data.model.response.CourseSummary
 import com.edumind.app.data.model.response.FeaturedCourse
+import com.edumind.app.data.model.response.toDomain
+import com.edumind.app.data.remote.api.ProgressApiService
 import kotlinx.coroutines.delay
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class FakeHomeRepository @Inject constructor() : HomeRepository {
+class FakeHomeRepository @Inject constructor(
+    private val progressApiService: ProgressApiService
+) : HomeRepository {
 
     override suspend fun getFeaturedCourses(): Result<List<FeaturedCourse>> {
         delay(600)
@@ -55,38 +59,17 @@ class FakeHomeRepository @Inject constructor() : HomeRepository {
     }
 
     override suspend fun getContinueLearningItems(): Result<List<ContinueLearningItem>> {
-        delay(400)
-        return Result.success(
-            listOf(
-                ContinueLearningItem(
-                    courseId = "c_python_01",
-                    lessonId = "l_py_05",
-                    courseTitle = "Nhập môn Lập trình Python",
-                    currentLessonTitle = "Bài 5: Vòng lặp for & while",
-                    thumbnailUrl = "file:///android_asset/courses/course_python.jpg",
-                    progressPercent = 35,
-                    remainingTimeText = "12:45 còn lại"
-                ),
-                ContinueLearningItem(
-                    courseId = "c_sql_02",
-                    lessonId = "l_sql_12",
-                    courseTitle = "Cơ sở dữ liệu với SQL",
-                    currentLessonTitle = "Bài 12: JOIN tables nâng cao",
-                    thumbnailUrl = "file:///android_asset/courses/course_sql.jpg",
-                    progressPercent = 68,
-                    remainingTimeText = "05:20 còn lại"
-                ),
-                ContinueLearningItem(
-                    courseId = "c_web_03",
-                    lessonId = "l_web_03",
-                    courseTitle = "Lập trình Web cơ bản",
-                    currentLessonTitle = "Bài 3: CSS Flexbox & Grid",
-                    thumbnailUrl = "file:///android_asset/courses/course_web.jpg",
-                    progressPercent = 15,
-                    remainingTimeText = "24:10 còn lại"
-                )
-            )
-        )
+        return try {
+            val response = progressApiService.getContinueLearning()
+            if (response.isSuccessful && response.body() != null) {
+                val items = response.body()!!.data.map { it.toDomain() }
+                Result.success(items)
+            } else {
+                Result.success(emptyList())
+            }
+        } catch (e: Exception) {
+            Result.success(emptyList())
+        }
     }
 
     override suspend fun getRecommendedCourses(): Result<List<CourseSummary>> {
