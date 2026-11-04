@@ -442,15 +442,19 @@ class PlayerViewModel @Inject constructor(
                 _userMessage.value = "Bài học có tính phí. Vui lòng đăng ký khóa học để học tiếp."
                 return
             }
-            if (chapter.lessonId != currentLessonId) {
-                saveCurrentProgress()
-                openLesson(chapter.lessonId)
-            }
+            openLesson(chapter.lessonId)
         }
     }
 
     fun openLesson(newLessonId: String) {
+        if (newLessonId == currentLessonId) return
+        saveCurrentProgress()
+        exoPlayer.stop()
+        exoPlayer.clearMediaItems()
         currentLessonId = newLessonId
+        currentStreamUrl = null
+        _resumePromptPositionMs.value = null
+        _uiState.update { it.copy(positionMs = 0L, durationMs = 0L, errorMessage = null) }
         fetchLesson(newLessonId)
     }
 

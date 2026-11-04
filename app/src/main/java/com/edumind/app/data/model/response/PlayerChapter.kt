@@ -64,7 +64,7 @@ fun List<CourseSection>.toPlayerChapters(
                 lessonId = lesson.id,
                 isCurrent = lesson.id == currentLessonId,
                 isCompleted = lesson.isCompleted,
-                isLocked = !lesson.isFreePreview && !lesson.isCompleted,
+                isLocked = lesson.isLocked && !lesson.isCompleted,
                 groupTitle = section.title
             )
         }

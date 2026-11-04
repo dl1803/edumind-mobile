@@ -54,6 +54,7 @@ fun ChapterSheet(
     onDismiss: () -> Unit
 ) {
     val listState = rememberLazyListState()
+    val sheetState = androidx.compose.material3.rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(currentIndex) {
         if (currentIndex in chapters.indices) {
@@ -63,6 +64,7 @@ fun ChapterSheet(
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
+        sheetState = sheetState,
         containerColor = Color.White,
         shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
         dragHandle = {

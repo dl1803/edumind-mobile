@@ -326,8 +326,8 @@ class PlayerViewModelTest {
                 title = "Chương 1",
                 durationSummary = "2 bài",
                 lessons = listOf(
-                    CourseLesson("l1", "Bài 1", "10p", LessonType.VIDEO, isFreePreview = true, isCompleted = true),
-                    CourseLesson("l2", "Bài 2", "15p", LessonType.VIDEO, isFreePreview = false, isCompleted = false)
+                    CourseLesson("l1", "Bài 1", "10p", LessonType.VIDEO, isFreePreview = true, isCompleted = true, isLocked = false),
+                    CourseLesson("l2", "Bài 2", "15p", LessonType.VIDEO, isFreePreview = false, isCompleted = false, isLocked = true)
                 )
             )
         )

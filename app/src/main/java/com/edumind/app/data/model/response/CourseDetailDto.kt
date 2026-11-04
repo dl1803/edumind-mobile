@@ -144,7 +144,8 @@ fun CourseDetailResponse.toDomain(): CourseDetail {
                             type = if (l.hasQuiz) LessonType.QUIZ else LessonType.VIDEO,
                             isFreePreview = !l.isLocked || lIdx == 0,
                             isCompleted = l.isCompleted ?: false,
-                            isCurrent = isEnrolled && (activeLesson?.id == l.id)
+                            isCurrent = isEnrolled && (activeLesson?.id == l.id),
+                            isLocked = l.isLocked
                         )
                     }
                 )
