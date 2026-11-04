@@ -364,7 +364,6 @@ fun PlayerControlsOverlay(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
                     .height(44.dp)
                     .padding(horizontal = 16.dp)
                     .align(Alignment.TopCenter),

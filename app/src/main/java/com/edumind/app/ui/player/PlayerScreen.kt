@@ -6,6 +6,10 @@ import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import com.edumind.app.util.findActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -115,12 +119,14 @@ fun PlayerScreen(
     val chapters by viewModel.chapters.collectAsState()
     val currentChapterIndex by viewModel.currentChapterIndex.collectAsState()
     val userMessage by viewModel.userMessage.collectAsState()
+    val isFullscreen by viewModel.isFullscreen.collectAsState()
     var isQualitySheetVisible by remember { mutableStateOf(false) }
     var isChapterSheetVisible by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val activity = remember(context) { context.findActivity() }
 
     LaunchedEffect(userMessage) {
         userMessage?.let { msg ->
@@ -129,22 +135,34 @@ fun PlayerScreen(
         }
     }
 
-    val activity = remember(context) {
-        var ctx = context
-        while (ctx is ContextWrapper) {
-            if (ctx is Activity) return@remember ctx
-            ctx = ctx.baseContext
+    LaunchedEffect(isFullscreen) {
+        activity?.let { act ->
+            val window = act.window
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            if (isFullscreen) {
+                insetsController.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                insetsController.hide(WindowInsetsCompat.Type.systemBars())
+                act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            } else {
+                insetsController.show(WindowInsetsCompat.Type.systemBars())
+                act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            }
         }
-        null
     }
 
-    BackHandler(enabled = isLandscape) {
-        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    BackHandler(enabled = isFullscreen) {
+        viewModel.exitFullscreen()
     }
 
     DisposableEffect(Unit) {
         onDispose {
-            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            activity?.let { act ->
+                val window = act.window
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.show(WindowInsetsCompat.Type.systemBars())
+                act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            }
         }
     }
 
@@ -193,8 +211,8 @@ fun PlayerScreen(
             PlayerScreenContent(
                 state = state,
                 onBackClick = {
-                    if (isLandscape) {
-                        activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    if (isFullscreen) {
+                        viewModel.exitFullscreen()
                     } else {
                         onBackClick()
                     }
@@ -206,15 +224,9 @@ fun PlayerScreen(
                 onSeekRelative = { offsetMs -> viewModel.seekRelative(offsetMs) },
                 onOverlayClick = { viewModel.toggleControlsVisibility() },
                 onToggleFullscreen = {
-                    activity?.let { act ->
-                        if (isLandscape) {
-                            act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                        } else {
-                            act.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                        }
-                    }
+                    viewModel.toggleFullscreen()
                 },
-                isLandscape = isLandscape,
+                isLandscape = isFullscreen || isLandscape,
                 availableQualities = availableQualities,
                 onQualityClick = { isQualitySheetVisible = true },
                 onChapterClick = { isChapterSheetVisible = true },
@@ -248,13 +260,13 @@ fun PlayerScreen(
                             factory = { ctx ->
                                 PlayerView(ctx).apply {
                                     useController = false
-                                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                                     player = viewModel.exoPlayer
                                 }.also { playerViewRef = it }
                             },
                             update = { playerView ->
                                 playerView.player = viewModel.exoPlayer
-                                playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                                playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                                 playerViewRef = playerView
                             },
                             modifier = Modifier.fillMaxSize()
@@ -432,11 +444,17 @@ fun PlayerScreenContent(
                 .fillMaxSize()
                 .background(Color(0xFFFAFAFA))
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .statusBarsPadding()
+                    .background(Color(0xFFFAFAFA))
+            ) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(340.dp)
+                        .aspectRatio(16f / 9f)
                         .background(Color.Black)
                 ) {
                     videoSurface()

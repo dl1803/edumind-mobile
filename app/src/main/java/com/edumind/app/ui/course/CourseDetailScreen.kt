@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.VideoLibrary
@@ -273,7 +274,12 @@ fun CourseDetailScreen(
                         0 -> CourseIntroTab(
                             course = course,
                             onContinueLearning = {
-                                val target = course.lastLessonId ?: course.sections.firstOrNull()?.lessons?.firstOrNull()?.id ?: ""
+                                val isCompleted = course.isEnrolled && course.progressPercent >= 100
+                                val target = if (isCompleted) {
+                                    course.sections.firstOrNull()?.lessons?.firstOrNull()?.id ?: "les_01"
+                                } else {
+                                    course.lastLessonId ?: course.sections.firstOrNull()?.lessons?.firstOrNull()?.id ?: "les_01"
+                                }
                                 onNavigateToPlayer(target)
                             }
                         )
@@ -311,9 +317,14 @@ fun CourseDetailScreen(
                         )
                     },
                     onContinueClick = {
-                        val targetLesson = course.lastLessonId
-                            ?: course.sections.firstOrNull()?.lessons?.firstOrNull()?.id
-                            ?: ""
+                        val isCompleted = course.isEnrolled && course.progressPercent >= 100
+                        val targetLesson = if (isCompleted) {
+                            course.sections.firstOrNull()?.lessons?.firstOrNull()?.id ?: "les_01"
+                        } else {
+                            course.lastLessonId
+                                ?: course.sections.firstOrNull()?.lessons?.firstOrNull()?.id
+                                ?: "les_01"
+                        }
                         onNavigateToPlayer(targetLesson)
                     },
                     modifier = Modifier.align(Alignment.BottomCenter)
@@ -334,147 +345,151 @@ private fun CourseHeaderMedia(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(340.dp)
             .background(Color.Black)
+            .statusBarsPadding()
     ) {
-        AsyncImage(
-            model = thumbnailUrl,
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxSize()
-                .alpha(0.9f)
-        )
-
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.75f),
-                            Color.Black.copy(alpha = 0.20f),
-                            Color.Black.copy(alpha = 0.60f)
-                        )
-                    )
-                )
-        )
-
-        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
-                .height(44.dp)
-                .padding(horizontal = 16.dp)
-                .align(Alignment.TopCenter),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .aspectRatio(16f / 9f)
         ) {
-            IconButton(
-                onClick = onBack,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Quay lại",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
+            AsyncImage(
+                model = thumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .alpha(0.9f)
+            )
 
-            IconButton(
-                onClick = onShare,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Share,
-                    contentDescription = "Chia sẻ",
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-        }
-
-        Box(
-            modifier = Modifier
-                .align(Alignment.Center)
-                .offset(y = 18.dp)
-                .size(64.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.25f))
-                .border(2.dp, Color.White.copy(alpha = 0.6f), CircleShape)
-                .clickable(onClick = onPlayPreview),
-            contentAlignment = Alignment.Center
-        ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .clip(CircleShape)
-                    .background(NebulaBrush),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Xem thử",
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-
-        if (isEnrolled) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(start = 16.dp, bottom = 12.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Success600.copy(alpha = 0.95f))
-                    .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(15.dp)
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Black.copy(alpha = 0.75f),
+                                Color.Black.copy(alpha = 0.20f),
+                                Color.Black.copy(alpha = 0.60f)
+                            )
+                        )
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Đã sở hữu khóa học",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp)
+                    .padding(horizontal = 16.dp)
+                    .align(Alignment.TopCenter),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Quay lại",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                IconButton(
+                    onClick = onShare,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Chia sẻ",
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
-        } else {
+
             Box(
                 modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 12.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.Black.copy(alpha = 0.6f))
-                    .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
-                    .clickable(onClick = onPlayPreview)
-                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                    .align(Alignment.Center)
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.25f))
+                    .border(2.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+                    .clickable(onClick = onPlayPreview),
+                contentAlignment = Alignment.Center
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(NebulaBrush),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
-                        imageVector = Icons.Outlined.RemoveRedEye,
-                        contentDescription = null,
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = "Xem thử",
                         tint = Color.White,
-                        modifier = Modifier.size(14.dp)
+                        modifier = Modifier.size(24.dp)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Xem trước",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color.White
-                    )
+                }
+            }
+
+            if (isEnrolled) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(start = 16.dp, bottom = 12.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Success600.copy(alpha = 0.95f))
+                        .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Đã sở hữu khóa học",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.White
+                        )
+                    }
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 16.dp, bottom = 12.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Black.copy(alpha = 0.6f))
+                        .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        .clickable(onClick = onPlayPreview)
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Outlined.RemoveRedEye,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Xem trước",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
@@ -704,61 +719,121 @@ private fun CourseIntroTab(
                     }
                 }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Primary50.copy(alpha = 0.6f))
-                        .border(1.dp, Primary100, RoundedCornerShape(12.dp))
-                        .clickable(onClick = onContinueLearning)
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                if (isCompleted) {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Success100.copy(alpha = 0.5f))
+                            .border(1.dp, Success600.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                            .clickable(onClick = onContinueLearning)
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(28.dp)
-                                .clip(CircleShape)
-                                .background(NebulaBrush),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.PlayArrow,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(Success600),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Replay,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Hoàn thành xuất sắc 100%!",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Success700
+                                )
+                                Text(
+                                    text = "Nhấn để ôn tập lại từ bài học đầu tiên",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Neutral900,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column {
-                            Text(
-                                text = "Đang học dở:",
-                                fontFamily = EduMindFontFamily,
-                                fontSize = 10.sp,
-                                color = Neutral400
-                            )
-                            Text(
-                                text = course.lastLessonTitle ?: "Bài 5: Vòng lặp For và While",
-                                fontFamily = EduMindFontFamily,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Neutral900,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
 
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = Primary700,
-                        modifier = Modifier.size(20.dp)
-                    )
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = Success700,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Primary50.copy(alpha = 0.6f))
+                            .border(1.dp, Primary100, RoundedCornerShape(12.dp))
+                            .clickable(onClick = onContinueLearning)
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .background(NebulaBrush),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Column {
+                                Text(
+                                    text = "Đang học dở:",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 10.sp,
+                                    color = Neutral400
+                                )
+                                Text(
+                                    text = course.lastLessonTitle ?: "Bài 5: Vòng lặp For và While",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Neutral900,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = Primary700,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 
@@ -2039,6 +2114,7 @@ private fun CourseStickyCtaBar(
     modifier: Modifier = Modifier
 ) {
     if (course.isEnrolled) {
+        val isCompleted = course.progressPercent >= 100
         val lessonShortName = remember(course.lastLessonTitle) {
             val raw = course.lastLessonTitle ?: "Bài 5"
             val match = Regex("""Bài\s*\d+""", RegexOption.IGNORE_CASE).find(raw)
@@ -2058,7 +2134,13 @@ private fun CourseStickyCtaBar(
                     .fillMaxWidth()
                     .height(48.dp)
                     .clip(RoundedCornerShape(14.dp))
-                    .background(NebulaBrush)
+                    .background(
+                        if (isCompleted) {
+                            Brush.horizontalGradient(listOf(Success600, Success700))
+                        } else {
+                            NebulaBrush
+                        }
+                    )
                     .clickable(onClick = onContinueClick),
                 contentAlignment = Alignment.Center
             ) {
@@ -2067,14 +2149,14 @@ private fun CourseStickyCtaBar(
                     horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.PlayArrow,
+                        imageVector = if (isCompleted) Icons.Default.Replay else Icons.Default.PlayArrow,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Tiếp tục học ($lessonShortName)",
+                        text = if (isCompleted) "Ôn tập khóa học (Học lại từ đầu)" else "Tiếp tục học ($lessonShortName)",
                         fontFamily = EduMindFontFamily,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,

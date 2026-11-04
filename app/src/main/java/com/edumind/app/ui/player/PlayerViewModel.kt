@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val TAG = "PlayerViewModel"
+private const val KEY_IS_FULLSCREEN = "is_fullscreen"
 
 sealed interface LessonLoadState {
     data object Loading : LessonLoadState
@@ -86,6 +87,8 @@ class PlayerViewModel @Inject constructor(
 
     private val _userMessage = MutableStateFlow<String?>(null)
     val userMessage: StateFlow<String?> = _userMessage.asStateFlow()
+
+    val isFullscreen: StateFlow<Boolean> = savedStateHandle.getStateFlow(KEY_IS_FULLSCREEN, false)
 
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
@@ -460,6 +463,15 @@ class PlayerViewModel @Inject constructor(
 
     fun clearUserMessage() {
         _userMessage.value = null
+    }
+
+    fun toggleFullscreen() {
+        val current = savedStateHandle.get<Boolean>(KEY_IS_FULLSCREEN) ?: false
+        savedStateHandle[KEY_IS_FULLSCREEN] = !current
+    }
+
+    fun exitFullscreen() {
+        savedStateHandle[KEY_IS_FULLSCREEN] = false
     }
 
     private fun updateCurrentChapterIndex(positionMs: Long) {
