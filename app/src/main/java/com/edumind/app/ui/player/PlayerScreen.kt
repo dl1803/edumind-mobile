@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -217,7 +218,10 @@ fun PlayerScreen(
 
                         DisposableEffect(Unit) {
                             onDispose {
-                                playerViewRef?.player = null
+                                playerViewRef?.apply {
+                                    visibility = android.view.View.GONE
+                                    player = null
+                                }
                             }
                         }
 
@@ -225,12 +229,13 @@ fun PlayerScreen(
                             factory = { ctx ->
                                 PlayerView(ctx).apply {
                                     useController = false
-                                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                                     player = viewModel.exoPlayer
                                 }.also { playerViewRef = it }
                             },
                             update = { playerView ->
                                 playerView.player = viewModel.exoPlayer
+                                playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                                 playerViewRef = playerView
                             },
                             modifier = Modifier.fillMaxSize()
@@ -394,7 +399,7 @@ fun PlayerScreenContent(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(280.dp)
+                        .height(340.dp)
                         .background(Color.Black)
                 ) {
                     videoSurface()

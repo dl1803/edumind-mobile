@@ -13,10 +13,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -332,7 +334,7 @@ private fun CourseHeaderMedia(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(280.dp)
+            .height(340.dp)
             .background(Color.Black)
     ) {
         AsyncImage(
@@ -375,7 +377,7 @@ private fun CourseHeaderMedia(
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Quay lại",
-                    tint = Primary700,
+                    tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -387,7 +389,7 @@ private fun CourseHeaderMedia(
                 Icon(
                     imageVector = Icons.Default.Share,
                     contentDescription = "Chia sẻ",
-                    tint = Primary700,
+                    tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -396,6 +398,7 @@ private fun CourseHeaderMedia(
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
+                .offset(y = 18.dp)
                 .size(64.dp)
                 .clip(CircleShape)
                 .background(Color.White.copy(alpha = 0.25f))
@@ -423,7 +426,7 @@ private fun CourseHeaderMedia(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(start = 16.dp, bottom = 14.dp)
+                    .padding(start = 16.dp, bottom = 12.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(Success600.copy(alpha = 0.95f))
                     .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
@@ -450,7 +453,7 @@ private fun CourseHeaderMedia(
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = 14.dp)
+                    .padding(end = 16.dp, bottom = 12.dp)
                     .clip(RoundedCornerShape(8.dp))
                     .background(Color.Black.copy(alpha = 0.6f))
                     .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))

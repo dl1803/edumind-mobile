@@ -171,18 +171,18 @@ fun PlayerControlsOverlay(
                     }
                 }
 
-                // Center Controls: Tua lùi 10s | Play/Pause 56dp | Tua tới 10s
+                // Center Controls: Tua lùi 10s | Play/Pause 64dp chính giữa nổi bật | Tua tới 10s
                 Row(
                     modifier = Modifier.align(Alignment.Center),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(28.dp)
+                    horizontalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.45f))
-                            .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
                             .clickable { onSeekRelative(-10000L) },
                         contentAlignment = Alignment.Center
                     ) {
@@ -190,16 +190,16 @@ fun PlayerControlsOverlay(
                             imageVector = Icons.Filled.Replay10,
                             contentDescription = "Lùi 10 giây",
                             tint = Color.White,
-                            modifier = Modifier.size(26.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
 
                     Box(
                         modifier = Modifier
-                            .size(56.dp)
+                            .size(64.dp)
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = 0.25f))
-                            .border(2.dp, Color.White.copy(alpha = 0.6f), CircleShape)
+                            .background(Color.White.copy(alpha = 0.35f))
+                            .border(2.5.dp, Color.White.copy(alpha = 0.9f), CircleShape)
                             .clickable(onClick = onTogglePlayPause),
                         contentAlignment = Alignment.Center
                     ) {
@@ -207,16 +207,16 @@ fun PlayerControlsOverlay(
                             imageVector = if (state.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = if (state.isPlaying) "Tạm dừng" else "Phát",
                             tint = Color.White,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(38.dp)
                         )
                     }
 
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
-                            .background(Color.Black.copy(alpha = 0.45f))
-                            .border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
+                            .background(Color.Black.copy(alpha = 0.5f))
+                            .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
                             .clickable { onSeekRelative(10000L) },
                         contentAlignment = Alignment.Center
                     ) {
@@ -224,7 +224,7 @@ fun PlayerControlsOverlay(
                             imageVector = Icons.Filled.Forward10,
                             contentDescription = "Tới 10 giây",
                             tint = Color.White,
-                            modifier = Modifier.size(26.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 }
