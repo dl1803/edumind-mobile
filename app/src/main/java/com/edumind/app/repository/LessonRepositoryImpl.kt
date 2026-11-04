@@ -1,6 +1,7 @@
 package com.edumind.app.repository
 
 import com.edumind.app.data.model.response.LessonDetail
+import com.edumind.app.data.model.response.VideoChapter
 import com.edumind.app.data.model.response.toDomain
 import com.edumind.app.data.remote.api.LessonApiService
 import com.edumind.app.util.ApiErrorParser
@@ -46,7 +47,12 @@ class LessonRepositoryImpl @Inject constructor(
                             durationSec = 765,
                             lastPositionSec = 0f,
                             transcript = emptyList(),
-                            chapters = emptyList(),
+                            chapters = listOf(
+                                VideoChapter("1. Giới thiệu tổng quan bài học", 0f),
+                                VideoChapter("2. Quy tắc khai báo biến chuẩn PEP 8", 135f),
+                                VideoChapter("3. Kiểu số nguyên int & số thực float", 255f),
+                                VideoChapter("4. Chuỗi ký tự (str) & Kiểu Logic (bool)", 380f)
+                            ),
                             quizMarkers = emptyList(),
                             nextLessonId = null,
                             prevLessonId = null

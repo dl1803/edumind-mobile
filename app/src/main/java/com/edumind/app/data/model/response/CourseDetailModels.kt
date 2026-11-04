@@ -14,7 +14,8 @@ data class CourseLesson(
     val type: LessonType = LessonType.VIDEO,
     val isFreePreview: Boolean = false,
     val isCompleted: Boolean = false,
-    val isCurrent: Boolean = false
+    val isCurrent: Boolean = false,
+    val isLocked: Boolean = false
 )
 
 data class CourseSection(

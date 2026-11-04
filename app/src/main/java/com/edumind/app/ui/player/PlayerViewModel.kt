@@ -17,6 +17,9 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsManifest
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.edumind.app.data.model.response.LessonDetail
+import com.edumind.app.data.model.response.PlayerChapter
+import com.edumind.app.data.model.response.toPlayerChapters
+import com.edumind.app.repository.CourseRepository
 import com.edumind.app.repository.LessonAccessDeniedException
 import com.edumind.app.repository.LessonNotFoundException
 import com.edumind.app.repository.LessonRepository
@@ -52,7 +55,8 @@ class PlayerViewModel @Inject constructor(
     @ApplicationContext context: Context,
     private val savedStateHandle: SavedStateHandle,
     private val lessonRepository: LessonRepository,
-    private val progressRepository: ProgressRepository
+    private val progressRepository: ProgressRepository,
+    private val courseRepository: CourseRepository
 ) : ViewModel() {
 
     val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
@@ -74,6 +78,15 @@ class PlayerViewModel @Inject constructor(
     private val _resumePromptPositionMs = MutableStateFlow<Long?>(null)
     val resumePromptPositionMs: StateFlow<Long?> = _resumePromptPositionMs.asStateFlow()
 
+    private val _chapters = MutableStateFlow<List<PlayerChapter>>(emptyList())
+    val chapters: StateFlow<List<PlayerChapter>> = _chapters.asStateFlow()
+
+    private val _currentChapterIndex = MutableStateFlow<Int>(0)
+    val currentChapterIndex: StateFlow<Int> = _currentChapterIndex.asStateFlow()
+
+    private val _userMessage = MutableStateFlow<String?>(null)
+    val userMessage: StateFlow<String?> = _userMessage.asStateFlow()
+
     private var connectivityManager: ConnectivityManager? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
@@ -92,6 +105,13 @@ class PlayerViewModel @Inject constructor(
         } else {
             // Tuyến dự phòng debug / preview
             load(Constants.SAMPLE_HLS_URL)
+            _chapters.value = listOf(
+                PlayerChapter("sample_0", "1. Giới thiệu tổng quan bài học", 0L, "00:00", "sample", true, groupTitle = "Phân đoạn bài hiện tại"),
+                PlayerChapter("sample_1", "2. Quy tắc khai báo biến chuẩn PEP 8", 135_000L, "02:15", "sample", groupTitle = "Phân đoạn bài hiện tại"),
+                PlayerChapter("sample_2", "3. Kiểu số nguyên int & số thực float", 255_000L, "04:15", "sample", groupTitle = "Phân đoạn bài hiện tại"),
+                PlayerChapter("sample_3", "4. Chuỗi ký tự (str) & Kiểu Logic (bool)", 380_000L, "06:20", "sample", groupTitle = "Phân đoạn bài hiện tại")
+            )
+            updateCurrentChapterIndex(0L)
         }
     }
 
@@ -151,6 +171,22 @@ class PlayerViewModel @Inject constructor(
                             seekTo(candidatePositionMs)
                         }
                         exoPlayer.play()
+                    }
+
+                    // Nạp danh sách phân đoạn mốc thời gian hoặc cấu trúc bài học
+                    if (lesson.chapters.isNotEmpty()) {
+                        val videoChapters = lesson.chapters.toPlayerChapters(lesson.id)
+                        _chapters.value = videoChapters
+                        updateCurrentChapterIndex(exoPlayer.currentPosition)
+                    } else if (lesson.courseId.isNotBlank()) {
+                        viewModelScope.launch {
+                            courseRepository.getCourseDetail(lesson.courseId).onSuccess { courseDetail ->
+                                if (_chapters.value.isEmpty() || _chapters.value.firstOrNull()?.isTimestampMarker != true) {
+                                    _chapters.value = courseDetail.sections.toPlayerChapters(lesson.id)
+                                    updateCurrentChapterIndex(exoPlayer.currentPosition)
+                                }
+                            }
+                        }
                     }
                 },
                 onFailure = { error ->
@@ -396,17 +432,70 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    fun onChapterSelected(chapter: PlayerChapter) {
+        if (chapter.isTimestampMarker) {
+            val targetMs = chapter.startMs ?: 0L
+            seekTo(targetMs)
+            exoPlayer.play()
+        } else {
+            if (chapter.isLocked) {
+                _userMessage.value = "Bài học có tính phí. Vui lòng đăng ký khóa học để học tiếp."
+                return
+            }
+            openLesson(chapter.lessonId)
+        }
+    }
+
+    fun openLesson(newLessonId: String) {
+        if (newLessonId == currentLessonId) return
+        saveCurrentProgress()
+        exoPlayer.stop()
+        exoPlayer.clearMediaItems()
+        currentLessonId = newLessonId
+        currentStreamUrl = null
+        _resumePromptPositionMs.value = null
+        _uiState.update { it.copy(positionMs = 0L, durationMs = 0L, errorMessage = null) }
+        fetchLesson(newLessonId)
+    }
+
+    fun clearUserMessage() {
+        _userMessage.value = null
+    }
+
+    private fun updateCurrentChapterIndex(positionMs: Long) {
+        val chapterList = _chapters.value
+        if (chapterList.isEmpty()) return
+
+        val newIndex = if (chapterList.firstOrNull()?.isTimestampMarker == true) {
+            val idx = chapterList.indexOfLast { it.startMs != null && it.startMs <= positionMs }
+            if (idx >= 0) idx else 0
+        } else {
+            val idx = chapterList.indexOfFirst { it.lessonId == currentLessonId }
+            if (idx >= 0) idx else 0
+        }
+
+        if (_currentChapterIndex.value != newIndex) {
+            _currentChapterIndex.value = newIndex
+            _chapters.update { list ->
+                list.mapIndexed { i, ch -> ch.copy(isCurrent = i == newIndex) }
+            }
+        }
+    }
+
     private fun startPositionTicker() {
         tickerJob?.cancel()
         tickerJob = viewModelScope.launch {
             var tickCount = 0
             while (isActive) {
+                val currentPos = exoPlayer.currentPosition.coerceAtLeast(0L)
+                val duration = exoPlayer.duration.coerceAtLeast(0L)
                 _uiState.update {
                     it.copy(
-                        positionMs = exoPlayer.currentPosition.coerceAtLeast(0L),
-                        durationMs = exoPlayer.duration.coerceAtLeast(0L)
+                        positionMs = currentPos,
+                        durationMs = duration
                     )
                 }
+                updateCurrentChapterIndex(currentPos)
                 tickCount++
                 if (tickCount % 30 == 0) { // Mỗi 15 giây lưu 1 lần (30 * 500ms = 15s)
                     saveCurrentProgress()

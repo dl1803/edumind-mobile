@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -49,11 +50,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -74,6 +77,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.edumind.app.data.model.response.PlayerChapter
 import com.edumind.app.ui.theme.EduMindFontFamily
 import com.edumind.app.ui.theme.EduMindTheme
 import com.edumind.app.ui.theme.NebulaGradient
@@ -108,11 +112,22 @@ fun PlayerScreen(
     val availableQualities by viewModel.availableQualities.collectAsState()
     val selectedQuality by viewModel.selectedQuality.collectAsState()
     val resumePromptPositionMs by viewModel.resumePromptPositionMs.collectAsState()
+    val chapters by viewModel.chapters.collectAsState()
+    val currentChapterIndex by viewModel.currentChapterIndex.collectAsState()
+    val userMessage by viewModel.userMessage.collectAsState()
     var isQualitySheetVisible by remember { mutableStateOf(false) }
+    var isChapterSheetVisible by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    LaunchedEffect(userMessage) {
+        userMessage?.let { msg ->
+            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            viewModel.clearUserMessage()
+        }
+    }
 
     val activity = remember(context) {
         var ctx = context
@@ -202,6 +217,10 @@ fun PlayerScreen(
                 isLandscape = isLandscape,
                 availableQualities = availableQualities,
                 onQualityClick = { isQualitySheetVisible = true },
+                onChapterClick = { isChapterSheetVisible = true },
+                chapters = chapters,
+                currentChapterIndex = currentChapterIndex,
+                onChapterSelect = { chapter -> viewModel.onChapterSelected(chapter) },
                 videoSurface = {
                     if (loadState is LessonLoadState.Loading) {
                         Box(
@@ -262,6 +281,18 @@ fun PlayerScreen(
                         viewModel.setQuality(quality)
                     },
                     onDismiss = { isQualitySheetVisible = false }
+                )
+            }
+
+            // Bảng trượt đáy danh sách chương và phân đoạn
+            if (isChapterSheetVisible) {
+                ChapterSheet(
+                    chapters = chapters,
+                    currentIndex = currentChapterIndex,
+                    onChapterClick = { chapter ->
+                        viewModel.onChapterSelected(chapter)
+                    },
+                    onDismiss = { isChapterSheetVisible = false }
                 )
             }
         }
@@ -363,6 +394,10 @@ fun PlayerScreenContent(
     isLandscape: Boolean = false,
     availableQualities: List<QualityOption> = emptyList(),
     onQualityClick: () -> Unit = {},
+    onChapterClick: () -> Unit = {},
+    chapters: List<PlayerChapter> = emptyList(),
+    currentChapterIndex: Int = 0,
+    onChapterSelect: (PlayerChapter) -> Unit = {},
     videoSurface: @Composable () -> Unit = {}
 ) {
     var selectedMainTab by remember { mutableIntStateOf(0) }
@@ -386,7 +421,9 @@ fun PlayerScreenContent(
                 onOverlayClick = onOverlayClick,
                 isLandscape = true,
                 availableQualities = availableQualities,
-                onQualityClick = onQualityClick
+                onQualityClick = onQualityClick,
+                onChapterClick = onChapterClick,
+                chapters = chapters
             )
         }
     } else {
@@ -414,7 +451,9 @@ fun PlayerScreenContent(
                         onOverlayClick = onOverlayClick,
                         isLandscape = false,
                         availableQualities = availableQualities,
-                        onQualityClick = onQualityClick
+                        onQualityClick = onQualityClick,
+                        onChapterClick = onChapterClick,
+                        chapters = chapters
                     )
                 }
 
@@ -607,7 +646,11 @@ fun PlayerScreenContent(
                         .background(Color(0xFFFAFAFA))
                 ) {
                     if (selectedSubTab == 0) {
-                        LessonContentTab(onSeek = onSeek)
+                        LessonContentTab(
+                            chapters = chapters,
+                            currentIndex = currentChapterIndex,
+                            onChapterSelect = onChapterSelect
+                        )
                     } else {
                         LessonOverviewTab()
                     }
@@ -641,358 +684,124 @@ fun PlayerScreenContent(
 }
 
 @Composable
-private fun LessonContentTab(onSeek: (Long) -> Unit) {
+private fun LessonContentTab(
+    chapters: List<PlayerChapter>,
+    currentIndex: Int,
+    onChapterSelect: (PlayerChapter) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // PHẦN A: BÀI HỌC TRƯỚC (ĐÃ XONG)
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "BÀI HỌC TRƯỚC (ĐÃ XONG)",
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
-                    color = Neutral400
-                )
-                Text(
-                    text = "08:40",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    color = Neutral400
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White)
-                    .border(1.dp, Neutral200, RoundedCornerShape(16.dp))
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.CheckCircle,
-                        contentDescription = "Đã xong",
-                        tint = Success600,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = "Bài 02: Cú pháp Print & Thụt lề (Indentation)",
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Neutral800
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Hoàn thành - 100%",
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 10.sp,
-                            color = Neutral400
-                        )
-                    }
-                }
-                Icon(
-                    imageVector = Icons.Default.Refresh,
-                    contentDescription = "Xem lại",
-                    tint = Neutral400,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "MỤC LỤC BÀI HỌC & PHÂN ĐOẠN",
+                fontFamily = EduMindFontFamily,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.5.sp,
+                color = Primary700
+            )
+            Text(
+                text = "${chapters.size} mục",
+                fontFamily = FontFamily.Monospace,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Primary700
+            )
         }
 
-        // PHẦN B: BÀI HIỆN TẠI (BÀI 03)
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "PHÂN ĐOẠN BÀI HỌC HIỆN TẠI (BÀI 03)",
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
-                    color = Primary700
-                )
-                Text(
-                    text = "15:30",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Primary700
-                )
-            }
-
-            // Phân đoạn 1: 00:00
-            LessonSegmentCard(
-                timeBadge = "00:00",
-                title = "1. Giới thiệu tổng quan bài học",
-                subtitle = "Khái niệm cốt lõi & lộ trình",
-                onClick = { onSeek(0L) }
-            )
-
-            // Phân đoạn 2: 02:15
-            LessonSegmentCard(
-                timeBadge = "02:15",
-                title = "2. Quy tắc khai báo biến chuẩn PEP 8",
-                subtitle = "snake_case, không bắt đầu bằng số",
-                onClick = { onSeek(135000L) }
-            )
-
-            // Phân đoạn 3: 05:40 (ĐANG PHÁT TẠI 04:15 - ACTIVE CARD NỔI BẬT)
+        if (chapters.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Primary50)
-                    .border(1.dp, Primary300, RoundedCornerShape(16.dp))
-                    .clickable { onSeek(255000L) }
+                    .padding(vertical = 32.dp),
+                contentAlignment = Alignment.Center
             ) {
-                // Vạch tím Gradient Nebula ở mép trái
-                Box(
-                    modifier = Modifier
-                        .width(4.dp)
-                        .fillMaxHeight()
-                        .background(NebulaGradient)
+                Text(
+                    text = "Bài giảng này không có phân đoạn riêng",
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 13.sp,
+                    color = Neutral500
                 )
-
+            }
+        } else {
+            chapters.forEachIndexed { index, chapter ->
+                val isCurrent = index == currentIndex
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 10.dp, top = 12.dp, end = 14.dp, bottom = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(if (isCurrent) Primary50.copy(alpha = 0.7f) else Color.White)
+                        .border(
+                            width = 1.dp,
+                            color = if (isCurrent) Primary300 else Neutral200,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable { onChapterSelect(chapter) }
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.weight(1f)
                     ) {
-                        // Badge Nebula Gradient
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(NebulaGradient)
-                                .padding(horizontal = 8.dp, vertical = 4.dp),
-                            contentAlignment = Alignment.Center
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(if (isCurrent) Primary100 else Neutral100)
+                                .padding(horizontal = 6.dp, vertical = 3.dp)
                         ) {
                             Text(
-                                text = "05:40",
-                                fontFamily = EduMindFontFamily,
+                                text = chapter.durationText,
+                                fontFamily = FontFamily.Monospace,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = if (isCurrent) Primary700 else Neutral600
                             )
                         }
 
                         Spacer(modifier = Modifier.width(10.dp))
 
-                        Column {
-                            Text(
-                                text = "3. Kiểu số nguyên int & số thực float",
-                                fontFamily = EduMindFontFamily,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Primary950
-                            )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = "Đang phát tại 04:15",
-                                fontFamily = EduMindFontFamily,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Medium,
-                                color = Primary700
-                            )
-                        }
-                    }
-
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.VolumeUp,
-                        contentDescription = "Đang phát",
-                        tint = Primary600,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-            }
-
-            // Phân đoạn 4: 10:20
-            LessonSegmentCard(
-                timeBadge = "10:20",
-                title = "4. Chuỗi ký tự (str) & Kiểu Logic (bool)",
-                subtitle = "Ép kiểu casting và bài tập ngắn",
-                onClick = { onSeek(620000L) }
-            )
-        }
-
-        // PHẦN C: BÀI TẬP SAU BÀI HỌC
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "BÀI TẬP",
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
-                    color = Neutral400
-                )
-                Text(
-                    text = "10 câu",
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 11.sp,
-                    color = Neutral400
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White)
-                    .border(1.dp, Neutral200, RoundedCornerShape(16.dp))
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Neutral100),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Assignment,
-                            contentDescription = null,
-                            tint = Neutral500,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
                         Text(
-                            text = "Bài tập cuối bài 03: Biến & Kiểu dữ liệu",
+                            text = chapter.title,
                             fontFamily = EduMindFontFamily,
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Neutral700
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Mở sau khi xem hết bài giảng",
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 10.sp,
-                            color = Neutral400
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.SemiBold,
+                            color = if (isCurrent) Primary900 else Neutral800
                         )
                     }
-                }
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                    contentDescription = "Mở",
-                    tint = Neutral400,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
 
-        // PHẦN D: BÀI HỌC TIẾP THEO
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "BÀI HỌC TIẾP THEO",
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp,
-                    color = Neutral400
-                )
-                Text(
-                    text = "18:20",
-                    fontFamily = FontFamily.Monospace,
-                    fontSize = 11.sp,
-                    color = Neutral400
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .alpha(0.75f)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(Color.White)
-                    .border(1.dp, Neutral200, RoundedCornerShape(16.dp))
-                    .padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val isLocked = true
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    if (isLocked) {
+                    if (isCurrent) {
                         Icon(
-                            imageVector = Icons.Default.Lock,
-                            contentDescription = "Khóa",
+                            imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                            contentDescription = "Đang phát",
+                            tint = Primary600,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    } else if (chapter.isCompleted) {
+                        Icon(
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = "Đã xong",
+                            tint = Success600,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    } else if (chapter.isLocked) {
+                        Icon(
+                            imageVector = Icons.Filled.Lock,
+                            contentDescription = "Bị khóa",
                             tint = Neutral400,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    } else {
-                        Spacer(modifier = Modifier.width(26.dp))
-                    }
-                    Column {
-                        Text(
-                            text = "Bài 04: Cấu trúc rẽ nhánh If - Elif - Else",
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Neutral800
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Chưa bắt đầu - 0%",
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 10.sp,
-                            color = Neutral400
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
@@ -1003,70 +812,7 @@ private fun LessonContentTab(onSeek: (Long) -> Unit) {
     }
 }
 
-// Card phân đoạn bình thường
-@Composable
-private fun LessonSegmentCard(
-    timeBadge: String,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
-            .border(1.dp, Neutral200, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
-            .padding(12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.weight(1f)
-        ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Neutral100)
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = timeBadge,
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Neutral600
-                )
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-                Text(
-                    text = title,
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Neutral800
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 10.sp,
-                    color = Neutral400
-                )
-            }
-        }
-        Icon(
-            imageVector = Icons.Default.PlayArrow,
-            contentDescription = "Phát",
-            tint = Neutral400,
-            modifier = Modifier.size(16.dp)
-        )
-    }
-}
+
 
 // -----------------------------------------------------------------------------------------
 // TAB CON 2: GIỚI THIỆU CHUNG BÀI HỌC

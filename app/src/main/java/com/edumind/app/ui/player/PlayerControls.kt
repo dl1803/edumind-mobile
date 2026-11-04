@@ -60,6 +60,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.edumind.app.data.model.response.PlayerChapter
 import com.edumind.app.ui.theme.EduMindFontFamily
 import com.edumind.app.ui.theme.EduMindTheme
 import com.edumind.app.ui.theme.Neutral600
@@ -81,8 +82,19 @@ fun PlayerControlsOverlay(
     modifier: Modifier = Modifier,
     isLandscape: Boolean = false,
     availableQualities: List<QualityOption> = emptyList(),
-    onQualityClick: () -> Unit = {}
+    onQualityClick: () -> Unit = {},
+    onChapterClick: () -> Unit = {},
+    chapters: List<PlayerChapter> = emptyList()
 ) {
+    val dynamicMarkers = remember(chapters, state.durationMs) {
+        if (state.durationMs > 0L) {
+            chapters.mapNotNull { ch ->
+                ch.startMs?.let { ms -> (ms.toFloat() / state.durationMs.toFloat()).coerceIn(0f, 1f) }
+            }
+        } else {
+            emptyList()
+        }
+    }
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -157,16 +169,38 @@ fun PlayerControlsOverlay(
                                 .padding(horizontal = 12.dp)
                         )
 
-                        IconButton(
-                            onClick = onToggleFullscreen,
-                            modifier = Modifier.size(32.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.FullscreenExit,
-                                contentDescription = "Thu nhỏ",
-                                tint = Color.White,
-                                modifier = Modifier.size(22.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(Color.White.copy(alpha = 0.2f))
+                                    .clickable(onClick = onChapterClick)
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "Mục lục",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = (-0.3).sp,
+                                    color = Color.White
+                                )
+                            }
+
+                            IconButton(
+                                onClick = onQualityClick,
+                                modifier = Modifier.size(32.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Cài đặt chất lượng",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -295,18 +329,18 @@ fun PlayerControlsOverlay(
                                 )
                             }
 
-                            if (availableQualities.isNotEmpty()) {
-                                IconButton(
-                                    onClick = onQualityClick,
-                                    modifier = Modifier.size(24.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Settings,
-                                        contentDescription = "Chất lượng video",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(17.dp)
-                                    )
-                                }
+
+
+                            IconButton(
+                                onClick = onToggleFullscreen,
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isLandscape) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                    contentDescription = if (isLandscape) "Thu nhỏ" else "Toàn màn hình",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
                             }
                         }
                     }
@@ -315,7 +349,7 @@ fun PlayerControlsOverlay(
 
                     NebulaVideoSeekbar(
                         progress = state.progress,
-                        chapterMarkers = listOf(0.0f, 0.35f, 0.65f, 0.85f),
+                        chapterMarkers = dynamicMarkers,
                         onSeek = { fraction ->
                             val targetMs = (fraction * state.durationMs).toLong()
                             onSeek(targetMs)
@@ -374,14 +408,14 @@ fun PlayerControlsOverlay(
                         )
 
                         IconButton(
-                            onClick = onToggleFullscreen,
+                            onClick = onQualityClick,
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Fullscreen,
-                                contentDescription = "Toàn màn hình",
+                                imageVector = Icons.Default.Settings,
+                                contentDescription = "Cài đặt chất lượng",
                                 tint = Color.White,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
