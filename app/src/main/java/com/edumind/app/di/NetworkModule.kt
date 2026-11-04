@@ -9,6 +9,7 @@ import com.edumind.app.data.local.prefs.TokenManager
 import com.edumind.app.data.remote.api.AuthApiService
 import com.edumind.app.data.remote.api.CourseApiService
 import com.edumind.app.data.remote.api.LessonApiService
+import com.edumind.app.data.remote.api.NoteApiService
 import com.edumind.app.data.remote.api.ProgressApiService
 import com.edumind.app.data.remote.mock.FakeAuthApiService
 import com.edumind.app.data.remote.interceptor.AuthInterceptor
@@ -149,6 +150,12 @@ object NetworkModule {
     @Singleton
     fun provideLessonApiService(retrofit: Retrofit): LessonApiService {
         return retrofit.create(LessonApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNoteApiService(retrofit: Retrofit): NoteApiService {
+        return retrofit.create(NoteApiService::class.java)
     }
 
     @Provides
