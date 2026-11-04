@@ -346,4 +346,58 @@ class PlayerViewModelTest {
         assertTrue(playerChapters[1].isLocked) // Vì không free preview và chưa hoàn thành
         assertFalse(playerChapters[1].isTimestampMarker)
     }
+
+    @Test
+    fun isFullscreen_defaultState_isFalse() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_LESSON_ID to sampleLessonId))
+        val viewModel = PlayerViewModel(
+            context = context,
+            savedStateHandle = savedStateHandle,
+            lessonRepository = lessonRepository,
+            progressRepository = progressRepository,
+            courseRepository = courseRepository
+        )
+
+        assertFalse(viewModel.isFullscreen.value)
+    }
+
+    @Test
+    fun toggleFullscreen_togglesStateCorrectly() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_LESSON_ID to sampleLessonId))
+        val viewModel = PlayerViewModel(
+            context = context,
+            savedStateHandle = savedStateHandle,
+            lessonRepository = lessonRepository,
+            progressRepository = progressRepository,
+            courseRepository = courseRepository
+        )
+
+        viewModel.toggleFullscreen()
+        assertTrue(viewModel.isFullscreen.value)
+
+        viewModel.toggleFullscreen()
+        assertFalse(viewModel.isFullscreen.value)
+    }
+
+    @Test
+    fun exitFullscreen_setsStateToFalse() = runTest(testDispatcher) {
+        val savedStateHandle = SavedStateHandle(
+            mapOf(
+                Screen.ARG_LESSON_ID to sampleLessonId,
+                "is_fullscreen" to true
+            )
+        )
+        val viewModel = PlayerViewModel(
+            context = context,
+            savedStateHandle = savedStateHandle,
+            lessonRepository = lessonRepository,
+            progressRepository = progressRepository,
+            courseRepository = courseRepository
+        )
+
+        assertTrue(viewModel.isFullscreen.value)
+
+        viewModel.exitFullscreen()
+        assertFalse(viewModel.isFullscreen.value)
+    }
 }
