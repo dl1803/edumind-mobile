@@ -105,6 +105,13 @@ class PlayerViewModel @Inject constructor(
         } else {
             // Tuyến dự phòng debug / preview
             load(Constants.SAMPLE_HLS_URL)
+            _chapters.value = listOf(
+                PlayerChapter("sample_0", "1. Giới thiệu tổng quan bài học", 0L, "00:00", "sample", true, groupTitle = "Phân đoạn bài hiện tại"),
+                PlayerChapter("sample_1", "2. Quy tắc khai báo biến chuẩn PEP 8", 135_000L, "02:15", "sample", groupTitle = "Phân đoạn bài hiện tại"),
+                PlayerChapter("sample_2", "3. Kiểu số nguyên int & số thực float", 255_000L, "04:15", "sample", groupTitle = "Phân đoạn bài hiện tại"),
+                PlayerChapter("sample_3", "4. Chuỗi ký tự (str) & Kiểu Logic (bool)", 380_000L, "06:20", "sample", groupTitle = "Phân đoạn bài hiện tại")
+            )
+            updateCurrentChapterIndex(0L)
         }
     }
 
