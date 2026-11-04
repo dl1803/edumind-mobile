@@ -11,6 +11,8 @@ import com.edumind.app.repository.FakeProgressRepository
 import com.edumind.app.repository.HomeRepository
 import com.edumind.app.repository.LessonRepository
 import com.edumind.app.repository.LessonRepositoryImpl
+import com.edumind.app.repository.NoteRepository
+import com.edumind.app.repository.NoteRepositoryImpl
 import com.edumind.app.repository.ProfileRepository
 import com.edumind.app.repository.ProgressRepository
 import com.edumind.app.repository.ProgressRepositoryImpl
@@ -59,4 +61,10 @@ abstract class RepositoryModule {
     abstract fun bindProfileRepository(
         fakeProfileRepository: FakeProfileRepository
     ): ProfileRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNoteRepository(
+        noteRepositoryImpl: NoteRepositoryImpl
+    ): NoteRepository
 }
