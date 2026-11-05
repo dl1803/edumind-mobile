@@ -9,6 +9,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -595,5 +596,62 @@ class ExploreViewModelTest {
                 sortBy = "price_asc"
             )
         }
+    }
+
+    @Test
+    fun rapidFilterChanges_displayOnlyLatestResult() = runTest(testDispatcher) {
+        val staleResponse = PagedResponse(
+            data = listOf(sampleCourses[0]),
+            total = 1,
+            page = 1,
+            pageSize = 20,
+            totalPages = 1
+        )
+        val latestResponse = PagedResponse(
+            data = listOf(sampleCourses[1]),
+            total = 1,
+            page = 1,
+            pageSize = 20,
+            totalPages = 1
+        )
+        viewModel = ExploreViewModel(courseRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coEvery {
+            courseRepository.getCourses(
+                page = any(),
+                pageSize = any(),
+                search = any(),
+                categoryId = "cat_it",
+                priceMin = any(),
+                priceMax = any(),
+                minRating = any(),
+                sortBy = any()
+            )
+        } coAnswers {
+            delay(1_000)
+            Result.success(staleResponse)
+        }
+        coEvery {
+            courseRepository.getCourses(
+                page = any(),
+                pageSize = any(),
+                search = any(),
+                categoryId = "cat_design",
+                priceMin = any(),
+                priceMax = any(),
+                minRating = any(),
+                sortBy = any()
+            )
+        } returns Result.success(latestResponse)
+
+        viewModel.onCategorySelected("cat_it")
+        testDispatcher.scheduler.runCurrent()
+        viewModel.onCategorySelected("cat_design")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value as ExploreUiState.Success
+        assertEquals(listOf("c2"), state.courses.map { it.id })
+        assertEquals("cat_design", viewModel.filter.value.categoryId)
     }
 }
