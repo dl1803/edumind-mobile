@@ -457,4 +457,143 @@ class ExploreViewModelTest {
         viewModel.onCategorySelected("cat_it")
         assertEquals(ExploreUiState.Loading, viewModel.uiState.value)
     }
+
+    private fun stubTwoPages() {
+        val page1Response = PagedResponse(
+            data = List(20) { index -> sampleCourses[0].copy(id = "c1_$index") },
+            total = 21,
+            page = 1,
+            pageSize = 20,
+            totalPages = 2
+        )
+        val page2Response = PagedResponse(
+            data = listOf(sampleCourses[1]),
+            total = 21,
+            page = 2,
+            pageSize = 20,
+            totalPages = 2
+        )
+        coEvery {
+            courseRepository.getCourses(
+                page = 1,
+                pageSize = any(),
+                search = any(),
+                categoryId = any(),
+                priceMin = any(),
+                priceMax = any(),
+                minRating = any(),
+                sortBy = any()
+            )
+        } returns Result.success(page1Response)
+        coEvery {
+            courseRepository.getCourses(
+                page = 2,
+                pageSize = any(),
+                search = any(),
+                categoryId = any(),
+                priceMin = any(),
+                priceMax = any(),
+                minRating = any(),
+                sortBy = any()
+            )
+        } returns Result.success(page2Response)
+    }
+
+    @Test
+    fun onCategorySelected_afterLoadMore_resetsToPage1AndReplacesList() = runTest(testDispatcher) {
+        stubTwoPages()
+        val categoryResponse = PagedResponse(
+            data = listOf(sampleCourses[1]),
+            total = 1,
+            page = 1,
+            pageSize = 20,
+            totalPages = 1
+        )
+        coEvery {
+            courseRepository.getCourses(
+                page = 1,
+                pageSize = any(),
+                search = any(),
+                categoryId = "cat_it",
+                priceMin = any(),
+                priceMax = any(),
+                minRating = any(),
+                sortBy = any()
+            )
+        } returns Result.success(categoryResponse)
+
+        viewModel = ExploreViewModel(courseRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.loadMore()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(21, (viewModel.uiState.value as ExploreUiState.Success).courses.size)
+
+        viewModel.onCategorySelected("cat_it")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value as ExploreUiState.Success
+        assertEquals(listOf("c2"), state.courses.map { it.id })
+        assertEquals(1, state.totalCount)
+        coVerify(exactly = 1) {
+            courseRepository.getCourses(
+                page = 1,
+                pageSize = 20,
+                search = null,
+                categoryId = "cat_it",
+                priceMin = null,
+                priceMax = null,
+                minRating = null,
+                sortBy = "newest"
+            )
+        }
+    }
+
+    @Test
+    fun onSortChanged_afterLoadMore_resetsToPage1AndReplacesList() = runTest(testDispatcher) {
+        stubTwoPages()
+        val sortedResponse = PagedResponse(
+            data = listOf(sampleCourses[1]),
+            total = 1,
+            page = 1,
+            pageSize = 20,
+            totalPages = 1
+        )
+        coEvery {
+            courseRepository.getCourses(
+                page = 1,
+                pageSize = any(),
+                search = any(),
+                categoryId = any(),
+                priceMin = any(),
+                priceMax = any(),
+                minRating = any(),
+                sortBy = "price_asc"
+            )
+        } returns Result.success(sortedResponse)
+
+        viewModel = ExploreViewModel(courseRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel.loadMore()
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(21, (viewModel.uiState.value as ExploreUiState.Success).courses.size)
+
+        viewModel.onSortChanged(SortOption.PRICE_ASC)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value as ExploreUiState.Success
+        assertEquals(listOf("c2"), state.courses.map { it.id })
+        assertEquals(1, state.totalCount)
+        coVerify(exactly = 1) {
+            courseRepository.getCourses(
+                page = 1,
+                pageSize = 20,
+                search = null,
+                categoryId = null,
+                priceMin = null,
+                priceMax = null,
+                minRating = null,
+                sortBy = "price_asc"
+            )
+        }
+    }
 }
