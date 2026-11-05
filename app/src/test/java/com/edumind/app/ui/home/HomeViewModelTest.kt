@@ -8,6 +8,7 @@ import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -165,5 +166,50 @@ class HomeViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.isRefreshing)
         assertEquals(1, state.featuredCourses.size)
+    }
+
+    @Test
+    fun init_isLoadingUntilDataArrives_thenSuccess() = runTest(testDispatcher) {
+        coEvery { homeRepository.getFeaturedCourses() } returns Result.success(sampleFeatured)
+        coEvery { homeRepository.getContinueLearningItems() } returns Result.success(sampleContinue)
+        coEvery { homeRepository.getRecommendedCourses() } returns Result.success(sampleCourses)
+        coEvery { homeRepository.getNewCourses(any()) } returns Result.success(sampleCourses)
+        coEvery { homeRepository.getUnreadNotificationCount() } returns Result.success(1)
+
+        viewModel = HomeViewModel(homeRepository)
+        assertTrue(viewModel.uiState.value.isLoading)
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isLoading)
+        assertEquals(1, viewModel.uiState.value.featuredCourses.size)
+    }
+
+    @Test
+    fun refresh_setsIsRefreshingThenReplacesData() = runTest(testDispatcher) {
+        val refreshedFeatured = listOf(sampleFeatured[0].copy(id = "c9", title = "Khóa học làm mới"))
+        coEvery { homeRepository.getFeaturedCourses() } returns Result.success(sampleFeatured)
+        coEvery { homeRepository.getContinueLearningItems() } returns Result.success(sampleContinue)
+        coEvery { homeRepository.getRecommendedCourses() } returns Result.success(sampleCourses)
+        coEvery { homeRepository.getNewCourses(any()) } returns Result.success(sampleCourses)
+        coEvery { homeRepository.getUnreadNotificationCount() } returns Result.success(1)
+
+        viewModel = HomeViewModel(homeRepository)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals("c1", viewModel.uiState.value.featuredCourses[0].id)
+
+        coEvery { homeRepository.getFeaturedCourses() } coAnswers {
+            delay(1_000)
+            Result.success(refreshedFeatured)
+        }
+        viewModel.refresh()
+        testDispatcher.scheduler.runCurrent()
+
+        assertTrue(viewModel.uiState.value.isRefreshing)
+
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(viewModel.uiState.value.isRefreshing)
+        assertEquals("c9", viewModel.uiState.value.featuredCourses[0].id)
     }
 }

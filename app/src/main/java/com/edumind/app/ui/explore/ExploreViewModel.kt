@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.edumind.app.data.model.response.Category
 import com.edumind.app.repository.CourseRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +30,7 @@ class ExploreViewModel @Inject constructor(
     private var currentPage = 1
     private val pageSize = 20
     private var isFetching = false
+    private var fetchJob: Job? = null
 
     init {
         loadInitialData()
@@ -82,7 +84,9 @@ class ExploreViewModel @Inject constructor(
     private fun resetAndReload() {
         currentPage = 1
         _uiState.value = ExploreUiState.Loading
-        viewModelScope.launch {
+        fetchJob?.cancel()
+        isFetching = false
+        fetchJob = viewModelScope.launch {
             fetchCourses(page = 1, isRefresh = true)
         }
     }
@@ -91,7 +95,7 @@ class ExploreViewModel @Inject constructor(
         val currentState = _uiState.value as? ExploreUiState.Success ?: return
         if (isFetching || currentState.isEndReached || currentState.isLoadingMore) return
 
-        viewModelScope.launch {
+        fetchJob = viewModelScope.launch {
             fetchCourses(page = currentPage + 1, isRefresh = false)
         }
     }

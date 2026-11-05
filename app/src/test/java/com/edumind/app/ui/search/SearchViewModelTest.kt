@@ -271,4 +271,31 @@ class SearchViewModelTest {
         advanceUntilIdle()
         assertTrue(viewModel.filter.value.isDefault)
     }
+
+    @Test
+    fun `typing a then an then and sends exactly one request with the last keyword`() = runTest {
+        viewModel.onKeywordChange("a")
+        advanceTimeBy(100)
+        viewModel.onKeywordChange("an")
+        advanceTimeBy(100)
+        viewModel.onKeywordChange("and")
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { courseRepository.getCourses(search = any(), pageSize = any()) }
+        coVerify(exactly = 1) { courseRepository.getCourses(search = "and", pageSize = 4) }
+    }
+
+    @Test
+    fun `typing then clearing the keyword sends no request and returns to Idle`() = runTest {
+        viewModel.onKeywordChange("python")
+        advanceTimeBy(100)
+        viewModel.onKeywordChange("")
+        advanceTimeBy(350)
+        advanceUntilIdle()
+
+        coVerify(exactly = 0) { courseRepository.getCourses(search = any(), pageSize = any()) }
+        val state = viewModel.uiState.value
+        assertTrue(state is SearchUiState.Idle)
+        assertEquals("", (state as SearchUiState.Idle).keyword)
+    }
 }
