@@ -84,8 +84,11 @@ class NoteRepositoryImpl @Inject constructor(
                 val response = noteApiService.updateNote(noteId, request)
                 if (response.isSuccessful && response.body() != null) {
                     val dto = response.body()!!
-                    val note = dto.toDomain(lessonId = "")
-                    noteDao.upsertNote(note.toEntity())
+                    val existingEntity = noteDao.getNoteById(noteId)
+                    val restoredLessonId = existingEntity?.lessonId ?: ""
+                    val restoredUserId = existingEntity?.userId ?: ""
+                    val note = dto.toDomain(lessonId = restoredLessonId)
+                    noteDao.upsertNote(note.toEntity(userId = restoredUserId))
                     Result.success(note)
                 } else {
                     Result.failure(mapHttpError(response.code(), "Không thể cập nhật ghi chú."))
