@@ -31,7 +31,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -170,17 +173,9 @@ fun NoteItem(
                     fontSize = 10.sp,
                     color = Neutral500
                 )
-                if (!note.isSynced) {
-                    Text(
-                        text = " • Chờ đồng bộ",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 10.sp,
-                        color = Neutral400
-                    )
-                }
             }
 
-            // Mốc thời gian bấm tua video (Font monospace màu tím) + ngày tạo
+            // Mốc thời gian bấm tua video (Font monospace màu tím gạch chân) + ngày tạo
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -189,11 +184,31 @@ fun NoteItem(
                     .padding(horizontal = 4.dp, vertical = 2.dp)
             ) {
                 Text(
-                    text = "Mốc ${note.formattedTimestamp}",
+                    text = "Mốc ",
+                    fontFamily = EduMindFontFamily,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Primary700
+                )
+                Text(
+                    text = note.formattedTimestamp,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Primary700
+                    color = Primary700,
+                    modifier = Modifier
+                        .padding(bottom = 1.dp)
+                        .drawBehind {
+                            val strokeWidth = 2.dp.toPx()
+                            val y = size.height - strokeWidth / 2
+                            drawLine(
+                                color = Primary700,
+                                start = Offset(0f, y),
+                                end = Offset(size.width, y),
+                                strokeWidth = strokeWidth,
+                                cap = StrokeCap.Round
+                            )
+                        }
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(

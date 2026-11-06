@@ -81,6 +81,8 @@ fun NoteEditorSheet(
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
         containerColor = Color.White,
+        tonalElevation = 0.dp,
+        dragHandle = null,
         modifier = modifier
     ) {
         NoteEditorContent(

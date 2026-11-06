@@ -127,7 +127,9 @@ class NotesViewModel @Inject constructor(
                     }
                     .collect { notes ->
                         allNotes = notes.sortedBy { it.timestampSeconds }
-                        applyFilter()
+                        if (allNotes.isNotEmpty() || _uiState.value !is NotesUiState.Loading) {
+                            applyFilter()
+                        }
                     }
             }
 
@@ -135,11 +137,19 @@ class NotesViewModel @Inject constructor(
             remoteResult.fold(
                 onSuccess = { remoteNotes ->
                     allNotes = remoteNotes.sortedBy { it.timestampSeconds }
-                    applyFilter()
+                    if (allNotes.isEmpty()) {
+                        _uiState.value = NotesUiState.Empty
+                    } else {
+                        applyFilter()
+                    }
                 },
                 onFailure = { error ->
                     if (allNotes.isEmpty()) {
-                        _uiState.value = NotesUiState.Error(error.message ?: "Không thể kết nối đến máy chủ.")
+                        if (error.message?.contains("không tồn tại") == true) {
+                            _uiState.value = NotesUiState.Empty
+                        } else {
+                            _uiState.value = NotesUiState.Error(error.message ?: "Không thể kết nối đến máy chủ.")
+                        }
                     }
                 }
             )
@@ -213,7 +223,11 @@ class NotesViewModel @Inject constructor(
             _editorState.update { it.copy(isSaving = true, error = null) }
 
             val result = if (state.isEditing && !state.noteId.isNullOrBlank()) {
-                noteRepository.updateNote(state.noteId, fullContent)
+                noteRepository.updateNote(
+                    noteId = state.noteId,
+                    content = fullContent,
+                    timestampSeconds = state.timestampSeconds
+                )
             } else {
                 noteRepository.createNote(
                     lessonId = state.lessonId.ifBlank { currentLessonId },

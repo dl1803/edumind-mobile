@@ -1,5 +1,6 @@
 package com.edumind.app.ui.player.notes
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,6 +31,8 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
@@ -49,6 +52,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.edumind.app.data.model.response.Note
 import com.edumind.app.ui.common.ErrorView
 import com.edumind.app.ui.theme.EduMindFontFamily
@@ -58,6 +62,7 @@ import com.edumind.app.ui.theme.Error600
 import com.edumind.app.ui.theme.NebulaGradient
 import com.edumind.app.ui.theme.Neutral100
 import com.edumind.app.ui.theme.Neutral200
+import com.edumind.app.ui.theme.Neutral300
 import com.edumind.app.ui.theme.Neutral400
 import com.edumind.app.ui.theme.Neutral500
 import com.edumind.app.ui.theme.Neutral600
@@ -333,76 +338,107 @@ fun NotesTabContent(
         // Hộp thoại xác nhận xóa ghi chú (Modal Dialog)
         if (noteToDelete != null) {
             val target = noteToDelete
-            AlertDialog(
-                onDismissRequest = onCancelDelete,
-                icon = {
-                    Box(
+            Dialog(onDismissRequest = onCancelDelete) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                ) {
+                    Column(
                         modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(Error100),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = null,
-                            tint = Error600,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                },
-                title = {
-                    Text(
-                        text = "Xác nhận xóa ghi chú?",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Neutral900,
-                        textAlign = TextAlign.Center
-                    )
-                },
-                text = {
-                    Text(
-                        text = "Ghi chú tại mốc ${target.formattedTimestamp} sẽ bị xóa vĩnh viễn khỏi bài học này.",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 13.sp,
-                        color = Neutral600,
-                        textAlign = TextAlign.Center
-                    )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = onConfirmDelete,
-                        colors = ButtonDefaults.buttonColors(containerColor = Error600),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.height(44.dp)
-                    ) {
+                        // Icon Thùng rác đỏ
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(RoundedCornerShape(28.dp))
+                                .background(Error100),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = null,
+                                tint = Error600,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Tiêu đề
                         Text(
-                            text = "Xóa ngay",
+                            text = "Xác nhận xóa ghi chú?",
                             fontFamily = EduMindFontFamily,
-                            fontSize = 13.sp,
+                            fontSize = 17.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = Neutral900,
+                            textAlign = TextAlign.Center
                         )
-                    }
-                },
-                dismissButton = {
-                    OutlinedButton(
-                        onClick = onCancelDelete,
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.height(44.dp)
-                    ) {
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Nội dung mô tả
                         Text(
-                            text = "Hủy bỏ",
+                            text = "Ghi chú tại mốc ${target.formattedTimestamp} sẽ bị xóa vĩnh viễn khỏi bài học này.",
                             fontFamily = EduMindFontFamily,
                             fontSize = 13.sp,
-                            color = Neutral700
+                            color = Neutral600,
+                            textAlign = TextAlign.Center,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(horizontal = 8.dp)
                         )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // 2 Nút căn giữa đều 50% - 50%
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            OutlinedButton(
+                                onClick = onCancelDelete,
+                                shape = RoundedCornerShape(12.dp),
+                                border = BorderStroke(1.dp, Neutral300),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp)
+                            ) {
+                                Text(
+                                    text = "Hủy bỏ",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Neutral700
+                                )
+                            }
+
+                            Button(
+                                onClick = onConfirmDelete,
+                                colors = ButtonDefaults.buttonColors(containerColor = Error600),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(44.dp)
+                            ) {
+                                Text(
+                                    text = "Xóa ngay",
+                                    fontFamily = EduMindFontFamily,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            }
+                        }
                     }
-                },
-                shape = RoundedCornerShape(20.dp),
-                containerColor = Color.White
-            )
+                }
+            }
         }
     }
 }
