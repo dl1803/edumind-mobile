@@ -16,7 +16,8 @@ interface NoteRepository {
 
     suspend fun updateNote(
         noteId: String,
-        content: String
+        content: String,
+        timestampSeconds: Float? = null
     ): Result<Note>
 
     suspend fun deleteNote(noteId: String): Result<Unit>

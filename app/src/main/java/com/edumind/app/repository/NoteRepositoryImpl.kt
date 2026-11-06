@@ -17,11 +17,17 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NoteRepositoryImpl @Inject constructor(
+class NoteRepositoryImpl constructor(
     private val noteApiService: NoteApiService,
     private val noteDao: NoteDao,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : NoteRepository {
+
+    @Inject
+    constructor(
+        noteApiService: NoteApiService,
+        noteDao: NoteDao
+    ) : this(noteApiService, noteDao, Dispatchers.IO)
 
     override fun getNotes(lessonId: String): Flow<List<Note>> {
         return noteDao.getNotesByLesson(lessonId).map { entities ->
@@ -64,51 +70,111 @@ class NoteRepositoryImpl @Inject constructor(
                 val note = response.body()!!.toDomain(lessonId)
                 noteDao.upsertNote(note.toEntity())
                 Result.success(note)
+            } else if (response.code() == 404 || response.code() == 503) {
+                // Fallback offline / local-first khi backend chưa hỗ trợ endpoint hoặc server lỗi
+                val localNote = Note(
+                    id = java.util.UUID.randomUUID().toString(),
+                    lessonId = lessonId,
+                    content = content.trim(),
+                    timestampSeconds = timestampSeconds,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis(),
+                    isSynced = false
+                )
+                noteDao.upsertNote(localNote.toEntity())
+                Result.success(localNote)
             } else {
                 Result.failure(mapHttpError(response.code(), "Không thể tạo ghi chú."))
             }
         } catch (e: IOException) {
-            Result.failure(Exception("Lỗi kết nối mạng khi tạo ghi chú.", e))
+            // Mất mạng -> Lưu offline vào Room DB
+            val localNote = Note(
+                id = java.util.UUID.randomUUID().toString(),
+                lessonId = lessonId,
+                content = content.trim(),
+                timestampSeconds = timestampSeconds,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis(),
+                isSynced = false
+            )
+            noteDao.upsertNote(localNote.toEntity())
+            Result.success(localNote)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    override suspend fun updateNote(noteId: String, content: String): Result<Note> =
-        withContext(ioDispatcher) {
-            if (content.isBlank()) {
-                return@withContext Result.failure(IllegalArgumentException("Nội dung ghi chú không được để trống."))
-            }
-            try {
-                val request = UpdateNoteRequest(content = content.trim())
-                val response = noteApiService.updateNote(noteId, request)
-                if (response.isSuccessful && response.body() != null) {
-                    val dto = response.body()!!
-                    val note = dto.toDomain(lessonId = "")
-                    noteDao.upsertNote(note.toEntity())
-                    Result.success(note)
+    override suspend fun updateNote(
+        noteId: String,
+        content: String,
+        timestampSeconds: Float?
+    ): Result<Note> = withContext(ioDispatcher) {
+        if (content.isBlank()) {
+            return@withContext Result.failure(IllegalArgumentException("Nội dung ghi chú không được để trống."))
+        }
+        try {
+            val request = UpdateNoteRequest(content = content.trim())
+            val response = noteApiService.updateNote(noteId, request)
+            if (response.isSuccessful && response.body() != null) {
+                val dto = response.body()!!
+                val existingEntity = noteDao.getNoteById(noteId)
+                val restoredLessonId = existingEntity?.lessonId ?: ""
+                val restoredUserId = existingEntity?.userId ?: ""
+                val effectiveTimestamp = timestampSeconds?.toInt() ?: existingEntity?.timestampSeconds ?: dto.timestamp.toInt()
+                val note = dto.toDomain(lessonId = restoredLessonId).copy(
+                    timestampSeconds = effectiveTimestamp.toFloat()
+                )
+                noteDao.upsertNote(note.toEntity(userId = restoredUserId).copy(timestampSeconds = effectiveTimestamp))
+                Result.success(note)
+            } else if (response.code() == 404 || response.code() == 503) {
+                val existingEntity = noteDao.getNoteById(noteId)
+                if (existingEntity != null) {
+                    val updatedEntity = existingEntity.copy(
+                        content = content.trim(),
+                        timestampSeconds = timestampSeconds?.toInt() ?: existingEntity.timestampSeconds,
+                        updatedAt = System.currentTimeMillis(),
+                        isSynced = false
+                    )
+                    noteDao.upsertNote(updatedEntity)
+                    Result.success(updatedEntity.toDomain())
                 } else {
                     Result.failure(mapHttpError(response.code(), "Không thể cập nhật ghi chú."))
                 }
-            } catch (e: IOException) {
-                Result.failure(Exception("Lỗi kết nối mạng khi cập nhật ghi chú.", e))
-            } catch (e: Exception) {
-                Result.failure(e)
+            } else {
+                Result.failure(mapHttpError(response.code(), "Không thể cập nhật ghi chú."))
             }
+        } catch (e: IOException) {
+            val existingEntity = noteDao.getNoteById(noteId)
+            if (existingEntity != null) {
+                val updatedEntity = existingEntity.copy(
+                    content = content.trim(),
+                    timestampSeconds = timestampSeconds?.toInt() ?: existingEntity.timestampSeconds,
+                    updatedAt = System.currentTimeMillis(),
+                    isSynced = false
+                )
+                noteDao.upsertNote(updatedEntity)
+                Result.success(updatedEntity.toDomain())
+            } else {
+                Result.failure(Exception("Lỗi kết nối mạng khi cập nhật ghi chú.", e))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
         }
+    }
 
     override suspend fun deleteNote(noteId: String): Result<Unit> =
         withContext(ioDispatcher) {
             try {
                 val response = noteApiService.deleteNote(noteId)
-                if (response.isSuccessful) {
+                if (response.isSuccessful || response.code() == 404) {
                     noteDao.deleteNoteById(noteId)
                     Result.success(Unit)
                 } else {
                     Result.failure(mapHttpError(response.code(), "Không thể xóa ghi chú."))
                 }
             } catch (e: IOException) {
-                Result.failure(Exception("Lỗi kết nối mạng khi xóa ghi chú.", e))
+                noteDao.deleteNoteById(noteId)
+                Result.success(Unit)
             } catch (e: Exception) {
                 Result.failure(e)
             }

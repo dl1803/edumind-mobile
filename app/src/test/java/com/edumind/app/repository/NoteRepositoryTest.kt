@@ -112,6 +112,15 @@ class NoteRepositoryTest {
     @Test
     fun updateNote_success_updatesRoom() = runTest(testDispatcher) {
         val request = UpdateNoteRequest(content = "Nội dung đã sửa")
+        val existingEntity = NoteEntity(
+            id = sampleNoteId,
+            lessonId = sampleLessonId,
+            userId = "user_test",
+            timestampSeconds = 45,
+            content = "Nội dung cũ",
+            isSynced = true
+        )
+        coEvery { noteDao.getNoteById(sampleNoteId) } returns existingEntity
         coEvery { noteApiService.updateNote(sampleNoteId, request) } returns Response.success(
             sampleNoteDto.copy(content = "Nội dung đã sửa")
         )
@@ -121,7 +130,9 @@ class NoteRepositoryTest {
 
         assertTrue(result.isSuccess)
         assertEquals("Nội dung đã sửa", result.getOrThrow().content)
-        coVerify(exactly = 1) { noteDao.upsertNote(match { it.content == "Nội dung đã sửa" }) }
+        coVerify(exactly = 1) {
+            noteDao.upsertNote(match { it.content == "Nội dung đã sửa" && it.lessonId == sampleLessonId })
+        }
     }
 
     @Test

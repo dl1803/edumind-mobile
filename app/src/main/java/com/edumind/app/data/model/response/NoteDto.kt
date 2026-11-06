@@ -36,7 +36,46 @@ data class Note(
     val createdAt: Long,
     val updatedAt: Long,
     val isSynced: Boolean = true
-)
+) {
+    val timestampMs: Long
+        get() = (timestampSeconds.coerceAtLeast(0f) * 1000f).toLong()
+
+    val formattedTimestamp: String
+        get() {
+            val totalSeconds = timestampSeconds.toInt().coerceAtLeast(0)
+            val hours = totalSeconds / 3600
+            val minutes = (totalSeconds % 3600) / 60
+            val seconds = totalSeconds % 60
+            return if (hours > 0) {
+                String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds)
+            } else {
+                String.format(Locale.getDefault(), "%02d:%02d", minutes, seconds)
+            }
+        }
+
+    val tagLabel: String?
+        get() {
+            val trimmed = content.trim()
+            return when {
+                trimmed.startsWith("[Cú pháp]") -> "Cú pháp"
+                trimmed.startsWith("[Lỗi thường gặp]") -> "Lỗi thường gặp"
+                trimmed.startsWith("[Lưu ý quan trọng]") || trimmed.startsWith("[Lưu ý]") -> "Lưu ý quan trọng"
+                else -> null
+            }
+        }
+
+    val cleanContent: String
+        get() {
+            val trimmed = content.trim()
+            return when {
+                trimmed.startsWith("[Cú pháp]") -> trimmed.removePrefix("[Cú pháp]").trim()
+                trimmed.startsWith("[Lỗi thường gặp]") -> trimmed.removePrefix("[Lỗi thường gặp]").trim()
+                trimmed.startsWith("[Lưu ý quan trọng]") -> trimmed.removePrefix("[Lưu ý quan trọng]").trim()
+                trimmed.startsWith("[Lưu ý]") -> trimmed.removePrefix("[Lưu ý]").trim()
+                else -> trimmed
+            }
+        }
+}
 
 fun NoteDto.toDomain(lessonId: String): Note {
     return Note(
