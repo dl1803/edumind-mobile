@@ -17,7 +17,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,9 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.edumind.app.ui.common.CourseCard
 import com.edumind.app.ui.common.EduMindSearchBar
@@ -44,8 +41,6 @@ import com.edumind.app.ui.explore.components.ExploreFullSkeleton
 import com.edumind.app.ui.explore.components.ExploreSkeletonGrid
 import com.edumind.app.ui.explore.components.FilterBottomSheet
 import com.edumind.app.ui.theme.BgCanvasMobile
-import com.edumind.app.ui.theme.EduMindFontFamily
-import com.edumind.app.ui.theme.Neutral950
 import com.edumind.app.ui.theme.Primary600
 import kotlinx.coroutines.flow.distinctUntilChanged
 
