@@ -117,6 +117,7 @@ class NotesViewModel @Inject constructor(
         if (lessonId.isBlank()) return
 
         notesJob?.cancel()
+        allNotes = emptyList()
         notesJob = viewModelScope.launch {
             _uiState.value = NotesUiState.Loading
 
