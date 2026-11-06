@@ -17,11 +17,17 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NoteRepositoryImpl @Inject constructor(
+class NoteRepositoryImpl constructor(
     private val noteApiService: NoteApiService,
     private val noteDao: NoteDao,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : NoteRepository {
+
+    @Inject
+    constructor(
+        noteApiService: NoteApiService,
+        noteDao: NoteDao
+    ) : this(noteApiService, noteDao, Dispatchers.IO)
 
     override fun getNotes(lessonId: String): Flow<List<Note>> {
         return noteDao.getNotesByLesson(lessonId).map { entities ->
