@@ -16,6 +16,7 @@ import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsManifest
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import com.edumind.app.BuildConfig
 import com.edumind.app.data.model.response.LessonDetail
 import com.edumind.app.data.model.response.PlayerChapter
 import com.edumind.app.data.model.response.toPlayerChapters
@@ -51,6 +52,7 @@ sealed interface LessonLoadState {
     data class Error(val message: String) : LessonLoadState
 }
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
     @ApplicationContext context: Context,
@@ -126,7 +128,9 @@ class PlayerViewModel @Inject constructor(
                     progressRepository.syncPending()
                     if (exoPlayer.playerError != null || exoPlayer.playbackState == Player.STATE_IDLE) {
                         delay(300)
-                        Log.d(TAG, "Network restored, auto recovering ExoPlayer...")
+                        if (BuildConfig.DEBUG) {
+                            Log.d(TAG, "Network restored, auto recovering ExoPlayer...")
+                        }
                         retryPlayback(autoPlay = exoPlayer.playWhenReady)
                     }
                 }
@@ -255,7 +259,9 @@ class PlayerViewModel @Inject constructor(
                     totalDurationMs = dur,
                     completed = completed
                 ).onSuccess { percent ->
-                    Log.d(TAG, "Progress saved successfully: $percent% (pos: ${pos}ms / ${dur}ms)")
+                    if (BuildConfig.DEBUG) {
+                        Log.d(TAG, "Progress saved successfully: $percent% (pos: ${pos}ms / ${dur}ms)")
+                    }
                 }.onFailure { e ->
                     Log.e(TAG, "Failed to save progress: ${e.message}")
                 }
@@ -319,7 +325,9 @@ class PlayerViewModel @Inject constructor(
                 val isHls = exoPlayer.currentManifest is HlsManifest
 
                 if (playbackState == Player.STATE_READY) {
-                    Log.d(TAG, "ExoPlayer READY - HlsManifest: $isHls, duration: ${exoPlayer.duration}ms")
+                    if (BuildConfig.DEBUG) {
+                        Log.d(TAG, "ExoPlayer READY - HlsManifest: $isHls, duration: ${exoPlayer.duration}ms")
+                    }
                 } else if (playbackState == Player.STATE_ENDED) {
                     saveCurrentProgress(completed = true)
                 }
@@ -533,6 +541,8 @@ class PlayerViewModel @Inject constructor(
             Log.w(TAG, "Cannot unregister network callback: ${e.message}")
         }
         exoPlayer.release()
-        Log.d(TAG, "ExoPlayer instance has been safely released.")
+        if (BuildConfig.DEBUG) {
+            Log.d(TAG, "ExoPlayer instance has been safely released.")
+        }
     }
 }

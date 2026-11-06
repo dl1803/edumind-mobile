@@ -7,6 +7,7 @@ import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
 import android.util.Log
+import com.edumind.app.BuildConfig
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,12 +39,16 @@ class NetworkUtils @Inject constructor(
     val isOnline: StateFlow<Boolean> = callbackFlow {
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
-                Log.d("NetworkUtils", "onAvailable: Mạng khả dụng -> isOnline = true")
+                if (BuildConfig.DEBUG) {
+                    Log.d("NetworkUtils", "onAvailable: Mạng khả dụng -> isOnline = true")
+                }
                 trySend(true)
             }
 
             override fun onLost(network: Network) {
-                Log.d("NetworkUtils", "onLost: Mất mạng (Airplane Mode / Tắt Wifi) -> isOnline = false")
+                if (BuildConfig.DEBUG) {
+                    Log.d("NetworkUtils", "onLost: Mất mạng (Airplane Mode / Tắt Wifi) -> isOnline = false")
+                }
                 trySend(false)
             }
 
@@ -53,7 +58,9 @@ class NetworkUtils @Inject constructor(
             ) {
                 val hasInternet = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
                         networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                Log.d("NetworkUtils", "onCapabilitiesChanged: hasInternet = $hasInternet")
+                if (BuildConfig.DEBUG) {
+                    Log.d("NetworkUtils", "onCapabilitiesChanged: hasInternet = $hasInternet")
+                }
                 trySend(hasInternet)
             }
         }
@@ -68,7 +75,9 @@ class NetworkUtils @Inject constructor(
         }
 
         val initialStatus = isConnectedNow()
-        Log.d("NetworkUtils", "Khởi tạo trạng thái mạng: isOnline = $initialStatus")
+        if (BuildConfig.DEBUG) {
+            Log.d("NetworkUtils", "Khởi tạo trạng thái mạng: isOnline = $initialStatus")
+        }
         trySend(initialStatus)
 
         awaitClose {

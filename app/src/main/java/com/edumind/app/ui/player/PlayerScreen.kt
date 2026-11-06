@@ -104,6 +104,7 @@ import com.edumind.app.ui.theme.Primary900
 import com.edumind.app.ui.theme.Primary950
 import com.edumind.app.ui.theme.Success600
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun PlayerScreen(
     onBackClick: () -> Unit,
