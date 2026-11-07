@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface NoteRepository {
     fun getNotes(lessonId: String): Flow<List<Note>>
 
-    suspend fun fetchNotesFromRemote(lessonId: String): Result<List<Note>>
+    suspend fun fetchNotesFromRemote(lessonId: String): Result<Unit>
 
     suspend fun createNote(
         lessonId: String,
@@ -22,6 +22,6 @@ interface NoteRepository {
 
     suspend fun deleteNote(noteId: String): Result<Unit>
 
-    suspend fun getUnsyncedNotes(): List<Note>
+    suspend fun syncPendingNotes()
 }
 

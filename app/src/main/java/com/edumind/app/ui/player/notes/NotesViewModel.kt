@@ -136,8 +136,7 @@ class NotesViewModel @Inject constructor(
 
             val remoteResult = noteRepository.fetchNotesFromRemote(lessonId)
             remoteResult.fold(
-                onSuccess = { remoteNotes ->
-                    allNotes = remoteNotes.sortedBy { it.timestampSeconds }
+                onSuccess = {
                     if (allNotes.isEmpty()) {
                         _uiState.value = NotesUiState.Empty
                     } else {

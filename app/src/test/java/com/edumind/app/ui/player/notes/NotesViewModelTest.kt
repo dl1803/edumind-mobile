@@ -56,7 +56,7 @@ class NotesViewModelTest {
         Dispatchers.setMain(testDispatcher)
         savedStateHandle = SavedStateHandle(mapOf(Screen.ARG_LESSON_ID to sampleLessonId))
         coEvery { noteRepository.getNotes(sampleLessonId) } returns flowOf(listOf(note1, note2))
-        coEvery { noteRepository.fetchNotesFromRemote(sampleLessonId) } returns Result.success(listOf(note1, note2))
+        coEvery { noteRepository.fetchNotesFromRemote(sampleLessonId) } returns Result.success(Unit)
 
         viewModel = NotesViewModel(
             savedStateHandle = savedStateHandle,
@@ -100,7 +100,7 @@ class NotesViewModelTest {
     @Test
     fun loadNotes_empty_emitsEmptyState() = runTest(testDispatcher) {
         coEvery { noteRepository.getNotes("lesson_empty") } returns flowOf(emptyList())
-        coEvery { noteRepository.fetchNotesFromRemote("lesson_empty") } returns Result.success(emptyList())
+        coEvery { noteRepository.fetchNotesFromRemote("lesson_empty") } returns Result.success(Unit)
 
         viewModel.initLessonId("lesson_empty")
         advanceUntilIdle()

@@ -54,6 +54,7 @@ import com.edumind.app.ui.theme.Neutral800
 import com.edumind.app.ui.theme.Primary100
 import com.edumind.app.ui.theme.Primary50
 import com.edumind.app.ui.theme.Primary700
+import com.edumind.app.ui.theme.Warning700
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -80,18 +81,12 @@ fun NoteItem(
         // Hàng trên: Badge nhãn phân loại (bên trái) + Nút sửa/xóa phẳng (bên phải) theo Frame 3
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (note.tagLabel != null) {
                 NoteTagBadge(tag = note.tagLabel!!)
-            } else {
-                // Nếu không có nhãn thì hiển thị mốc thời gian Zero-Pill ở góc trên
-                ZeroPillTimestamp(
-                    formattedTimestamp = note.formattedTimestamp,
-                    onClick = { onSeek(note.timestampMs) }
-                )
             }
+            Spacer(modifier = Modifier.weight(1f))
 
             // Nút sửa và xóa phẳng (không nền card) với touch target 36-40dp
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -173,6 +168,24 @@ fun NoteItem(
                     fontSize = 10.sp,
                     color = Neutral500
                 )
+                if (!note.isSynced) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "•",
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 10.sp,
+                        color = Neutral400
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Chưa đồng bộ",
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Warning700
+                    )
+                }
             }
 
             // Mốc thời gian bấm tua video (Font monospace màu tím gạch chân) + ngày tạo
@@ -336,6 +349,21 @@ private fun NoteItemPreview() {
                     timestampSeconds = 710f,
                     createdAt = System.currentTimeMillis() - 86400000,
                     updatedAt = System.currentTimeMillis() - 86400000
+                ),
+                onSeek = {},
+                onEditClick = {},
+                onDeleteClick = {}
+            )
+
+            NoteItem(
+                note = Note(
+                    id = "4",
+                    lessonId = "lesson_1",
+                    content = "Ghi chú thường không chọn nhãn phân loại (minh họa nhãn chưa đồng bộ)",
+                    timestampSeconds = 120f,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis(),
+                    isSynced = false
                 ),
                 onSeek = {},
                 onEditClick = {},
