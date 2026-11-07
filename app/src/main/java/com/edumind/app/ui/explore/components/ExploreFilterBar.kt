@@ -33,13 +33,11 @@ import com.edumind.app.R
 import com.edumind.app.ui.explore.SortOption
 import com.edumind.app.ui.theme.EduMindFontFamily
 import com.edumind.app.ui.theme.NebulaBrush
-import com.edumind.app.ui.theme.Neutral100
 import com.edumind.app.ui.theme.Neutral200
 import com.edumind.app.ui.theme.Neutral50
 import com.edumind.app.ui.theme.Neutral500
 import com.edumind.app.ui.theme.Neutral600
 import com.edumind.app.ui.theme.Neutral700
-import com.edumind.app.ui.theme.Primary200
 import com.edumind.app.ui.theme.Primary50
 import com.edumind.app.ui.theme.Primary500
 import com.edumind.app.ui.theme.Primary700

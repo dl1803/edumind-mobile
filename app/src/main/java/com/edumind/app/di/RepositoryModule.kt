@@ -4,10 +4,8 @@ import com.edumind.app.repository.AuthRepository
 import com.edumind.app.repository.AuthRepositoryImpl
 import com.edumind.app.repository.CourseRepository
 import com.edumind.app.repository.CourseRepositoryImpl
-import com.edumind.app.repository.FakeCourseRepository
 import com.edumind.app.repository.FakeHomeRepository
 import com.edumind.app.repository.FakeProfileRepository
-import com.edumind.app.repository.FakeProgressRepository
 import com.edumind.app.repository.FakeSubtitleRepository
 import com.edumind.app.repository.HomeRepository
 import com.edumind.app.repository.LessonRepository

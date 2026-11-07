@@ -5,13 +5,11 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.edumind.app.BuildConfig
-import com.edumind.app.data.local.prefs.TokenManager
 import com.edumind.app.data.remote.api.AuthApiService
 import com.edumind.app.data.remote.api.CourseApiService
 import com.edumind.app.data.remote.api.LessonApiService
 import com.edumind.app.data.remote.api.NoteApiService
 import com.edumind.app.data.remote.api.ProgressApiService
-import com.edumind.app.data.remote.mock.FakeAuthApiService
 import com.edumind.app.data.remote.interceptor.AuthInterceptor
 import com.edumind.app.data.remote.interceptor.TokenAuthenticator
 import com.edumind.app.util.ClockProvider
@@ -127,11 +125,7 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideAuthApiService(retrofit: Retrofit): AuthApiService {
-        return if (BuildConfig.USE_MOCK_AUTH) {
-            FakeAuthApiService()
-        } else {
-            retrofit.create(AuthApiService::class.java)
-        }
+        return retrofit.create(AuthApiService::class.java)
     }
 
     @Provides

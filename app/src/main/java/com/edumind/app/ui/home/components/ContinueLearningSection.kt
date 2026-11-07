@@ -47,7 +47,6 @@ import com.edumind.app.ui.theme.Neutral500
 import com.edumind.app.ui.theme.Neutral900
 import com.edumind.app.ui.theme.Neutral950
 import com.edumind.app.ui.theme.Primary700
-import com.edumind.app.ui.theme.Success600
 
 @Composable
 fun ContinueLearningSection(

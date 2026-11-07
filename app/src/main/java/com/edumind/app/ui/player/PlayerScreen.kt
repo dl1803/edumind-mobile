@@ -1,7 +1,5 @@
 package com.edumind.app.ui.player
 
-import android.app.Activity
-import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.widget.Toast
@@ -19,7 +17,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,9 +30,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.draw.alpha
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.Assignment
 import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.Add
@@ -46,11 +40,7 @@ import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PictureAsPdf
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -104,15 +94,20 @@ import com.edumind.app.ui.theme.Primary50
 import com.edumind.app.ui.theme.Primary600
 import com.edumind.app.ui.theme.Primary700
 import com.edumind.app.ui.theme.Primary900
-import com.edumind.app.ui.theme.Primary950
 import com.edumind.app.ui.theme.Success600
+import com.edumind.app.ui.player.notes.NoteEditorSheet
+import com.edumind.app.ui.player.notes.NotesTab
+import com.edumind.app.ui.player.notes.NotesViewModel
+import com.edumind.app.ui.player.notes.NotesUiState
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun PlayerScreen(
     onBackClick: () -> Unit,
     onNavigateToAiSummary: () -> Unit = {},
     onNavigateToAiChat: () -> Unit = {},
     viewModel: PlayerViewModel = hiltViewModel(),
+    notesViewModel: NotesViewModel = hiltViewModel(),
     subtitleViewModel: SubtitleViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -127,11 +122,20 @@ fun PlayerScreen(
     val subtitleState by subtitleViewModel.uiState.collectAsState()
     var isQualitySheetVisible by remember { mutableStateOf(false) }
     var isChapterSheetVisible by rememberSaveable { mutableStateOf(false) }
+    var wasPlayingBeforeSheet by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val activity = remember(context) { context.findActivity() }
+
+    LaunchedEffect(loadState) {
+        if (loadState is LessonLoadState.Ready) {
+            val lesson = (loadState as LessonLoadState.Ready).lesson
+            notesViewModel.initLessonId(lesson.id)
+            subtitleViewModel.initLessonId(lesson.id)
+        }
+    }
 
     LaunchedEffect(userMessage) {
         userMessage?.let { msg ->
@@ -158,13 +162,6 @@ fun PlayerScreen(
 
     BackHandler(enabled = isFullscreen) {
         viewModel.exitFullscreen()
-    }
-
-    LaunchedEffect(loadState) {
-        if (loadState is LessonLoadState.Ready) {
-            val lesson = (loadState as LessonLoadState.Ready).lesson
-            subtitleViewModel.initLessonId(lesson.id)
-        }
     }
 
     LaunchedEffect(state.positionMs) {
@@ -249,6 +246,24 @@ fun PlayerScreen(
                 chapters = chapters,
                 currentChapterIndex = currentChapterIndex,
                 onChapterSelect = { chapter -> viewModel.onChapterSelected(chapter) },
+                notesContent = {
+                    NotesTab(
+                        viewModel = notesViewModel,
+                        currentPositionMs = state.positionMs,
+                        lessonTitle = state.title,
+                        onSeek = { targetMs -> viewModel.seekTo(targetMs) },
+                        onPauseVideo = {
+                            wasPlayingBeforeSheet = state.isPlaying
+                            viewModel.pause()
+                        },
+                        onResumeVideo = {
+                            if (wasPlayingBeforeSheet) {
+                                viewModel.exoPlayer.play()
+                                wasPlayingBeforeSheet = false
+                            }
+                        }
+                    )
+                },
                 transcriptContent = {
                     TranscriptPanel(
                         segments = subtitleState.segments,
@@ -332,6 +347,44 @@ fun PlayerScreen(
                         viewModel.onChapterSelected(chapter)
                     },
                     onDismiss = { isChapterSheetVisible = false }
+                )
+            }
+
+            // Modal Bottom Sheet soạn thảo ghi chú M-16
+            val editorState by notesViewModel.editorState.collectAsState()
+            if (editorState.isOpen) {
+                NoteEditorSheet(
+                    editorState = editorState,
+                    lessonTitle = state.title,
+                    onContentChange = { notesViewModel.onContentChange(it) },
+                    onSelectTag = { notesViewModel.onSelectTag(it) },
+                    onSyncCurrentPosition = {
+                        notesViewModel.updateTimestamp(state.positionMs / 1000f)
+                    },
+                    onSaveClick = {
+                        notesViewModel.saveNote(onSuccess = {
+                            if (wasPlayingBeforeSheet) {
+                                viewModel.exoPlayer.play()
+                                wasPlayingBeforeSheet = false
+                            }
+                        })
+                    },
+                    onDismiss = {
+                        notesViewModel.closeEditorSheet()
+                        if (wasPlayingBeforeSheet) {
+                            viewModel.exoPlayer.play()
+                            wasPlayingBeforeSheet = false
+                        }
+                    },
+                    onDeleteClick = {
+                        val currentNote = (notesViewModel.uiState.value as? NotesUiState.Success)
+                            ?.notes?.find { it.id == editorState.noteId }
+                        if (currentNote != null) {
+                            // Đóng sheet trước để hiển thị AlertDialog xác nhận xóa rõ ràng, không bị trùng lớp modal
+                            notesViewModel.closeEditorSheet()
+                            notesViewModel.requestDelete(currentNote)
+                        }
+                    }
                 )
             }
         }
@@ -437,6 +490,7 @@ fun PlayerScreenContent(
     chapters: List<PlayerChapter> = emptyList(),
     currentChapterIndex: Int = 0,
     onChapterSelect: (PlayerChapter) -> Unit = {},
+    notesContent: @Composable () -> Unit = {},
     transcriptContent: @Composable () -> Unit = {},
     subtitleText: String? = null,
     hasSubtitles: Boolean = false,
@@ -755,8 +809,8 @@ fun PlayerScreenContent(
                     }
                 }
             } else {
-                // TAB GHI CHÚ
-                LessonNotesTab()
+                // TAB GHI CHÚ (M-15)
+                notesContent()
             }
         }
 
@@ -1146,198 +1200,6 @@ private fun LessonOverviewTab() {
                     color = Primary700
                 )
             }
-        }
-
-        Spacer(modifier = Modifier.height(48.dp))
-    }
-}
-
-@Composable
-private fun LessonNotesTab() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        // Thanh lọc nhãn tag
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "Nhãn:",
-                fontFamily = EduMindFontFamily,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = Neutral400
-            )
-
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(NebulaGradient)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Tất cả (3)",
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Primary50)
-                    .border(1.dp, Primary100, CircleShape)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Cú pháp",
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Primary700
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(Neutral100)
-                    .padding(horizontal = 10.dp, vertical = 4.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Lỗi thường gặp",
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = Neutral600
-                )
-            }
-        }
-
-        // Header ghi chú
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Ghi chú trong Bài 03 (3)",
-                fontFamily = EduMindFontFamily,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Neutral900
-            )
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(NebulaGradient)
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(12.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "Thêm tại 04:15",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
-            }
-        }
-
-        // Ghi chú 1
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color.White)
-                .border(1.dp, Primary100, RoundedCornerShape(16.dp))
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Primary50)
-                        .border(1.dp, Primary100, RoundedCornerShape(6.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "Cú pháp • 02:15",
-                        fontFamily = EduMindFontFamily,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Primary700
-                    )
-                }
-            }
-            Text(
-                text = "Quy tắc đặt tên biến: Luôn dùng cú pháp snake_case theo chuẩn PEP 8. Tuyệt đối không bắt đầu tên biến bằng số.",
-                fontFamily = EduMindFontFamily,
-                fontSize = 12.sp,
-                color = Neutral800,
-                lineHeight = 18.sp
-            )
-        }
-
-        // Ghi chú 2
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color.White)
-                .border(1.dp, Neutral200, RoundedCornerShape(16.dp))
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Neutral100)
-                    .padding(horizontal = 8.dp, vertical = 2.dp)
-            ) {
-                Text(
-                    text = "Lỗi thường gặp • 07:35",
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Neutral600
-                )
-            }
-            Text(
-                text = "Không cộng trực tiếp chuỗi với số (str + int) vì Python là ngôn ngữ strongly typed. Bắt buộc phải ép kiểu str(so).",
-                fontFamily = EduMindFontFamily,
-                fontSize = 12.sp,
-                color = Neutral800,
-                lineHeight = 18.sp
-            )
         }
 
         Spacer(modifier = Modifier.height(48.dp))

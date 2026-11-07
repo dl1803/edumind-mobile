@@ -20,7 +20,7 @@ import com.edumind.app.data.local.db.entity.PlaybackPositionEntity
         ChatHistoryEntity::class,
         PlaybackPositionEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -47,6 +47,14 @@ abstract class AppDatabase : RoomDatabase() {
                     )
                     """.trimIndent()
                 )
+            }
+        }
+
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `notes` ADD COLUMN `server_id` TEXT")
+                db.execSQL("ALTER TABLE `notes` ADD COLUMN `is_deleted` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE `notes` SET `server_id` = `id` WHERE `is_synced` = 1")
             }
         }
     }

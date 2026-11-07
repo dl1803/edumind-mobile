@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -88,7 +87,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -100,8 +98,6 @@ import com.edumind.app.data.model.response.CourseSection
 import com.edumind.app.data.model.response.LessonType
 import com.edumind.app.ui.common.ErrorView
 import com.edumind.app.ui.theme.EduMindFontFamily
-import com.edumind.app.ui.theme.Error100
-import com.edumind.app.ui.theme.Error600
 import com.edumind.app.ui.theme.NebulaBrush
 import com.edumind.app.ui.theme.Neutral100
 import com.edumind.app.ui.theme.Neutral200
