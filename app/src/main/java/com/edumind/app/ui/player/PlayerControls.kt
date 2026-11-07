@@ -84,7 +84,10 @@ fun PlayerControlsOverlay(
     availableQualities: List<QualityOption> = emptyList(),
     onQualityClick: () -> Unit = {},
     onChapterClick: () -> Unit = {},
-    chapters: List<PlayerChapter> = emptyList()
+    chapters: List<PlayerChapter> = emptyList(),
+    hasSubtitles: Boolean = false,
+    subtitleEnabled: Boolean = true,
+    onToggleSubtitle: () -> Unit = {}
 ) {
     val dynamicMarkers = remember(chapters, state.durationMs) {
         if (state.durationMs > 0L) {
@@ -298,19 +301,25 @@ fun PlayerControlsOverlay(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(Primary700)
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = "CC",
-                                    fontFamily = EduMindFontFamily,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
+                            if (hasSubtitles) {
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(if (subtitleEnabled) Primary700 else Color.White.copy(alpha = 0.2f))
+                                        .clickable(
+                                            onClickLabel = if (subtitleEnabled) "Tắt phụ đề" else "Bật phụ đề",
+                                            onClick = onToggleSubtitle
+                                        )
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "CC",
+                                        fontFamily = EduMindFontFamily,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    )
+                                }
                             }
 
                             Box(

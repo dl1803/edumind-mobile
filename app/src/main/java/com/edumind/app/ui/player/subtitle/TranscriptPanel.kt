@@ -117,8 +117,8 @@ private fun TranscriptList(
     LazyColumn(
         state = listState,
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+        contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 88.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         itemsIndexed(segments, key = { _, segment -> segment.startMs }) { index, segment ->
             TranscriptRow(
@@ -144,11 +144,10 @@ private fun TranscriptRow(
             .clip(RoundedCornerShape(8.dp))
             .background(if (isCurrent) Primary50 else Color.Transparent)
             .clickable(onClickLabel = "Tua đến $timeLabel", onClick = onClick)
-            .padding(horizontal = 8.dp, vertical = 6.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.Top
     ) {
-        // Mốc thời gian đặt trong thẻ card bo góc nhạt
         Box(
             modifier = Modifier
                 .padding(top = 1.dp)
@@ -156,30 +155,28 @@ private fun TranscriptRow(
                     color = if (isCurrent) Primary100 else Neutral100,
                     shape = RoundedCornerShape(6.dp)
                 )
-                .padding(horizontal = 6.dp, vertical = 2.dp),
+                .padding(horizontal = 5.dp, vertical = 2.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = timeLabel,
                 fontFamily = FontFamily.Monospace,
-                fontSize = 12.sp,
+                fontSize = 11.sp,
                 lineHeight = 16.sp,
                 fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Medium,
                 color = if (isCurrent) Primary700 else Neutral500
             )
         }
 
-        // Thanh dọc ngăn cách phân định rõ ràng giữa mốc thời gian và nội dung
         Box(
             modifier = Modifier
                 .fillMaxHeight()
                 .padding(vertical = 2.dp)
-                .width(2.dp)
+                .width(if (isCurrent) 2.dp else 1.dp)
                 .clip(RoundedCornerShape(1.dp))
                 .background(if (isCurrent) Primary400 else Neutral200)
         )
 
-        // Nội dung câu phụ đề
         Text(
             text = segment.text,
             fontFamily = EduMindFontFamily,

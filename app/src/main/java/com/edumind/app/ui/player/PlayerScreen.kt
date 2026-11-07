@@ -82,6 +82,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.edumind.app.data.model.response.PlayerChapter
+import com.edumind.app.ui.player.subtitle.SubtitleOverlay
+import com.edumind.app.ui.player.subtitle.SubtitleViewModel
+import com.edumind.app.ui.player.subtitle.TranscriptPanel
 import com.edumind.app.ui.theme.EduMindFontFamily
 import com.edumind.app.ui.theme.EduMindTheme
 import com.edumind.app.ui.theme.NebulaGradient
@@ -109,7 +112,8 @@ fun PlayerScreen(
     onBackClick: () -> Unit,
     onNavigateToAiSummary: () -> Unit = {},
     onNavigateToAiChat: () -> Unit = {},
-    viewModel: PlayerViewModel = hiltViewModel()
+    viewModel: PlayerViewModel = hiltViewModel(),
+    subtitleViewModel: SubtitleViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val loadState by viewModel.loadState.collectAsState()
@@ -120,6 +124,7 @@ fun PlayerScreen(
     val currentChapterIndex by viewModel.currentChapterIndex.collectAsState()
     val userMessage by viewModel.userMessage.collectAsState()
     val isFullscreen by viewModel.isFullscreen.collectAsState()
+    val subtitleState by subtitleViewModel.uiState.collectAsState()
     var isQualitySheetVisible by remember { mutableStateOf(false) }
     var isChapterSheetVisible by rememberSaveable { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -153,6 +158,17 @@ fun PlayerScreen(
 
     BackHandler(enabled = isFullscreen) {
         viewModel.exitFullscreen()
+    }
+
+    LaunchedEffect(loadState) {
+        if (loadState is LessonLoadState.Ready) {
+            val lesson = (loadState as LessonLoadState.Ready).lesson
+            subtitleViewModel.initLessonId(lesson.id)
+        }
+    }
+
+    LaunchedEffect(state.positionMs) {
+        subtitleViewModel.onPositionChanged(state.positionMs)
     }
 
     DisposableEffect(Unit) {
@@ -233,6 +249,17 @@ fun PlayerScreen(
                 chapters = chapters,
                 currentChapterIndex = currentChapterIndex,
                 onChapterSelect = { chapter -> viewModel.onChapterSelected(chapter) },
+                transcriptContent = {
+                    TranscriptPanel(
+                        segments = subtitleState.segments,
+                        currentIndex = subtitleState.currentIndex,
+                        onSeek = { targetMs -> viewModel.seekTo(targetMs) }
+                    )
+                },
+                subtitleText = if (subtitleState.enabled) subtitleState.currentText else null,
+                hasSubtitles = subtitleState.hasSubtitles,
+                subtitleEnabled = subtitleState.enabled,
+                onToggleSubtitle = { subtitleViewModel.toggleEnabled() },
                 videoSurface = {
                     if (loadState is LessonLoadState.Loading) {
                         Box(
@@ -410,6 +437,11 @@ fun PlayerScreenContent(
     chapters: List<PlayerChapter> = emptyList(),
     currentChapterIndex: Int = 0,
     onChapterSelect: (PlayerChapter) -> Unit = {},
+    transcriptContent: @Composable () -> Unit = {},
+    subtitleText: String? = null,
+    hasSubtitles: Boolean = false,
+    subtitleEnabled: Boolean = true,
+    onToggleSubtitle: () -> Unit = {},
     videoSurface: @Composable () -> Unit = {}
 ) {
     var selectedMainTab by remember { mutableIntStateOf(0) }
@@ -435,7 +467,16 @@ fun PlayerScreenContent(
                 availableQualities = availableQualities,
                 onQualityClick = onQualityClick,
                 onChapterClick = onChapterClick,
-                chapters = chapters
+                chapters = chapters,
+                hasSubtitles = hasSubtitles,
+                subtitleEnabled = subtitleEnabled,
+                onToggleSubtitle = onToggleSubtitle
+            )
+
+            SubtitleOverlay(
+                text = subtitleText,
+                controlsVisible = state.isControlsVisible,
+                isLandscape = true
             )
         }
     } else {
@@ -471,7 +512,16 @@ fun PlayerScreenContent(
                         availableQualities = availableQualities,
                         onQualityClick = onQualityClick,
                         onChapterClick = onChapterClick,
-                        chapters = chapters
+                        chapters = chapters,
+                        hasSubtitles = hasSubtitles,
+                        subtitleEnabled = subtitleEnabled,
+                        onToggleSubtitle = onToggleSubtitle
+                    )
+
+                    SubtitleOverlay(
+                        text = subtitleText,
+                        controlsVisible = state.isControlsVisible,
+                        isLandscape = false
                     )
                 }
 
@@ -655,6 +705,37 @@ fun PlayerScreenContent(
                                 .background(if (selectedSubTab == 1) Primary600 else Neutral200)
                         )
                     }
+
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(16.dp)
+                            .background(Neutral200)
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp)
+                            .background(if (selectedSubTab == 2) Primary50 else Color.White)
+                            .clickable { selectedSubTab = 2 },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Phụ đề",
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 12.sp,
+                            fontWeight = if (selectedSubTab == 2) FontWeight.Bold else FontWeight.SemiBold,
+                            color = if (selectedSubTab == 2) Primary700 else Neutral500
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(if (selectedSubTab == 2) 2.dp else 1.dp)
+                                .align(Alignment.BottomCenter)
+                                .background(if (selectedSubTab == 2) Primary600 else Neutral200)
+                        )
+                    }
                 }
 
                 // VÙNG NỘI DUNG CUỘN CỦA TAB MỤC LỤC
@@ -663,14 +744,14 @@ fun PlayerScreenContent(
                         .fillMaxSize()
                         .background(Color(0xFFFAFAFA))
                 ) {
-                    if (selectedSubTab == 0) {
-                        LessonContentTab(
+                    when (selectedSubTab) {
+                        0 -> LessonContentTab(
                             chapters = chapters,
                             currentIndex = currentChapterIndex,
                             onChapterSelect = onChapterSelect
                         )
-                    } else {
-                        LessonOverviewTab()
+                        1 -> LessonOverviewTab()
+                        else -> transcriptContent()
                     }
                 }
             } else {
