@@ -89,16 +89,18 @@ fun NoteDto.toDomain(lessonId: String): Note {
     )
 }
 
-fun Note.toEntity(userId: String = ""): NoteEntity {
+fun NoteDto.toEntity(lessonId: String, localId: String = this.id, userId: String = ""): NoteEntity {
     return NoteEntity(
-        id = this.id,
-        lessonId = this.lessonId,
+        id = localId,
+        lessonId = lessonId,
         userId = userId,
-        timestampSeconds = this.timestampSeconds.toInt(),
+        timestampSeconds = this.timestamp.toInt(),
         content = this.content,
-        createdAt = this.createdAt,
-        updatedAt = this.updatedAt,
-        isSynced = this.isSynced
+        createdAt = parseIsoToMillis(this.createdAt),
+        updatedAt = parseIsoToMillis(this.updatedAt ?: this.createdAt),
+        isSynced = true,
+        serverId = this.id,
+        isDeleted = false
     )
 }
 
