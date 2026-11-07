@@ -509,10 +509,10 @@ class PlayerViewModel @Inject constructor(
                 }
                 updateCurrentChapterIndex(currentPos)
                 tickCount++
-                if (tickCount % 30 == 0) { // Mỗi 15 giây lưu 1 lần (30 * 500ms = 15s)
+                if (tickCount % 75 == 0) { // Mỗi 15 giây lưu 1 lần (75 * 200ms = 15s)
                     saveCurrentProgress()
                 }
-                delay(500)
+                delay(200)
             }
         }
     }
