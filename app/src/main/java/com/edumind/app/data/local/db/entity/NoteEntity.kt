@@ -31,5 +31,11 @@ data class NoteEntity(
     val updatedAt: Long = System.currentTimeMillis(),
 
     @ColumnInfo(name = "is_synced")
-    val isSynced: Boolean = true // false nếu tạo lúc offline và đang chờ đồng bộ lên BE
+    val isSynced: Boolean = true, // false nếu tạo lúc offline và đang chờ đồng bộ lên BE
+
+    @ColumnInfo(name = "server_id")
+    val serverId: String? = null,
+
+    @ColumnInfo(name = "is_deleted", defaultValue = "0")
+    val isDeleted: Boolean = false
 )
