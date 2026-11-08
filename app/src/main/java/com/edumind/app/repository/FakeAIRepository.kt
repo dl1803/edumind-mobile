@@ -14,7 +14,7 @@ class FakeAIRepository @Inject constructor() : AIRepository {
 
     override suspend fun ask(lessonId: String, question: String): Result<ChatMessage> {
         delay(REPLY_DELAY_MS)
-        if (question.contains(ERROR_KEYWORD, ignoreCase = true)) {
+        if (ERROR_KEYWORDS.any { question.contains(it, ignoreCase = true) }) {
             return Result.failure(IOException("Mock AI failure"))
         }
         val citations = buildList {
@@ -35,7 +35,7 @@ class FakeAIRepository @Inject constructor() : AIRepository {
 
     companion object {
         private const val REPLY_DELAY_MS = 1_200L
-        private const val ERROR_KEYWORD = "lỗi"
+        private val ERROR_KEYWORDS = listOf("lỗi", "error")
         private const val LONG_QUESTION_LENGTH = 20
         private const val REPLY_TEXT =
             "Trong Python, kiểu dữ liệu của biến được xác định tự động khi bạn gán giá trị nên không cần khai báo kiểu trước. Đây là câu trả lời mẫu dùng để kiểm thử giao diện."

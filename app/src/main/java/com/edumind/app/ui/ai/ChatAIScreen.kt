@@ -26,6 +26,11 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.MenuBook
@@ -86,6 +91,7 @@ private const val ERROR_ITEM_KEY = "error"
 @Composable
 fun ChatAIScreen(
     state: ChatUiState,
+    currentPositionMs: Long = 0L,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
     onRetry: () -> Unit,
@@ -104,6 +110,7 @@ fun ChatAIScreen(
     ) {
         ChatAISheetContent(
             state = state,
+            currentPositionMs = currentPositionMs,
             onInputChange = onInputChange,
             onSend = onSend,
             onRetry = onRetry,
@@ -112,9 +119,7 @@ fun ChatAIScreen(
             modifier = Modifier
                 .fillMaxHeight(SHEET_HEIGHT_FRACTION)
                 .fillMaxWidth()
-                .navigationBarsPadding()
                 .imePadding()
-                .padding(horizontal = 10.dp)
         )
     }
 }
@@ -122,6 +127,7 @@ fun ChatAIScreen(
 @Composable
 fun ChatAISheetContent(
     state: ChatUiState,
+    currentPositionMs: Long = 0L,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit,
     onRetry: () -> Unit,
@@ -137,9 +143,9 @@ fun ChatAISheetContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = 28.dp)
-                .clip(RoundedCornerShape(32.dp))
+                .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
                 .background(Color.White)
-                .border(1.dp, Primary200.copy(alpha = 0.8f), RoundedCornerShape(32.dp))
+                .border(1.dp, Primary200.copy(alpha = 0.8f), RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
         ) {
             Spacer(modifier = Modifier.height(18.dp))
             ChatHeader()
@@ -164,6 +170,7 @@ fun ChatAISheetContent(
             ChatInputBar(
                 input = state.input,
                 canSend = state.canSend,
+                currentPositionMs = currentPositionMs,
                 onInputChange = onInputChange,
                 onSend = onSend
             )
@@ -419,13 +426,21 @@ private fun ChatMessageList(
 private fun ChatInputBar(
     input: String,
     canSend: Boolean,
+    currentPositionMs: Long,
     onInputChange: (String) -> Unit,
     onSend: () -> Unit
 ) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val totalSeconds = (currentPositionMs.coerceAtLeast(0L) / 1000).toInt()
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    val formattedTime = String.format("%02d:%02d", minutes, seconds)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color.White)
+            .navigationBarsPadding()
     ) {
         Box(
             modifier = Modifier
@@ -436,7 +451,7 @@ private fun ChatInputBar(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp)
+                .padding(horizontal = 14.dp, vertical = 10.dp)
         ) {
             Row(
                 modifier = Modifier
@@ -444,7 +459,8 @@ private fun ChatInputBar(
                     .clip(RoundedCornerShape(24.dp))
                     .background(Neutral100)
                     .border(1.dp, Neutral200, RoundedCornerShape(24.dp))
-                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                    .clickable { keyboardController?.show() }
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -455,10 +471,14 @@ private fun ChatInputBar(
                     modifier = Modifier.size(18.dp)
                 )
 
-                Box(modifier = Modifier.weight(1f)) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { keyboardController?.show() }
+                ) {
                     if (input.isEmpty()) {
                         Text(
-                            text = "Hỏi EduAI về bài học tại 04:15...",
+                            text = "Hỏi EduAI về bài học tại $formattedTime...",
                             fontFamily = EduMindFontFamily,
                             fontSize = 13.sp,
                             lineHeight = 18.sp,
@@ -478,6 +498,18 @@ private fun ChatInputBar(
                         ),
                         cursorBrush = SolidColor(Primary700),
                         maxLines = 3,
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Send,
+                            keyboardType = KeyboardType.Text
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onSend = {
+                                if (canSend) {
+                                    onSend()
+                                    keyboardController?.hide()
+                                }
+                            }
+                        ),
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -491,7 +523,10 @@ private fun ChatInputBar(
                             enabled = canSend,
                             onClickLabel = "Gửi câu hỏi",
                             role = Role.Button,
-                            onClick = onSend
+                            onClick = {
+                                onSend()
+                                keyboardController?.hide()
+                            }
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -503,19 +538,6 @@ private fun ChatInputBar(
                     )
                 }
             }
-
-            Text(
-                text = "Còn 50/50 câu hỏi AI hôm nay",
-                fontFamily = EduMindFontFamily,
-                fontSize = 10.sp,
-                lineHeight = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color = Neutral500,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 6.dp)
-            )
         }
     }
 }

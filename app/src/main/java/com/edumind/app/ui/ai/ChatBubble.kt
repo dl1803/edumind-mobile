@@ -101,14 +101,7 @@ private fun UserBubble(message: ChatMessage, modifier: Modifier) {
                 modifier = Modifier
                     .clip(UserBubbleShape)
                     .background(Primary100.copy(alpha = 0.95f))
-                    .border(1.dp, Primary300, UserBubbleShape)
-                    .drawBehind {
-                        drawRect(
-                            color = Primary700,
-                            topLeft = Offset(size.width - 3.dp.toPx(), 0f),
-                            size = Size(3.dp.toPx(), size.height)
-                        )
-                    }
+                    .border(1.dp, Primary200, UserBubbleShape)
                     .padding(horizontal = 14.dp, vertical = 10.dp)
                     .clearAndSetSemantics { contentDescription = "Bạn nói: ${message.text}" }
             ) {
@@ -121,15 +114,6 @@ private fun UserBubble(message: ChatMessage, modifier: Modifier) {
                     color = Neutral900
                 )
             }
-            Text(
-                text = "Vừa xong • Bạn",
-                fontFamily = FontFamily.Monospace,
-                fontSize = 10.sp,
-                lineHeight = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color = Neutral400,
-                modifier = Modifier.padding(top = 4.dp, end = 4.dp)
-            )
         }
     }
 }
@@ -152,7 +136,7 @@ private fun AiBubble(
                 modifier = Modifier
                     .clip(AiBubbleShape)
                     .background(Color.White)
-                    .border(2.dp, NebulaGradient, AiBubbleShape)
+                    .border(1.dp, NebulaGradient, AiBubbleShape)
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -230,16 +214,6 @@ private fun AiBubble(
                     )
                 }
             }
-
-            Text(
-                text = "Vừa xong",
-                fontFamily = FontFamily.Monospace,
-                fontSize = 10.sp,
-                lineHeight = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color = Neutral400,
-                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
-            )
         }
     }
 }
@@ -357,14 +331,7 @@ fun ChatErrorBubble(
                     .clip(AiBubbleShape)
                     .background(Error100)
                     .border(1.dp, Error300, AiBubbleShape)
-                    .drawBehind {
-                        drawRect(
-                            color = Error600,
-                            topLeft = Offset.Zero,
-                            size = Size(3.dp.toPx(), size.height)
-                        )
-                    }
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .padding(horizontal = 14.dp, vertical = 10.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
