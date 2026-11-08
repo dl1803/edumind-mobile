@@ -1,9 +1,11 @@
 package com.edumind.app.di
 
+import com.edumind.app.repository.AIRepository
 import com.edumind.app.repository.AuthRepository
 import com.edumind.app.repository.AuthRepositoryImpl
 import com.edumind.app.repository.CourseRepository
 import com.edumind.app.repository.CourseRepositoryImpl
+import com.edumind.app.repository.FakeAIRepository
 import com.edumind.app.repository.FakeHomeRepository
 import com.edumind.app.repository.FakeProfileRepository
 import com.edumind.app.repository.FakeSubtitleRepository
@@ -73,4 +75,10 @@ abstract class RepositoryModule {
     abstract fun bindSubtitleRepository(
         fakeSubtitleRepository: FakeSubtitleRepository
     ): SubtitleRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindAIRepository(
+        fakeAIRepository: FakeAIRepository
+    ): AIRepository
 }
