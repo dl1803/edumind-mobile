@@ -347,16 +347,14 @@ fun AppNavGraph(
                 ) {
                     PlayerScreen(
                         onBackClick = { navController.popBackStack() },
-                        onNavigateToAiSummary = { },
-                        onNavigateToAiChat = { }
+                        onNavigateToAiSummary = { }
                     )
                 }
 
                 composable(Screen.PlayerPoc.route) {
                     PlayerScreen(
                         onBackClick = { navController.popBackStack() },
-                        onNavigateToAiSummary = { },
-                        onNavigateToAiChat = { }
+                        onNavigateToAiSummary = { }
                     )
                 }
 

@@ -95,6 +95,8 @@ import com.edumind.app.ui.theme.Primary600
 import com.edumind.app.ui.theme.Primary700
 import com.edumind.app.ui.theme.Primary900
 import com.edumind.app.ui.theme.Success600
+import com.edumind.app.ui.ai.ChatAIScreen
+import com.edumind.app.ui.ai.ChatAIViewModel
 import com.edumind.app.ui.player.notes.NoteEditorSheet
 import com.edumind.app.ui.player.notes.NotesTab
 import com.edumind.app.ui.player.notes.NotesViewModel
@@ -105,10 +107,10 @@ import com.edumind.app.ui.player.notes.NotesUiState
 fun PlayerScreen(
     onBackClick: () -> Unit,
     onNavigateToAiSummary: () -> Unit = {},
-    onNavigateToAiChat: () -> Unit = {},
     viewModel: PlayerViewModel = hiltViewModel(),
     notesViewModel: NotesViewModel = hiltViewModel(),
-    subtitleViewModel: SubtitleViewModel = hiltViewModel()
+    subtitleViewModel: SubtitleViewModel = hiltViewModel(),
+    chatViewModel: ChatAIViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val loadState by viewModel.loadState.collectAsState()
@@ -120,8 +122,10 @@ fun PlayerScreen(
     val userMessage by viewModel.userMessage.collectAsState()
     val isFullscreen by viewModel.isFullscreen.collectAsState()
     val subtitleState by subtitleViewModel.uiState.collectAsState()
+    val chatState by chatViewModel.uiState.collectAsState()
     var isQualitySheetVisible by remember { mutableStateOf(false) }
     var isChapterSheetVisible by rememberSaveable { mutableStateOf(false) }
+    var isChatVisible by rememberSaveable { mutableStateOf(false) }
     var wasPlayingBeforeSheet by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
@@ -134,6 +138,7 @@ fun PlayerScreen(
             val lesson = (loadState as LessonLoadState.Ready).lesson
             notesViewModel.initLessonId(lesson.id)
             subtitleViewModel.initLessonId(lesson.id)
+            chatViewModel.initLessonId(lesson.id)
         }
     }
 
@@ -231,7 +236,11 @@ fun PlayerScreen(
                     }
                 },
                 onNavigateToAiSummary = onNavigateToAiSummary,
-                onNavigateToAiChat = onNavigateToAiChat,
+                onNavigateToAiChat = {
+                    wasPlayingBeforeSheet = state.isPlaying
+                    viewModel.pause()
+                    isChatVisible = true
+                },
                 onTogglePlayPause = { viewModel.togglePlayPause() },
                 onSeek = { targetMs -> viewModel.seekTo(targetMs) },
                 onSeekRelative = { offsetMs -> viewModel.seekRelative(offsetMs) },
@@ -383,6 +392,28 @@ fun PlayerScreen(
                             // Đóng sheet trước để hiển thị AlertDialog xác nhận xóa rõ ràng, không bị trùng lớp modal
                             notesViewModel.closeEditorSheet()
                             notesViewModel.requestDelete(currentNote)
+                        }
+                    }
+                )
+            }
+
+            if (isChatVisible) {
+                ChatAIScreen(
+                    state = chatState,
+                    currentPositionMs = state.positionMs,
+                    onInputChange = chatViewModel::onInputChange,
+                    onSend = chatViewModel::onSend,
+                    onRetry = chatViewModel::onRetry,
+                    onCitationClick = { targetMs ->
+                        isChatVisible = false
+                        wasPlayingBeforeSheet = false
+                        viewModel.seekTo(targetMs)
+                    },
+                    onDismiss = {
+                        isChatVisible = false
+                        if (wasPlayingBeforeSheet) {
+                            viewModel.exoPlayer.play()
+                            wasPlayingBeforeSheet = false
                         }
                     }
                 )
