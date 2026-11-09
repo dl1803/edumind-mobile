@@ -9,6 +9,7 @@ import com.edumind.app.repository.FakeAIRepository
 import com.edumind.app.repository.FakeHomeRepository
 import com.edumind.app.repository.FakeProfileRepository
 import com.edumind.app.repository.FakeSubtitleRepository
+import com.edumind.app.repository.FakeSummaryRepository
 import com.edumind.app.repository.HomeRepository
 import com.edumind.app.repository.LessonRepository
 import com.edumind.app.repository.LessonRepositoryImpl
@@ -18,6 +19,7 @@ import com.edumind.app.repository.ProfileRepository
 import com.edumind.app.repository.ProgressRepository
 import com.edumind.app.repository.ProgressRepositoryImpl
 import com.edumind.app.repository.SubtitleRepository
+import com.edumind.app.repository.SummaryRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -81,4 +83,10 @@ abstract class RepositoryModule {
     abstract fun bindAIRepository(
         fakeAIRepository: FakeAIRepository
     ): AIRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSummaryRepository(
+        fakeSummaryRepository: FakeSummaryRepository
+    ): SummaryRepository
 }

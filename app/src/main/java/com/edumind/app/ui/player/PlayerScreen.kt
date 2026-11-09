@@ -97,6 +97,8 @@ import com.edumind.app.ui.theme.Primary900
 import com.edumind.app.ui.theme.Success600
 import com.edumind.app.ui.ai.ChatAIScreen
 import com.edumind.app.ui.ai.ChatAIViewModel
+import com.edumind.app.ui.ai.summary.SummaryScreen
+import com.edumind.app.ui.ai.summary.SummaryViewModel
 import com.edumind.app.ui.player.notes.NoteEditorSheet
 import com.edumind.app.ui.player.notes.NotesTab
 import com.edumind.app.ui.player.notes.NotesViewModel
@@ -106,11 +108,11 @@ import com.edumind.app.ui.player.notes.NotesUiState
 @Composable
 fun PlayerScreen(
     onBackClick: () -> Unit,
-    onNavigateToAiSummary: () -> Unit = {},
     viewModel: PlayerViewModel = hiltViewModel(),
     notesViewModel: NotesViewModel = hiltViewModel(),
     subtitleViewModel: SubtitleViewModel = hiltViewModel(),
-    chatViewModel: ChatAIViewModel = hiltViewModel()
+    chatViewModel: ChatAIViewModel = hiltViewModel(),
+    summaryViewModel: SummaryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val loadState by viewModel.loadState.collectAsState()
@@ -123,9 +125,11 @@ fun PlayerScreen(
     val isFullscreen by viewModel.isFullscreen.collectAsState()
     val subtitleState by subtitleViewModel.uiState.collectAsState()
     val chatState by chatViewModel.uiState.collectAsState()
+    val summaryState by summaryViewModel.uiState.collectAsState()
     var isQualitySheetVisible by remember { mutableStateOf(false) }
     var isChapterSheetVisible by rememberSaveable { mutableStateOf(false) }
     var isChatVisible by rememberSaveable { mutableStateOf(false) }
+    var isSummaryVisible by rememberSaveable { mutableStateOf(false) }
     var wasPlayingBeforeSheet by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val context = LocalContext.current
@@ -139,6 +143,7 @@ fun PlayerScreen(
             notesViewModel.initLessonId(lesson.id)
             subtitleViewModel.initLessonId(lesson.id)
             chatViewModel.initLessonId(lesson.id)
+            summaryViewModel.initLessonId(lesson.id)
         }
     }
 
@@ -235,9 +240,19 @@ fun PlayerScreen(
                         onBackClick()
                     }
                 },
-                onNavigateToAiSummary = onNavigateToAiSummary,
+                onNavigateToAiSummary = {
+                    if (!isChatVisible && !isSummaryVisible) {
+                        wasPlayingBeforeSheet = state.isPlaying
+                    }
+                    if (isChatVisible) isChatVisible = false
+                    viewModel.pause()
+                    isSummaryVisible = true
+                },
                 onNavigateToAiChat = {
-                    wasPlayingBeforeSheet = state.isPlaying
+                    if (!isChatVisible && !isSummaryVisible) {
+                        wasPlayingBeforeSheet = state.isPlaying
+                    }
+                    if (isSummaryVisible) isSummaryVisible = false
                     viewModel.pause()
                     isChatVisible = true
                 },
@@ -411,6 +426,28 @@ fun PlayerScreen(
                     },
                     onDismiss = {
                         isChatVisible = false
+                        if (wasPlayingBeforeSheet) {
+                            viewModel.exoPlayer.play()
+                            wasPlayingBeforeSheet = false
+                        }
+                    }
+                )
+            }
+
+            if (isSummaryVisible) {
+                SummaryScreen(
+                    state = summaryState,
+                    lessonTitle = state.title,
+                    onGenerate = summaryViewModel::onGenerate,
+                    onRetry = summaryViewModel::onRetry,
+                    onToggleSection = summaryViewModel::onToggleSection,
+                    onTimestampClick = { targetMs ->
+                        isSummaryVisible = false
+                        wasPlayingBeforeSheet = false
+                        viewModel.seekTo(targetMs)
+                    },
+                    onDismiss = {
+                        isSummaryVisible = false
                         if (wasPlayingBeforeSheet) {
                             viewModel.exoPlayer.play()
                             wasPlayingBeforeSheet = false
