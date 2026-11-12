@@ -7,6 +7,7 @@ import androidx.security.crypto.MasterKey
 import com.edumind.app.BuildConfig
 import com.edumind.app.data.remote.api.AuthApiService
 import com.edumind.app.data.remote.api.CourseApiService
+import com.edumind.app.data.remote.api.FakeLessonApiService
 import com.edumind.app.data.remote.api.LessonApiService
 import com.edumind.app.data.remote.api.NoteApiService
 import com.edumind.app.data.remote.api.ProgressApiService
@@ -143,7 +144,11 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideLessonApiService(retrofit: Retrofit): LessonApiService {
-        return retrofit.create(LessonApiService::class.java)
+        return if (BuildConfig.USE_FAKE_LESSON_API) {
+            FakeLessonApiService()
+        } else {
+            retrofit.create(LessonApiService::class.java)
+        }
     }
 
     @Provides

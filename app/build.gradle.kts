@@ -33,6 +33,9 @@ android {
 
         val apiBaseUrl = localProperties.getProperty("API_BASE_URL_STAGING") ?: "https://staging-api.edumind.edu.vn/api/"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+
+        val useFakeLessonApi = localProperties.getProperty("USE_FAKE_LESSON_API")?.toBoolean() ?: false
+        buildConfigField("boolean", "USE_FAKE_LESSON_API", useFakeLessonApi.toString())
     }
 
     buildTypes {
