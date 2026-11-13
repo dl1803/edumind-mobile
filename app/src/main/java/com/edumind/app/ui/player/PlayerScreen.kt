@@ -71,6 +71,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import com.edumind.app.data.local.datastore.SubtitleFontSize
 import com.edumind.app.data.model.response.PlayerChapter
 import com.edumind.app.ui.player.subtitle.SubtitleOverlay
 import com.edumind.app.ui.player.subtitle.SubtitleViewModel
@@ -127,6 +128,7 @@ fun PlayerScreen(
     val chatState by chatViewModel.uiState.collectAsState()
     val summaryState by summaryViewModel.uiState.collectAsState()
     var isQualitySheetVisible by remember { mutableStateOf(false) }
+    var isSubtitleSettingsVisible by remember { mutableStateOf(false) }
     var isChapterSheetVisible by rememberSaveable { mutableStateOf(false) }
     var isChatVisible by rememberSaveable { mutableStateOf(false) }
     var isSummaryVisible by rememberSaveable { mutableStateOf(false) }
@@ -296,9 +298,10 @@ fun PlayerScreen(
                     )
                 },
                 subtitleText = if (subtitleState.enabled) subtitleState.currentText else null,
+                subtitleFontSize = subtitleState.fontSize,
                 hasSubtitles = subtitleState.hasSubtitles,
                 subtitleEnabled = subtitleState.enabled,
-                onToggleSubtitle = { subtitleViewModel.toggleEnabled() },
+                onSubtitleClick = { isSubtitleSettingsVisible = true },
                 errorOverlay = {
                     state.error?.let { errorType ->
                         PlayerErrorOverlay(
@@ -374,6 +377,16 @@ fun PlayerScreen(
                         viewModel.setQuality(quality)
                     },
                     onDismiss = { isQualitySheetVisible = false }
+                )
+            }
+
+            if (isSubtitleSettingsVisible) {
+                PlayerSettingsSheet(
+                    subtitleEnabled = subtitleState.enabled,
+                    subtitleFontSize = subtitleState.fontSize,
+                    onSubtitleEnabledChange = subtitleViewModel::setEnabled,
+                    onSubtitleFontSizeChange = subtitleViewModel::setFontSize,
+                    onDismiss = { isSubtitleSettingsVisible = false }
                 )
             }
 
@@ -576,9 +589,10 @@ fun PlayerScreenContent(
     notesContent: @Composable () -> Unit = {},
     transcriptContent: @Composable () -> Unit = {},
     subtitleText: String? = null,
+    subtitleFontSize: SubtitleFontSize = SubtitleFontSize.MEDIUM,
     hasSubtitles: Boolean = false,
     subtitleEnabled: Boolean = true,
-    onToggleSubtitle: () -> Unit = {},
+    onSubtitleClick: () -> Unit = {},
     videoSurface: @Composable () -> Unit = {},
     errorOverlay: @Composable () -> Unit = {}
 ) {
@@ -608,13 +622,14 @@ fun PlayerScreenContent(
                 chapters = chapters,
                 hasSubtitles = hasSubtitles,
                 subtitleEnabled = subtitleEnabled,
-                onToggleSubtitle = onToggleSubtitle
+                onSubtitleClick = onSubtitleClick
             )
 
             SubtitleOverlay(
                 text = subtitleText,
                 controlsVisible = state.isControlsVisible,
-                isLandscape = true
+                isLandscape = true,
+                subtitleFontSize = subtitleFontSize
             )
 
             errorOverlay()
@@ -655,13 +670,14 @@ fun PlayerScreenContent(
                         chapters = chapters,
                         hasSubtitles = hasSubtitles,
                         subtitleEnabled = subtitleEnabled,
-                        onToggleSubtitle = onToggleSubtitle
+                        onSubtitleClick = onSubtitleClick
                     )
 
                     SubtitleOverlay(
                         text = subtitleText,
                         controlsVisible = state.isControlsVisible,
-                        isLandscape = false
+                        isLandscape = false,
+                        subtitleFontSize = subtitleFontSize
                     )
 
                     errorOverlay()

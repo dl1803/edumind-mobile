@@ -1,14 +1,20 @@
 package com.edumind.app.ui.player.subtitle
 
 import androidx.lifecycle.SavedStateHandle
+import com.edumind.app.data.local.datastore.PlayerPreferences
+import com.edumind.app.data.local.datastore.SubtitleFontSize
 import com.edumind.app.data.model.response.SubtitleSegment
 import com.edumind.app.repository.SubtitleRepository
 import com.edumind.app.ui.navigation.Screen
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -26,6 +32,7 @@ import org.junit.Test
 class SubtitleViewModelTest {
 
     private val repository: SubtitleRepository = mockk()
+    private val playerPreferences: PlayerPreferences = mockk()
     private val testDispatcher = StandardTestDispatcher()
     private val lessonId = "lesson_sub_01"
 
@@ -39,6 +46,10 @@ class SubtitleViewModelTest {
         Dispatchers.setMain(testDispatcher)
         coEvery { repository.getSegments(lessonId) } returns unsortedSegments
         coEvery { repository.getSegments("lesson_empty") } returns emptyList()
+        every { playerPreferences.subtitleEnabled } returns flowOf(true)
+        every { playerPreferences.subtitleFontSize } returns flowOf(SubtitleFontSize.MEDIUM)
+        coEvery { playerPreferences.setSubtitleEnabled(any()) } just Runs
+        coEvery { playerPreferences.setSubtitleFontSize(any()) } just Runs
     }
 
     @After
@@ -52,7 +63,7 @@ class SubtitleViewModelTest {
         } else {
             SavedStateHandle(mapOf(Screen.ARG_LESSON_ID to navLessonId))
         }
-        return SubtitleViewModel(handle, repository)
+        return SubtitleViewModel(handle, repository, playerPreferences)
     }
 
     @Test
@@ -122,17 +133,48 @@ class SubtitleViewModelTest {
     }
 
     @Test
-    fun toggleEnabled_flipsFlagAndKeepsCurrentIndex() = runTest(testDispatcher) {
+    fun setEnabled_updatesFlagKeepsCurrentIndexAndPersists() = runTest(testDispatcher) {
         val viewModel = createViewModel()
         advanceUntilIdle()
         viewModel.onPositionChanged(2_000L)
 
-        viewModel.toggleEnabled()
+        viewModel.setEnabled(false)
+        advanceUntilIdle()
         assertFalse(viewModel.uiState.value.enabled)
         assertEquals(0, viewModel.uiState.value.currentIndex)
+        coVerify(exactly = 1) { playerPreferences.setSubtitleEnabled(false) }
+
+        viewModel.setEnabled(true)
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.enabled)
+        coVerify(exactly = 1) { playerPreferences.setSubtitleEnabled(true) }
+    }
+
+    @Test
+    fun setFontSize_updatesStateAndPersists() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
+
+        viewModel.setFontSize(SubtitleFontSize.LARGE)
+        advanceUntilIdle()
+        assertEquals(SubtitleFontSize.LARGE, viewModel.uiState.value.fontSize)
+        coVerify(exactly = 1) { playerPreferences.setSubtitleFontSize(SubtitleFontSize.LARGE) }
+    }
+
+    @Test
+    fun toggleEnabled_flipsFlagAndPersists() = runTest(testDispatcher) {
+        val viewModel = createViewModel()
+        advanceUntilIdle()
 
         viewModel.toggleEnabled()
+        advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.enabled)
+        coVerify(exactly = 1) { playerPreferences.setSubtitleEnabled(false) }
+
+        viewModel.toggleEnabled()
+        advanceUntilIdle()
         assertTrue(viewModel.uiState.value.enabled)
+        coVerify(exactly = 1) { playerPreferences.setSubtitleEnabled(true) }
     }
 
     @Test
@@ -157,4 +199,3 @@ class SubtitleViewModelTest {
         coVerify(exactly = 1) { repository.getSegments(lessonId) }
     }
 }
-
