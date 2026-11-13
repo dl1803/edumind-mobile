@@ -19,9 +19,9 @@ import javax.inject.Singleton
 private val Context.playerDataStore: DataStore<Preferences> by preferencesDataStore(name = "player_preferences")
 
 enum class SubtitleFontSize(val textSp: Int, val lineHeightSp: Int) {
-    SMALL(14, 20),
-    MEDIUM(16, 22),
-    LARGE(18, 24)
+    SMALL(12, 16),
+    MEDIUM(14, 20),
+    LARGE(16, 22)
 }
 
 @Singleton
@@ -52,4 +52,3 @@ class PlayerPreferences @Inject constructor(
         val SUBTITLE_FONT_SIZE = stringPreferencesKey("subtitle_font_size")
     }
 }
-

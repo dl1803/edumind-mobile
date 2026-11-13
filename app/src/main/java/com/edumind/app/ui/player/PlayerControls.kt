@@ -87,7 +87,7 @@ fun PlayerControlsOverlay(
     chapters: List<PlayerChapter> = emptyList(),
     hasSubtitles: Boolean = false,
     subtitleEnabled: Boolean = true,
-    onToggleSubtitle: () -> Unit = {}
+    onSubtitleClick: () -> Unit = {}
 ) {
     val dynamicMarkers = remember(chapters, state.durationMs) {
         if (state.durationMs > 0L) {
@@ -307,8 +307,8 @@ fun PlayerControlsOverlay(
                                         .clip(RoundedCornerShape(4.dp))
                                         .background(if (subtitleEnabled) Primary700 else Color.White.copy(alpha = 0.2f))
                                         .clickable(
-                                            onClickLabel = if (subtitleEnabled) "Tắt phụ đề" else "Bật phụ đề",
-                                            onClick = onToggleSubtitle
+                                            onClickLabel = "Mở cài đặt phụ đề",
+                                            onClick = onSubtitleClick
                                         )
                                         .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
