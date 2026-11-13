@@ -3,6 +3,8 @@ package com.edumind.app.ui.player.subtitle
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.edumind.app.data.local.datastore.PlayerPreferences
+import com.edumind.app.data.local.datastore.SubtitleFontSize
 import com.edumind.app.data.model.response.SubtitleSegment
 import com.edumind.app.repository.SubtitleRepository
 import com.edumind.app.ui.navigation.Screen
@@ -13,6 +15,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -20,7 +23,8 @@ import javax.inject.Inject
 data class SubtitleUiState(
     val segments: List<SubtitleSegment> = emptyList(),
     val currentIndex: Int = -1,
-    val enabled: Boolean = true
+    val enabled: Boolean = true,
+    val fontSize: SubtitleFontSize = SubtitleFontSize.MEDIUM
 ) {
     val hasSubtitles: Boolean
         get() = segments.isNotEmpty()
@@ -32,7 +36,8 @@ data class SubtitleUiState(
 @HiltViewModel
 class SubtitleViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val subtitleRepository: SubtitleRepository
+    private val subtitleRepository: SubtitleRepository,
+    private val playerPreferences: PlayerPreferences
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SubtitleUiState())
@@ -43,6 +48,7 @@ class SubtitleViewModel @Inject constructor(
     private var loadJob: Job? = null
 
     init {
+        loadPreferences()
         val navLessonId = savedStateHandle.get<String>(Screen.ARG_LESSON_ID).orEmpty()
         if (navLessonId.isNotBlank()) {
             loadSegments(navLessonId)
@@ -63,8 +69,26 @@ class SubtitleViewModel @Inject constructor(
         }
     }
 
+    fun setEnabled(enabled: Boolean) {
+        _uiState.update { it.copy(enabled = enabled) }
+        viewModelScope.launch { playerPreferences.setSubtitleEnabled(enabled) }
+    }
+
+    fun setFontSize(fontSize: SubtitleFontSize) {
+        _uiState.update { it.copy(fontSize = fontSize) }
+        viewModelScope.launch { playerPreferences.setSubtitleFontSize(fontSize) }
+    }
+
     fun toggleEnabled() {
-        _uiState.update { it.copy(enabled = !it.enabled) }
+        setEnabled(!_uiState.value.enabled)
+    }
+
+    private fun loadPreferences() {
+        viewModelScope.launch {
+            val enabled = playerPreferences.subtitleEnabled.first()
+            val fontSize = playerPreferences.subtitleFontSize.first()
+            _uiState.update { it.copy(enabled = enabled, fontSize = fontSize) }
+        }
     }
 
     private fun loadSegments(lessonId: String) {
