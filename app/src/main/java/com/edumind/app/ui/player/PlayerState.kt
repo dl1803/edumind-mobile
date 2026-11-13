@@ -13,6 +13,13 @@ data class QualityOption(
         get() = "${height}p"
 }
 
+enum class PlayerErrorType {
+    NETWORK,
+    URL_EXPIRED,
+    NOT_ENROLLED,
+    UNKNOWN
+}
+
 data class PocPlayerState(
     val isPlaying: Boolean = false,
     val playbackState: Int = Player.STATE_IDLE,
@@ -20,7 +27,7 @@ data class PocPlayerState(
     val durationMs: Long = 0L,
     val isBuffering: Boolean = false,
     val isControlsVisible: Boolean = true,
-    val errorMessage: String? = null,
+    val error: PlayerErrorType? = null,
     val title: String = "Bài 03: Biến & Kiểu dữ liệu cơ bản",
     val isHlsManifest: Boolean = false
 ) {

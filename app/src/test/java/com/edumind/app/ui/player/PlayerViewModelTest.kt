@@ -14,7 +14,9 @@ import com.edumind.app.data.model.response.LessonDetail
 import com.edumind.app.data.model.response.LessonType
 import com.edumind.app.data.model.response.PlayerChapter
 import com.edumind.app.data.model.response.VideoChapter
+import com.edumind.app.data.model.response.VideoPlaybackInfo
 import com.edumind.app.data.model.response.toPlayerChapters
+import com.edumind.app.data.remote.VideoUrlManager
 import com.edumind.app.repository.CourseRepository
 import com.edumind.app.repository.LessonRepository
 import com.edumind.app.repository.ProgressRepository
@@ -52,6 +54,7 @@ class PlayerViewModelTest {
     private val lessonRepository: LessonRepository = mockk(relaxed = true)
     private val progressRepository: ProgressRepository = mockk(relaxed = true)
     private val courseRepository: CourseRepository = mockk(relaxed = true)
+    private val videoUrlManager: VideoUrlManager = mockk()
     private val mockExoPlayer: ExoPlayer = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -110,6 +113,13 @@ class PlayerViewModelTest {
         every { mockExoPlayer.playerError } returns null
 
         coEvery { lessonRepository.getLessonDetail(sampleLessonId) } returns Result.success(sampleLessonDetail)
+        coEvery { videoUrlManager.getPlaybackUrl(any()) } returns Result.success(
+            VideoPlaybackInfo(
+                lessonId = sampleLessonId,
+                hlsUrl = sampleLessonDetail.hlsStreamUrl,
+                expiresAt = Long.MAX_VALUE
+            )
+        )
         coEvery { progressRepository.getPlaybackPosition(any()) } returns null
         coEvery { progressRepository.saveProgress(any(), any(), any(), any()) } returns Result.success(10f)
     }
@@ -137,7 +147,8 @@ class PlayerViewModelTest {
             savedStateHandle = savedStateHandle,
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
-            courseRepository = courseRepository
+            courseRepository = courseRepository,
+            videoUrlManager = videoUrlManager
         )
 
         val chapters = viewModel.chapters.value
@@ -154,7 +165,8 @@ class PlayerViewModelTest {
             savedStateHandle = savedStateHandle,
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
-            courseRepository = courseRepository
+            courseRepository = courseRepository,
+            videoUrlManager = videoUrlManager
         )
 
         advanceUntilIdle()
@@ -175,7 +187,8 @@ class PlayerViewModelTest {
             savedStateHandle = savedStateHandle,
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
-            courseRepository = courseRepository
+            courseRepository = courseRepository,
+            videoUrlManager = videoUrlManager
         )
         advanceUntilIdle()
 
@@ -204,7 +217,8 @@ class PlayerViewModelTest {
             savedStateHandle = savedStateHandle,
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
-            courseRepository = courseRepository
+            courseRepository = courseRepository,
+            videoUrlManager = videoUrlManager
         )
         advanceUntilIdle()
 
@@ -223,7 +237,8 @@ class PlayerViewModelTest {
             savedStateHandle = savedStateHandle,
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
-            courseRepository = courseRepository
+            courseRepository = courseRepository,
+            videoUrlManager = videoUrlManager
         )
         advanceUntilIdle()
 
@@ -255,7 +270,8 @@ class PlayerViewModelTest {
             savedStateHandle = savedStateHandle,
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
-            courseRepository = courseRepository
+            courseRepository = courseRepository,
+            videoUrlManager = videoUrlManager
         )
         advanceUntilIdle()
 
@@ -282,7 +298,8 @@ class PlayerViewModelTest {
             savedStateHandle = savedStateHandle,
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
-            courseRepository = courseRepository
+            courseRepository = courseRepository,
+            videoUrlManager = videoUrlManager
         )
         advanceUntilIdle()
 
@@ -355,7 +372,8 @@ class PlayerViewModelTest {
             savedStateHandle = savedStateHandle,
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
-            courseRepository = courseRepository
+            courseRepository = courseRepository,
+            videoUrlManager = videoUrlManager
         )
 
         assertFalse(viewModel.isFullscreen.value)
@@ -369,7 +387,8 @@ class PlayerViewModelTest {
             savedStateHandle = savedStateHandle,
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
-            courseRepository = courseRepository
+            courseRepository = courseRepository,
+            videoUrlManager = videoUrlManager
         )
 
         viewModel.toggleFullscreen()
@@ -392,7 +411,8 @@ class PlayerViewModelTest {
             savedStateHandle = savedStateHandle,
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
-            courseRepository = courseRepository
+            courseRepository = courseRepository,
+            videoUrlManager = videoUrlManager
         )
 
         assertTrue(viewModel.isFullscreen.value)

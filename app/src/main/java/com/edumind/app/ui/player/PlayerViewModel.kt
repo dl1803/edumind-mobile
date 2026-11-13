@@ -13,6 +13,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.Tracks
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsManifest
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -20,6 +21,7 @@ import com.edumind.app.BuildConfig
 import com.edumind.app.data.model.response.LessonDetail
 import com.edumind.app.data.model.response.PlayerChapter
 import com.edumind.app.data.model.response.toPlayerChapters
+import com.edumind.app.data.remote.VideoUrlManager
 import com.edumind.app.repository.CourseRepository
 import com.edumind.app.repository.LessonAccessDeniedException
 import com.edumind.app.repository.LessonNotFoundException
@@ -39,10 +41,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.io.IOException
 import javax.inject.Inject
 
 private const val TAG = "PlayerViewModel"
 private const val KEY_IS_FULLSCREEN = "is_fullscreen"
+private const val MAX_RENEW_ATTEMPTS = 2
+private val URL_REJECTED_STATUS_CODES = setOf(401, 403, 410)
 
 sealed interface LessonLoadState {
     data object Loading : LessonLoadState
@@ -59,7 +64,8 @@ class PlayerViewModel @Inject constructor(
     private val savedStateHandle: SavedStateHandle,
     private val lessonRepository: LessonRepository,
     private val progressRepository: ProgressRepository,
-    private val courseRepository: CourseRepository
+    private val courseRepository: CourseRepository,
+    private val videoUrlManager: VideoUrlManager
 ) : ViewModel() {
 
     val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
@@ -99,6 +105,8 @@ class PlayerViewModel @Inject constructor(
     private var controlsTimeoutJob: Job? = null
     private var currentLessonId: String? = null
     private var currentStreamUrl: String? = null
+    private var renewJob: Job? = null
+    private var renewAttempts = 0
 
     init {
         setupPlayerListener()
@@ -126,7 +134,7 @@ class PlayerViewModel @Inject constructor(
             override fun onAvailable(network: Network) {
                 viewModelScope.launch(Dispatchers.Main) {
                     progressRepository.syncPending()
-                    if (exoPlayer.playerError != null || exoPlayer.playbackState == Player.STATE_IDLE) {
+                    if ((exoPlayer.playerError != null || exoPlayer.playbackState == Player.STATE_IDLE) && renewJob?.isActive != true) {
                         delay(300)
                         if (BuildConfig.DEBUG) {
                             Log.d(TAG, "Network restored, auto recovering ExoPlayer...")
@@ -144,75 +152,78 @@ class PlayerViewModel @Inject constructor(
     }
 
     fun fetchLesson(lessonId: String) {
+        renewJob?.cancel()
+        renewAttempts = 0
         viewModelScope.launch {
             _loadState.value = LessonLoadState.Loading
             lessonRepository.getLessonDetail(lessonId).fold(
                 onSuccess = { lesson ->
-                    _loadState.value = LessonLoadState.Ready(lesson)
-                    _uiState.update { it.copy(title = lesson.title) }
-
-                    val streamUrl = resolvePlaybackUrl(lesson)
-                    load(streamUrl)
-
-                    val localPosition = progressRepository.getPlaybackPosition(lesson.id)
-                    val serverPositionMs = lesson.lastPositionMs
-
-                    // Ưu tiên bản ghi chưa đồng bộ của máy hiện tại, hoặc mốc lớn nhất giữa server và local
-                    val candidatePositionMs = if (localPosition != null && !localPosition.synced && localPosition.positionMs > 0L) {
-                        localPosition.positionMs
-                    } else {
-                        maxOf(localPosition?.positionMs ?: 0L, serverPositionMs)
-                    }
-
-                    val totalDurationMs = lesson.durationMs
-                    val isCompleted = localPosition?.completed == true || (totalDurationMs > 0L && candidatePositionMs >= totalDurationMs * 0.9f)
-                    val isNearStart = candidatePositionMs <= 5_000L
-                    val isNearEnd = totalDurationMs > 0L && (totalDurationMs - candidatePositionMs <= 10_000L)
-
-                    if (!isCompleted && !isNearStart && !isNearEnd) {
-                        exoPlayer.pause()
-                        _resumePromptPositionMs.value = candidatePositionMs
-                    } else {
-                        _resumePromptPositionMs.value = null
-                        if (candidatePositionMs > 0L && !isCompleted) {
-                            seekTo(candidatePositionMs)
-                        }
-                        exoPlayer.play()
-                    }
-
-                    // Nạp danh sách phân đoạn mốc thời gian hoặc cấu trúc bài học
-                    if (lesson.chapters.isNotEmpty()) {
-                        val videoChapters = lesson.chapters.toPlayerChapters(lesson.id)
-                        _chapters.value = videoChapters
-                        updateCurrentChapterIndex(exoPlayer.currentPosition)
-                    } else if (lesson.courseId.isNotBlank()) {
-                        viewModelScope.launch {
-                            courseRepository.getCourseDetail(lesson.courseId).onSuccess { courseDetail ->
-                                if (_chapters.value.isEmpty() || _chapters.value.firstOrNull()?.isTimestampMarker != true) {
-                                    _chapters.value = courseDetail.sections.toPlayerChapters(lesson.id)
-                                    updateCurrentChapterIndex(exoPlayer.currentPosition)
-                                }
-                            }
-                        }
-                    }
+                    videoUrlManager.getPlaybackUrl(lesson.id).fold(
+                        onSuccess = { playbackInfo -> startLesson(lesson, playbackInfo.hlsUrl) },
+                        onFailure = { error -> _loadState.value = loadFailureState(error) }
+                    )
                 },
-                onFailure = { error ->
-                    when (error) {
-                        is LessonAccessDeniedException -> {
-                            _loadState.value = LessonLoadState.Forbidden(error.message ?: "Chưa đăng ký khóa học")
-                        }
-                        is VideoProcessingException -> {
-                            _loadState.value = LessonLoadState.Processing(error.message ?: "Video đang xử lý")
-                        }
-                        is LessonNotFoundException -> {
-                            _loadState.value = LessonLoadState.Error(error.message ?: "Bài giảng không tồn tại")
-                        }
-                        else -> {
-                            _loadState.value = LessonLoadState.Error(error.localizedMessage ?: "Lỗi tải bài giảng")
-                        }
+                onFailure = { error -> _loadState.value = loadFailureState(error) }
+            )
+        }
+    }
+
+    private fun loadFailureState(error: Throwable): LessonLoadState = when (error) {
+        is LessonAccessDeniedException ->
+            LessonLoadState.Forbidden(error.message ?: "Chưa đăng ký khóa học")
+        is VideoProcessingException ->
+            LessonLoadState.Processing(error.message ?: "Video đang xử lý")
+        is LessonNotFoundException ->
+            LessonLoadState.Error(error.message ?: "Bài giảng không tồn tại")
+        else -> LessonLoadState.Error(error.localizedMessage ?: "Lỗi tải bài giảng")
+    }
+
+    private suspend fun startLesson(lesson: LessonDetail, streamUrl: String) {
+        _loadState.value = LessonLoadState.Ready(lesson)
+        _uiState.update { it.copy(title = lesson.title) }
+
+        load(streamUrl)
+
+        val localPosition = progressRepository.getPlaybackPosition(lesson.id)
+        val serverPositionMs = lesson.lastPositionMs
+
+        // Ưu tiên bản ghi chưa đồng bộ của máy hiện tại, hoặc mốc lớn nhất giữa server và local
+        val candidatePositionMs = if (localPosition != null && !localPosition.synced && localPosition.positionMs > 0L) {
+            localPosition.positionMs
+        } else {
+            maxOf(localPosition?.positionMs ?: 0L, serverPositionMs)
+        }
+
+        val totalDurationMs = lesson.durationMs
+        val isCompleted = localPosition?.completed == true || (totalDurationMs > 0L && candidatePositionMs >= totalDurationMs * 0.9f)
+        val isNearStart = candidatePositionMs <= 5_000L
+        val isNearEnd = totalDurationMs > 0L && (totalDurationMs - candidatePositionMs <= 10_000L)
+
+        if (!isCompleted && !isNearStart && !isNearEnd) {
+            exoPlayer.pause()
+            _resumePromptPositionMs.value = candidatePositionMs
+        } else {
+            _resumePromptPositionMs.value = null
+            if (candidatePositionMs > 0L && !isCompleted) {
+                seekTo(candidatePositionMs)
+            }
+            exoPlayer.play()
+        }
+
+        // Nạp danh sách phân đoạn mốc thời gian hoặc cấu trúc bài học
+        if (lesson.chapters.isNotEmpty()) {
+            val videoChapters = lesson.chapters.toPlayerChapters(lesson.id)
+            _chapters.value = videoChapters
+            updateCurrentChapterIndex(exoPlayer.currentPosition)
+        } else if (lesson.courseId.isNotBlank()) {
+            viewModelScope.launch {
+                courseRepository.getCourseDetail(lesson.courseId).onSuccess { courseDetail ->
+                    if (_chapters.value.isEmpty() || _chapters.value.firstOrNull()?.isTimestampMarker != true) {
+                        _chapters.value = courseDetail.sections.toPlayerChapters(lesson.id)
+                        updateCurrentChapterIndex(exoPlayer.currentPosition)
                     }
                 }
-            )
+            }
         }
     }
 
@@ -269,10 +280,6 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
-    private fun resolvePlaybackUrl(lesson: LessonDetail): String {
-        return lesson.hlsStreamUrl.ifBlank { Constants.SAMPLE_HLS_URL }
-    }
-
     fun retry() {
         currentLessonId?.let { fetchLesson(it) }
     }
@@ -325,6 +332,7 @@ class PlayerViewModel @Inject constructor(
                 val isHls = exoPlayer.currentManifest is HlsManifest
 
                 if (playbackState == Player.STATE_READY) {
+                    renewAttempts = 0
                     if (BuildConfig.DEBUG) {
                         Log.d(TAG, "ExoPlayer READY - HlsManifest: $isHls, duration: ${exoPlayer.duration}ms")
                     }
@@ -338,18 +346,18 @@ class PlayerViewModel @Inject constructor(
                         isBuffering = isBuffering,
                         durationMs = exoPlayer.duration.coerceAtLeast(0L),
                         isHlsManifest = isHls,
-                        errorMessage = if (playbackState == Player.STATE_READY) null else it.errorMessage
+                        error = if (playbackState == Player.STATE_READY) null else it.error
                     )
                 }
             }
 
             override fun onPlayerError(error: PlaybackException) {
                 Log.e(TAG, "ExoPlayer Error: ${error.errorCodeName} - ${error.message}", error)
-                _uiState.update {
-                    it.copy(
-                        errorMessage = "Lỗi phát video: ${error.localizedMessage ?: "Vui lòng thử lại"}",
-                        isBuffering = false
-                    )
+                val httpStatus = error.httpStatusCode()
+                when {
+                    error.isNetworkError() -> publishPlaybackError(PlayerErrorType.NETWORK)
+                    httpStatus != null && httpStatus in URL_REJECTED_STATUS_CODES -> renewPlaybackUrl()
+                    else -> publishPlaybackError(PlayerErrorType.UNKNOWN)
                 }
             }
         })
@@ -361,10 +369,11 @@ class PlayerViewModel @Inject constructor(
         exoPlayer.setMediaItem(mediaItem)
         exoPlayer.prepare()
         exoPlayer.playWhenReady = true
-        _uiState.update { it.copy(errorMessage = null) }
+        _uiState.update { it.copy(error = null) }
     }
 
     fun retryPlayback(autoPlay: Boolean = true) {
+        if (renewJob?.isActive == true) return
         val targetPos = exoPlayer.currentPosition.coerceAtLeast(0L)
         val url = currentStreamUrl
         if (url != null) {
@@ -383,10 +392,70 @@ class PlayerViewModel @Inject constructor(
                 exoPlayer.play()
             }
         }
-        _uiState.update { it.copy(errorMessage = null) }
+        _uiState.update { it.copy(error = null) }
+    }
+
+    fun retryAfterError() {
+        val type = _uiState.value.error
+        renewAttempts = 0
+        _uiState.update { it.copy(error = null) }
+        if (type == PlayerErrorType.URL_EXPIRED) {
+            renewPlaybackUrl()
+        } else {
+            retryPlayback(autoPlay = true)
+        }
+    }
+
+    private fun renewPlaybackUrl() {
+        val lessonId = currentLessonId
+        if (lessonId == null) {
+            publishPlaybackError(PlayerErrorType.UNKNOWN)
+            return
+        }
+        if (renewAttempts >= MAX_RENEW_ATTEMPTS) {
+            publishPlaybackError(PlayerErrorType.URL_EXPIRED)
+            return
+        }
+        renewAttempts++
+        renewJob?.cancel()
+        _uiState.update { it.copy(isBuffering = true) }
+        renewJob = viewModelScope.launch {
+            videoUrlManager.renew(lessonId).fold(
+                onSuccess = { playbackInfo ->
+                    currentStreamUrl = playbackInfo.hlsUrl
+                    retryPlayback(autoPlay = true)
+                },
+                onFailure = { error -> publishPlaybackError(renewFailureType(error)) }
+            )
+        }
+    }
+
+    private fun publishPlaybackError(type: PlayerErrorType) {
+        _uiState.update { it.copy(error = type, isBuffering = false) }
+    }
+
+    private fun renewFailureType(error: Throwable): PlayerErrorType = when {
+        error is LessonAccessDeniedException -> PlayerErrorType.NOT_ENROLLED
+        error is IOException || error.cause is IOException -> PlayerErrorType.NETWORK
+        else -> PlayerErrorType.UNKNOWN
+    }
+
+    private fun PlaybackException.isNetworkError(): Boolean =
+        errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
+            errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ||
+            (cause is IOException && cause !is HttpDataSource.InvalidResponseCodeException)
+
+    private fun PlaybackException.httpStatusCode(): Int? {
+        var cause: Throwable? = this
+        while (cause != null) {
+            if (cause is HttpDataSource.InvalidResponseCodeException) return cause.responseCode
+            cause = cause.cause
+        }
+        return null
     }
 
     fun togglePlayPause() {
+        if (renewJob?.isActive == true) return
         if (exoPlayer.playerError != null || exoPlayer.playbackState == Player.STATE_IDLE) {
             retryPlayback(autoPlay = true)
         } else if (exoPlayer.isPlaying) {
@@ -417,7 +486,7 @@ class PlayerViewModel @Inject constructor(
         } else {
             exoPlayer.seekTo(clamped)
         }
-        _uiState.update { it.copy(positionMs = clamped, errorMessage = null) }
+        _uiState.update { it.copy(positionMs = clamped, error = null) }
         scheduleControlsAutoHide()
         saveCurrentProgress()
     }
@@ -465,7 +534,7 @@ class PlayerViewModel @Inject constructor(
         currentLessonId = newLessonId
         currentStreamUrl = null
         _resumePromptPositionMs.value = null
-        _uiState.update { it.copy(positionMs = 0L, durationMs = 0L, errorMessage = null) }
+        _uiState.update { it.copy(positionMs = 0L, durationMs = 0L, error = null) }
         fetchLesson(newLessonId)
     }
 

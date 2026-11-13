@@ -1,6 +1,8 @@
 package com.edumind.app.ui.navigation
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -343,7 +345,19 @@ fun AppNavGraph(
                     route = Screen.VideoPlayer.route,
                     arguments = listOf(
                         navArgument(Screen.ARG_LESSON_ID) { type = NavType.StringType }
-                    )
+                    ),
+                    enterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(250)
+                        )
+                    },
+                    popExitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(200)
+                        )
+                    }
                 ) {
                     PlayerScreen(
                         onBackClick = { navController.popBackStack() }
