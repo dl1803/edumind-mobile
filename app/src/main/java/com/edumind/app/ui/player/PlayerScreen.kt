@@ -284,6 +284,21 @@ fun PlayerScreen(
                 hasSubtitles = subtitleState.hasSubtitles,
                 subtitleEnabled = subtitleState.enabled,
                 onToggleSubtitle = { subtitleViewModel.toggleEnabled() },
+                errorOverlay = {
+                    state.error?.let { errorType ->
+                        PlayerErrorOverlay(
+                            type = errorType,
+                            onRetry = { viewModel.retryAfterError() },
+                            onBack = {
+                                if (isFullscreen) {
+                                    viewModel.exitFullscreen()
+                                } else {
+                                    onBackClick()
+                                }
+                            }
+                        )
+                    }
+                },
                 videoSurface = {
                     if (loadState is LessonLoadState.Loading) {
                         Box(
@@ -527,7 +542,8 @@ fun PlayerScreenContent(
     hasSubtitles: Boolean = false,
     subtitleEnabled: Boolean = true,
     onToggleSubtitle: () -> Unit = {},
-    videoSurface: @Composable () -> Unit = {}
+    videoSurface: @Composable () -> Unit = {},
+    errorOverlay: @Composable () -> Unit = {}
 ) {
     var selectedMainTab by remember { mutableIntStateOf(0) }
     var selectedSubTab by remember { mutableIntStateOf(0) }
@@ -563,6 +579,8 @@ fun PlayerScreenContent(
                 controlsVisible = state.isControlsVisible,
                 isLandscape = true
             )
+
+            errorOverlay()
         }
     } else {
         Box(
@@ -608,6 +626,8 @@ fun PlayerScreenContent(
                         controlsVisible = state.isControlsVisible,
                         isLandscape = false
                     )
+
+                    errorOverlay()
                 }
 
             // Thanh Tab chính dưới video: Mục lục | Ghi chú | Tóm tắt AI
