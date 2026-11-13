@@ -1,0 +1,46 @@
+WEBVTT - Tệp kiểm thử các trường hợp biên
+Kind: captions
+Language: vi
+
+NOTE
+Đây là ghi chú, phải bị bỏ qua.
+Ghi chú có nhiều dòng.
+
+STYLE
+::cue { color: white }
+
+intro
+00:00.500 --> 00:03.000 line:90% align:center
+Cue dùng định dạng MM:SS.mmm có cue identifier và cue settings.
+
+2
+00:03.000 --> 00:07.000
+Dòng thứ nhất của cue nhiều dòng.
+Dòng thứ hai của cue nhiều dòng.
+
+00:00:05.000 --> 00:00:09.000
+Cue chồng thời gian với cue trước từ giây 5 đến giây 7.
+
+00:00:09.000 --> 00:00:09.000
+Cue có thời điểm kết thúc bằng thời điểm bắt đầu, phải bị bỏ qua.
+
+00:10.000 --> 00:12.000
+<v Giảng viên>Thẻ <c.highlight>voice</c> và <i>nghiêng</i> phải được loại bỏ.</v>
+
+00:12.000 --> 00:14.000
+
+00:xx:16.000 --> 00:18.000
+Cue sai định dạng timestamp, phải bị bỏ qua.
+
+00:18.000 --> 00:20.000
+Cue hợp lệ ngay sau cue lỗi, phải vẫn được nạp.
+
+00:20.000 --> 00:22.000
+Cue trùng thời điểm bắt đầu thứ nhất.
+
+00:20.000 --> 00:23.000
+Cue trùng thời điểm bắt đầu thứ hai.
+
+01:00:00.000 --> 01:00:02.500
+Cue ở mốc một giờ đúng.
+

@@ -1,0 +1,92 @@
+WEBVTT
+
+00:00:00.000 --> 00:00:06.000
+Chào mừng các bạn đến với bài học về biến trong Python.
+
+00:00:06.000 --> 00:00:12.000
+Biến là tên gọi dùng để lưu trữ một giá trị trong bộ nhớ.
+
+00:00:12.000 --> 00:00:19.000
+Trong Python, bạn không cần khai báo kiểu dữ liệu trước khi dùng biến.
+
+00:00:19.000 --> 00:00:26.000
+Chỉ cần viết tên biến, dấu bằng, rồi đến giá trị muốn gán.
+
+00:00:26.000 --> 00:00:33.000
+Ví dụ: tuoi bằng 20 sẽ tạo ra một biến kiểu số nguyên.
+
+00:00:33.000 --> 00:00:40.000
+Tên biến nên viết thường và nối các từ bằng dấu gạch dưới.
+
+00:00:40.000 --> 00:00:47.000
+Quy tắc này nằm trong chuẩn PEP 8 mà cộng đồng Python tuân theo.
+
+00:00:47.000 --> 00:00:54.000
+Tên biến không được bắt đầu bằng chữ số.
+
+00:00:54.000 --> 00:01:01.000
+Tên biến cũng không được chứa khoảng trắng hay ký tự đặc biệt.
+
+00:01:01.000 --> 00:01:08.000
+Python phân biệt chữ hoa và chữ thường trong tên biến.
+
+00:01:13.000 --> 00:01:20.000
+Bây giờ chúng ta sang phần kiểu dữ liệu cơ bản.
+
+00:01:20.000 --> 00:01:27.000
+Kiểu số nguyên int dùng cho các số không có phần thập phân.
+
+00:01:27.000 --> 00:01:34.000
+Kiểu số thực float dùng cho các số có phần thập phân.
+
+00:01:34.000 --> 00:01:41.000
+Kiểu chuỗi str dùng để lưu trữ văn bản đặt trong dấu nháy.
+
+00:01:41.000 --> 00:01:48.000
+Kiểu logic bool chỉ có hai giá trị là True và False.
+
+00:01:48.000 --> 00:01:55.000
+Bạn có thể dùng hàm type để kiểm tra kiểu của một biến.
+
+00:01:55.000 --> 00:02:02.000
+Python sẽ tự nhận diện kiểu dựa trên giá trị được gán.
+
+00:02:02.000 --> 00:02:09.000
+Khi nhập dữ liệu từ bàn phím, giá trị luôn là kiểu chuỗi.
+
+00:02:09.000 --> 00:02:16.000
+Hãy dùng int hoặc float để ép kiểu trước khi tính toán.
+
+00:02:16.000 --> 00:02:23.000
+Ví dụ: hàm int đổi chuỗi hai mươi lăm thành số nguyên 25.
+
+00:02:23.000 --> 00:02:30.000
+Nếu chuỗi không phải là số, việc ép kiểu sẽ gây ra lỗi.
+
+00:02:30.000 --> 00:02:37.000
+Bạn có thể gán lại cho biến một giá trị thuộc kiểu khác.
+
+00:02:37.000 --> 00:02:44.000
+Khi đó, kiểu của biến sẽ thay đổi theo giá trị mới.
+
+00:02:44.000 --> 00:02:51.000
+Đây chính là đặc điểm của ngôn ngữ định kiểu động.
+
+00:02:51.000 --> 00:02:58.000
+Bạn cũng có thể gán nhiều biến cùng lúc trên một dòng lệnh.
+
+00:02:58.000 --> 00:03:05.000
+Ví dụ: a, b bằng 1, 2 sẽ gán lần lượt cho hai biến.
+
+00:03:05.000 --> 00:03:12.000
+Muốn hoán đổi giá trị của hai biến, chỉ cần viết b, a bằng a, b.
+
+00:03:12.000 --> 00:03:19.000
+Hãy tự thực hành các ví dụ này để nhớ lâu hơn.
+
+00:03:19.000 --> 00:03:26.000
+Cuối bài có phần bài tập để bạn kiểm tra kiến thức.
+
+00:03:26.000 --> 00:03:34.000
+Đó là toàn bộ nội dung của bài, hẹn gặp lại ở bài tiếp theo.
+
