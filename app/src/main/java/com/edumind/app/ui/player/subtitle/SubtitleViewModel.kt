@@ -4,10 +4,11 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.edumind.app.data.model.response.SubtitleSegment
-import com.edumind.app.data.model.response.indexAt
 import com.edumind.app.repository.SubtitleRepository
 import com.edumind.app.ui.navigation.Screen
+import com.edumind.app.util.subtitle.SubtitleSyncHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -57,7 +58,7 @@ class SubtitleViewModel @Inject constructor(
     fun onPositionChanged(positionMs: Long) {
         lastPositionMs = positionMs
         _uiState.update { state ->
-            val index = state.segments.indexAt(positionMs)
+            val index = SubtitleSyncHelper.findCueIndex(state.segments, positionMs)
             if (index == state.currentIndex) state else state.copy(currentIndex = index)
         }
     }
@@ -71,11 +72,19 @@ class SubtitleViewModel @Inject constructor(
         loadJob?.cancel()
         _uiState.update { it.copy(segments = emptyList(), currentIndex = -1) }
         loadJob = viewModelScope.launch {
-            val segments = subtitleRepository.getSegments(lessonId).sortedBy { it.startMs }
+            val segments = try {
+                subtitleRepository.getSegments(lessonId).sortedBy { it.startMs }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                emptyList()
+            }
             _uiState.update {
-                it.copy(segments = segments, currentIndex = segments.indexAt(lastPositionMs))
+                it.copy(
+                    segments = segments,
+                    currentIndex = SubtitleSyncHelper.findCueIndex(segments, lastPositionMs)
+                )
             }
         }
     }
 }
-
