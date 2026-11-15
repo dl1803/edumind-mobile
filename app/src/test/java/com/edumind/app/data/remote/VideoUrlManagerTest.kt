@@ -120,5 +120,21 @@ class VideoUrlManagerTest {
         assertTrue(resBlank.isFailure)
         assertTrue(resBlank.exceptionOrNull() is VideoProcessingException)
     }
+
+    @Test
+    fun renew_whenApiFails_returnsFailureAndKeepsPreviousCache() = runTest {
+        coEvery { api.getLessonDetail("les-01") } returns Response.success(createDto())
+        val cached = manager.getPlaybackUrl("les-01").getOrThrow()
+
+        val errorBody = "{\"message\":\"Error\"}".toResponseBody("application/json".toMediaTypeOrNull())
+        coEvery { api.getLessonDetail("les-01") } returns Response.error(500, errorBody)
+
+        val failed = manager.renew("les-01")
+        val afterFailure = manager.getPlaybackUrl("les-01").getOrThrow()
+
+        assertTrue(failed.isFailure)
+        assertSame(cached, afterFailure)
+        coVerify(exactly = 2) { api.getLessonDetail("les-01") }
+    }
 }
 
