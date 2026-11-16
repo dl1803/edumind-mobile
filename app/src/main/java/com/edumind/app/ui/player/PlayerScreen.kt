@@ -104,6 +104,9 @@ import com.edumind.app.ui.player.notes.NoteEditorSheet
 import com.edumind.app.ui.player.notes.NotesTab
 import com.edumind.app.ui.player.notes.NotesViewModel
 import com.edumind.app.ui.player.notes.NotesUiState
+import com.edumind.app.ui.player.pip.PipHost
+import com.edumind.app.ui.player.pip.PipPlayerController
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
@@ -138,6 +141,10 @@ fun PlayerScreen(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val activity = remember(context) { context.findActivity() }
+    val pipHost = activity as? PipHost
+    val isPipAvailable = pipHost?.isPipSupported == true
+    val pipModeFlow = remember(pipHost) { pipHost?.isInPipMode ?: MutableStateFlow(false) }
+    val isInPipMode by pipModeFlow.collectAsState()
 
     LaunchedEffect(loadState) {
         if (loadState is LessonLoadState.Ready) {
@@ -180,6 +187,21 @@ fun PlayerScreen(
         subtitleViewModel.onPositionChanged(state.positionMs)
     }
 
+    DisposableEffect(pipHost, viewModel) {
+        pipHost?.bindPipPlayer(
+            PipPlayerController(
+                isPlaying = { viewModel.exoPlayer.isPlaying },
+                togglePlayPause = { viewModel.togglePlayPause() },
+                seekBackward = { viewModel.seekRelative(-10_000L) }
+            )
+        )
+        onDispose { pipHost?.bindPipPlayer(null) }
+    }
+
+    LaunchedEffect(isInPipMode, state.isPlaying) {
+        pipHost?.updatePipActions(state.isPlaying)
+    }
+
     DisposableEffect(Unit) {
         onDispose {
             activity?.let { act ->
@@ -193,7 +215,10 @@ fun PlayerScreen(
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_PAUSE) {
+            if (event == Lifecycle.Event.ON_PAUSE && pipHost?.isInPipMode?.value != true) {
+                viewModel.pause()
+            }
+            if (event == Lifecycle.Event.ON_STOP && pipHost?.isInPipMode?.value == true) {
                 viewModel.pause()
             }
         }
@@ -266,6 +291,9 @@ fun PlayerScreen(
                     viewModel.toggleFullscreen()
                 },
                 isLandscape = isFullscreen || isLandscape,
+                isInPipMode = isInPipMode,
+                showPipButton = isPipAvailable,
+                onPipClick = { pipHost?.enterPip() },
                 availableQualities = availableQualities,
                 onQualityClick = { isQualitySheetVisible = true },
                 onChapterClick = { isChapterSheetVisible = true },
@@ -360,7 +388,7 @@ fun PlayerScreen(
             )
 
             // Hộp thoại xác nhận tiếp tục xem bài học từ mốc dừng cũ
-            resumePromptPositionMs?.let { posMs ->
+            resumePromptPositionMs?.takeIf { !isInPipMode }?.let { posMs ->
                 ResumePlaybackDialog(
                     positionMs = posMs,
                     onConfirmResume = { viewModel.confirmResume() },
@@ -369,7 +397,7 @@ fun PlayerScreen(
             }
 
             // Bảng trượt đáy chọn chất lượng video
-            if (isQualitySheetVisible) {
+            if (isQualitySheetVisible && !isInPipMode) {
                 QualitySelectionBottomSheet(
                     availableQualities = availableQualities,
                     selectedQuality = selectedQuality,
@@ -380,7 +408,7 @@ fun PlayerScreen(
                 )
             }
 
-            if (isSubtitleSettingsVisible) {
+            if (isSubtitleSettingsVisible && !isInPipMode) {
                 PlayerSettingsSheet(
                     subtitleEnabled = subtitleState.enabled,
                     subtitleFontSize = subtitleState.fontSize,
@@ -391,7 +419,7 @@ fun PlayerScreen(
             }
 
             // Bảng trượt đáy danh sách chương và phân đoạn
-            if (isChapterSheetVisible) {
+            if (isChapterSheetVisible && !isInPipMode) {
                 ChapterSheet(
                     chapters = chapters,
                     currentIndex = currentChapterIndex,
@@ -404,7 +432,7 @@ fun PlayerScreen(
 
             // Modal Bottom Sheet soạn thảo ghi chú M-16
             val editorState by notesViewModel.editorState.collectAsState()
-            if (editorState.isOpen) {
+            if (editorState.isOpen && !isInPipMode) {
                 NoteEditorSheet(
                     editorState = editorState,
                     lessonTitle = state.title,
@@ -440,7 +468,7 @@ fun PlayerScreen(
                 )
             }
 
-            if (isChatVisible) {
+            if (isChatVisible && !isInPipMode) {
                 ChatAIScreen(
                     state = chatState,
                     currentPositionMs = state.positionMs,
@@ -462,7 +490,7 @@ fun PlayerScreen(
                 )
             }
 
-            if (isSummaryVisible) {
+            if (isSummaryVisible && !isInPipMode) {
                 SummaryScreen(
                     state = summaryState,
                     lessonTitle = state.title,
@@ -580,6 +608,9 @@ fun PlayerScreenContent(
     onOverlayClick: () -> Unit = {},
     onToggleFullscreen: () -> Unit = {},
     isLandscape: Boolean = false,
+    isInPipMode: Boolean = false,
+    showPipButton: Boolean = false,
+    onPipClick: () -> Unit = {},
     availableQualities: List<QualityOption> = emptyList(),
     onQualityClick: () -> Unit = {},
     onChapterClick: () -> Unit = {},
@@ -599,7 +630,7 @@ fun PlayerScreenContent(
     var selectedMainTab by remember { mutableIntStateOf(0) }
     var selectedSubTab by remember { mutableIntStateOf(0) }
 
-    if (isLandscape) {
+    if (isLandscape || isInPipMode) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -607,32 +638,36 @@ fun PlayerScreenContent(
         ) {
             videoSurface()
 
-            PlayerControlsOverlay(
-                state = state,
-                onTogglePlayPause = onTogglePlayPause,
-                onSeek = onSeek,
-                onSeekRelative = onSeekRelative,
-                onBackClick = onBackClick,
-                onToggleFullscreen = onToggleFullscreen,
-                onOverlayClick = onOverlayClick,
-                isLandscape = true,
-                availableQualities = availableQualities,
-                onQualityClick = onQualityClick,
-                onChapterClick = onChapterClick,
-                chapters = chapters,
-                hasSubtitles = hasSubtitles,
-                subtitleEnabled = subtitleEnabled,
-                onSubtitleClick = onSubtitleClick
-            )
+            if (!isInPipMode) {
+                PlayerControlsOverlay(
+                    state = state,
+                    onTogglePlayPause = onTogglePlayPause,
+                    onSeek = onSeek,
+                    onSeekRelative = onSeekRelative,
+                    onBackClick = onBackClick,
+                    onToggleFullscreen = onToggleFullscreen,
+                    onOverlayClick = onOverlayClick,
+                    isLandscape = true,
+                    availableQualities = availableQualities,
+                    onQualityClick = onQualityClick,
+                    onChapterClick = onChapterClick,
+                    chapters = chapters,
+                    hasSubtitles = hasSubtitles,
+                    subtitleEnabled = subtitleEnabled,
+                    onSubtitleClick = onSubtitleClick,
+                    showPipButton = showPipButton,
+                    onPipClick = onPipClick
+                )
 
-            SubtitleOverlay(
-                text = subtitleText,
-                controlsVisible = state.isControlsVisible,
-                isLandscape = true,
-                subtitleFontSize = subtitleFontSize
-            )
+                SubtitleOverlay(
+                    text = subtitleText,
+                    controlsVisible = state.isControlsVisible,
+                    isLandscape = true,
+                    subtitleFontSize = subtitleFontSize
+                )
 
-            errorOverlay()
+                errorOverlay()
+            }
         }
     } else {
         Box(
@@ -670,7 +705,9 @@ fun PlayerScreenContent(
                         chapters = chapters,
                         hasSubtitles = hasSubtitles,
                         subtitleEnabled = subtitleEnabled,
-                        onSubtitleClick = onSubtitleClick
+                        onSubtitleClick = onSubtitleClick,
+                        showPipButton = showPipButton,
+                        onPipClick = onPipClick
                     )
 
                     SubtitleOverlay(
