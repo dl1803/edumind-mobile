@@ -66,6 +66,13 @@ class MainActivity : ComponentActivity(), PipHost {
 
     override fun bindPipPlayer(controller: PipPlayerController?) {
         pipPlayer = controller
+        if (controller == null && isPipSupported && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            runCatching {
+                setPictureInPictureParams(
+                    PictureInPictureParams.Builder().setAutoEnterEnabled(false).build()
+                )
+            }
+        }
     }
 
     override fun enterPip() {
@@ -79,8 +86,10 @@ class MainActivity : ComponentActivity(), PipHost {
     }
 
     override fun updatePipActions(isPlaying: Boolean) {
-        if (!_isInPipMode.value) return
-        setPictureInPictureParams(buildPipParams(isPlaying))
+        if (!isPipSupported) return
+        runCatching {
+            setPictureInPictureParams(buildPipParams(isPlaying))
+        }
     }
 
     override fun onUserLeaveHint() {

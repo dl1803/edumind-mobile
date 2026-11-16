@@ -31,6 +31,7 @@ import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Settings
@@ -87,7 +88,9 @@ fun PlayerControlsOverlay(
     chapters: List<PlayerChapter> = emptyList(),
     hasSubtitles: Boolean = false,
     subtitleEnabled: Boolean = true,
-    onSubtitleClick: () -> Unit = {}
+    onSubtitleClick: () -> Unit = {},
+    showPipButton: Boolean = false,
+    onPipClick: () -> Unit = {}
 ) {
     val dynamicMarkers = remember(chapters, state.durationMs) {
         if (state.durationMs > 0L) {
@@ -339,6 +342,20 @@ fun PlayerControlsOverlay(
                             }
 
 
+
+                            if (showPipButton) {
+                                IconButton(
+                                    onClick = onPipClick,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.PictureInPictureAlt,
+                                        contentDescription = "Hình trong hình",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
 
                             IconButton(
                                 onClick = onToggleFullscreen,
