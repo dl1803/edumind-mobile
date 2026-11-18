@@ -183,8 +183,10 @@ fun PlayerScreen(
         viewModel.exitFullscreen()
     }
 
-    LaunchedEffect(state.positionMs) {
-        subtitleViewModel.onPositionChanged(state.positionMs)
+    LaunchedEffect(state.positionMs, isInPipMode) {
+        if (!isInPipMode) {
+            subtitleViewModel.onPositionChanged(state.positionMs)
+        }
     }
 
     DisposableEffect(pipHost, viewModel) {
@@ -322,6 +324,7 @@ fun PlayerScreen(
                     TranscriptPanel(
                         segments = subtitleState.segments,
                         currentIndex = subtitleState.currentIndex,
+                        isLoading = subtitleState.isLoading,
                         onSeek = { targetMs -> viewModel.seekTo(targetMs) }
                     )
                 },
