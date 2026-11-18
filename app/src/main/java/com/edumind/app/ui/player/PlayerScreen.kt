@@ -322,6 +322,7 @@ fun PlayerScreen(
                     TranscriptPanel(
                         segments = subtitleState.segments,
                         currentIndex = subtitleState.currentIndex,
+                        isLoading = subtitleState.isLoading,
                         onSeek = { targetMs -> viewModel.seekTo(targetMs) }
                     )
                 },

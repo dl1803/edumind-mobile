@@ -24,7 +24,8 @@ data class SubtitleUiState(
     val segments: List<SubtitleSegment> = emptyList(),
     val currentIndex: Int = -1,
     val enabled: Boolean = true,
-    val fontSize: SubtitleFontSize = SubtitleFontSize.MEDIUM
+    val fontSize: SubtitleFontSize = SubtitleFontSize.MEDIUM,
+    val isLoading: Boolean = false
 ) {
     val hasSubtitles: Boolean
         get() = segments.isNotEmpty()
@@ -94,7 +95,7 @@ class SubtitleViewModel @Inject constructor(
     private fun loadSegments(lessonId: String) {
         currentLessonId = lessonId
         loadJob?.cancel()
-        _uiState.update { it.copy(segments = emptyList(), currentIndex = -1) }
+        _uiState.update { it.copy(segments = emptyList(), currentIndex = -1, isLoading = true) }
         loadJob = viewModelScope.launch {
             val segments = try {
                 subtitleRepository.getSegments(lessonId).sortedBy { it.startMs }
@@ -106,7 +107,8 @@ class SubtitleViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     segments = segments,
-                    currentIndex = SubtitleSyncHelper.findCueIndex(segments, lastPositionMs)
+                    currentIndex = SubtitleSyncHelper.findCueIndex(segments, lastPositionMs),
+                    isLoading = false
                 )
             }
         }
