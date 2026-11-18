@@ -196,6 +196,35 @@ class NoteRepositoryTest {
     }
 
     @Test
+    fun createNote_offline_thenSyncPending_pushesAndRecordsServerId() = runTest(testDispatcher) {
+        every { networkUtils.isConnectedNow() } returns false
+        val saved = slot<NoteEntity>()
+        coEvery { noteDao.upsertNote(capture(saved)) } returns Unit
+
+        val created = repository.createNote(lessonId, "Ghi chú offline", 60f)
+        advanceUntilIdle()
+
+        assertTrue(created.isSuccess)
+        coVerify(exactly = 0) { noteApiService.createNote(any(), any()) }
+
+        val pending = saved.captured
+        coEvery { noteDao.getUnsyncedNotes() } returns listOf(pending)
+        coEvery { noteDao.getNoteById(pending.id) } returns pending
+        coEvery {
+            noteApiService.createNote(lessonId, CreateNoteRequest(content = "Ghi chú offline", timestamp = 60f))
+        } returns Response.success(sampleDto)
+        every { networkUtils.isConnectedNow() } returns true
+
+        repository.syncPendingNotes()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) {
+            noteApiService.createNote(lessonId, CreateNoteRequest(content = "Ghi chú offline", timestamp = 60f))
+        }
+        coVerify(exactly = 1) { noteDao.applyPushResult(pending.id, serverId, pending.updatedAt) }
+    }
+
+    @Test
     fun createNote_blankContent_returnsFailureWithoutApiCall() = runTest(testDispatcher) {
         val result = repository.createNote(lessonId, "   ", 60f)
         advanceUntilIdle()
@@ -326,6 +355,25 @@ class NoteRepositoryTest {
         advanceUntilIdle()
 
         coVerify(exactly = 1) { noteDao.deleteNoteById(localId) }
+    }
+
+    @Test
+    fun syncPendingNotes_createFails_keepsPendingNoteWithoutRemovingIt() = runTest(testDispatcher) {
+        val pending = entity(id = "local_a", serverId = null, isSynced = false)
+        coEvery { noteDao.getUnsyncedNotes() } returns listOf(pending)
+        coEvery { noteDao.getNoteById("local_a") } returns pending
+        coEvery { noteApiService.createNote(any(), any()) } returns Response.error(
+            500,
+            "Server Error".toResponseBody(null)
+        )
+
+        repository.syncPendingNotes()
+        advanceUntilIdle()
+
+        coVerify(exactly = 1) { noteApiService.createNote(lessonId, any()) }
+        coVerify(exactly = 0) { noteDao.applyPushResult(any(), any(), any()) }
+        coVerify(exactly = 0) { noteDao.deleteNoteById(any()) }
+        coVerify(exactly = 0) { noteDao.upsertNote(any()) }
     }
 
     @Test
