@@ -183,8 +183,10 @@ fun PlayerScreen(
         viewModel.exitFullscreen()
     }
 
-    LaunchedEffect(state.positionMs) {
-        subtitleViewModel.onPositionChanged(state.positionMs)
+    LaunchedEffect(state.positionMs, isInPipMode) {
+        if (!isInPipMode) {
+            subtitleViewModel.onPositionChanged(state.positionMs)
+        }
     }
 
     DisposableEffect(pipHost, viewModel) {
