@@ -8,19 +8,22 @@ import com.edumind.app.data.local.db.dao.ChatHistoryDao
 import com.edumind.app.data.local.db.dao.CourseCacheDao
 import com.edumind.app.data.local.db.dao.NoteDao
 import com.edumind.app.data.local.db.dao.PlaybackPositionDao
+import com.edumind.app.data.local.db.dao.SubtitleCacheDao
 import com.edumind.app.data.local.db.entity.ChatHistoryEntity
 import com.edumind.app.data.local.db.entity.CourseCache
 import com.edumind.app.data.local.db.entity.NoteEntity
 import com.edumind.app.data.local.db.entity.PlaybackPositionEntity
+import com.edumind.app.data.local.db.entity.SubtitleCacheEntity
 
 @Database(
     entities = [
         NoteEntity::class,
         CourseCache::class,
         ChatHistoryEntity::class,
-        PlaybackPositionEntity::class
+        PlaybackPositionEntity::class,
+        SubtitleCacheEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -28,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun courseCacheDao(): CourseCacheDao
     abstract fun chatHistoryDao(): ChatHistoryDao
     abstract fun playbackPositionDao(): PlaybackPositionDao
+    abstract fun subtitleCacheDao(): SubtitleCacheDao
 
     companion object {
         const val DATABASE_NAME = "edumind.db"
@@ -55,6 +59,20 @@ abstract class AppDatabase : RoomDatabase() {
                 db.execSQL("ALTER TABLE `notes` ADD COLUMN `server_id` TEXT")
                 db.execSQL("ALTER TABLE `notes` ADD COLUMN `is_deleted` INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("UPDATE `notes` SET `server_id` = `id` WHERE `is_synced` = 1")
+            }
+        }
+
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `subtitle_cache` (
+                        `lesson_id` TEXT NOT NULL,
+                        `segments_json` TEXT NOT NULL,
+                        PRIMARY KEY(`lesson_id`)
+                    )
+                    """.trimIndent()
+                )
             }
         }
     }
