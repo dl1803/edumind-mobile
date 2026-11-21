@@ -1238,8 +1238,10 @@ private fun CourseSyllabusTab(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Banner Học thử miễn phí Bài 1 (Chỉ hiện khi Chưa mua)
-        if (!isEnrolled) {
+        // Banner Học thử miễn phí (Chỉ hiện khi Chưa mua)
+        val trialLesson = sections.asSequence().flatMap { it.lessons.asSequence() }.firstOrNull { it.isFreePreview }
+            ?: sections.firstOrNull()?.lessons?.firstOrNull()
+        if (!isEnrolled && trialLesson != null) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1259,11 +1261,7 @@ private fun CourseSyllabusTab(
                         shape = RoundedCornerShape(16.dp)
                     )
                     .clickable {
-                        val firstTrial = sections.firstOrNull()?.lessons?.firstOrNull { it.isFreePreview }
-                            ?: sections.firstOrNull()?.lessons?.firstOrNull()
-                        if (firstTrial != null) {
-                            onLessonClick(firstTrial.id, true)
-                        }
+                        onLessonClick(trialLesson.id, true)
                     }
                     .padding(horizontal = 14.dp, vertical = 12.dp)
             ) {
@@ -1291,24 +1289,28 @@ private fun CourseSyllabusTab(
                             )
                         }
                         Spacer(modifier = Modifier.width(10.dp))
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Học thử miễn phí Bài 1",
+                                text = "Học thử miễn phí: ${trialLesson.title}",
                                 fontFamily = EduMindFontFamily,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Neutral900
+                                color = Neutral900,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = "Trải nghiệm chất lượng video & Trợ giảng AI",
                                 fontFamily = EduMindFontFamily,
                                 fontSize = 10.sp,
-                                color = Neutral500
+                                color = Neutral500,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
-
+                    Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
@@ -1420,7 +1422,7 @@ private fun CourseSyllabusTab(
                                 text = when {
                                     isCompletedChapter -> "${section.lessons.size} bài giảng • 45 phút • Đã hoàn thành 100%"
                                     isCurrentChapter -> "${section.lessons.size} bài giảng • 1h 20p • Đang học (1/4)"
-                                    !isEnrolled && index == 0 -> "${section.lessons.size} bài giảng • 45 phút • 1 bài học thử"
+                                    !isEnrolled && section.lessons.any { it.isFreePreview } -> "${section.lessons.size} bài giảng • ${section.durationSummary.ifBlank { "45 phút" }} • ${section.lessons.count { it.isFreePreview }} bài học thử"
                                     else -> "${section.lessons.size} bài giảng • ${section.durationSummary.ifBlank { "1h 20p" }}"
                                 },
                                 fontFamily = EduMindFontFamily,
