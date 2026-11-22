@@ -36,6 +36,9 @@ android {
 
         val useFakeLessonApi = localProperties.getProperty("USE_FAKE_LESSON_API")?.toBoolean() ?: false
         buildConfigField("boolean", "USE_FAKE_LESSON_API", useFakeLessonApi.toString())
+
+        val useFakeQuizApi = localProperties.getProperty("USE_FAKE_QUIZ_API")?.toBoolean() ?: true
+        buildConfigField("boolean", "USE_FAKE_QUIZ_API", useFakeQuizApi.toString())
     }
 
     buildTypes {
