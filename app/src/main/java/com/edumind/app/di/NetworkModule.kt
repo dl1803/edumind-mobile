@@ -11,6 +11,7 @@ import com.edumind.app.data.remote.api.FakeLessonApiService
 import com.edumind.app.data.remote.api.LessonApiService
 import com.edumind.app.data.remote.api.NoteApiService
 import com.edumind.app.data.remote.api.ProgressApiService
+import com.edumind.app.data.remote.api.QuizApiService
 import com.edumind.app.data.remote.interceptor.AuthInterceptor
 import com.edumind.app.data.remote.interceptor.TokenAuthenticator
 import com.edumind.app.util.ClockProvider
@@ -155,6 +156,12 @@ object NetworkModule {
     @Singleton
     fun provideNoteApiService(retrofit: Retrofit): NoteApiService {
         return retrofit.create(NoteApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideQuizApiService(retrofit: Retrofit): QuizApiService {
+        return retrofit.create(QuizApiService::class.java)
     }
 
     @Provides
