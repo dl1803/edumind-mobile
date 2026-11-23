@@ -20,6 +20,7 @@ import com.edumind.app.data.remote.VideoUrlManager
 import com.edumind.app.repository.CourseRepository
 import com.edumind.app.repository.LessonRepository
 import com.edumind.app.repository.ProgressRepository
+import com.edumind.app.repository.QuizRepository
 import com.edumind.app.ui.navigation.Screen
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -55,6 +56,7 @@ class PlayerViewModelTest {
     private val progressRepository: ProgressRepository = mockk(relaxed = true)
     private val courseRepository: CourseRepository = mockk(relaxed = true)
     private val videoUrlManager: VideoUrlManager = mockk()
+    private val quizRepository: QuizRepository = mockk()
     private val mockExoPlayer: ExoPlayer = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -121,6 +123,7 @@ class PlayerViewModelTest {
             )
         )
         coEvery { progressRepository.getPlaybackPosition(any()) } returns null
+        coEvery { quizRepository.getLessonQuizMarkers(any()) } returns Result.success(emptyList())
         coEvery { progressRepository.saveProgress(any(), any(), any(), any()) } returns Result.success(10f)
     }
 
@@ -148,7 +151,8 @@ class PlayerViewModelTest {
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
             courseRepository = courseRepository,
-            videoUrlManager = videoUrlManager
+            videoUrlManager = videoUrlManager,
+            quizRepository = quizRepository
         )
 
         val chapters = viewModel.chapters.value
@@ -166,7 +170,8 @@ class PlayerViewModelTest {
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
             courseRepository = courseRepository,
-            videoUrlManager = videoUrlManager
+            videoUrlManager = videoUrlManager,
+            quizRepository = quizRepository
         )
 
         advanceUntilIdle()
@@ -188,7 +193,8 @@ class PlayerViewModelTest {
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
             courseRepository = courseRepository,
-            videoUrlManager = videoUrlManager
+            videoUrlManager = videoUrlManager,
+            quizRepository = quizRepository
         )
         advanceUntilIdle()
 
@@ -218,7 +224,8 @@ class PlayerViewModelTest {
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
             courseRepository = courseRepository,
-            videoUrlManager = videoUrlManager
+            videoUrlManager = videoUrlManager,
+            quizRepository = quizRepository
         )
         advanceUntilIdle()
 
@@ -238,7 +245,8 @@ class PlayerViewModelTest {
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
             courseRepository = courseRepository,
-            videoUrlManager = videoUrlManager
+            videoUrlManager = videoUrlManager,
+            quizRepository = quizRepository
         )
         advanceUntilIdle()
 
@@ -271,7 +279,8 @@ class PlayerViewModelTest {
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
             courseRepository = courseRepository,
-            videoUrlManager = videoUrlManager
+            videoUrlManager = videoUrlManager,
+            quizRepository = quizRepository
         )
         advanceUntilIdle()
 
@@ -299,7 +308,8 @@ class PlayerViewModelTest {
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
             courseRepository = courseRepository,
-            videoUrlManager = videoUrlManager
+            videoUrlManager = videoUrlManager,
+            quizRepository = quizRepository
         )
         advanceUntilIdle()
 
@@ -373,7 +383,8 @@ class PlayerViewModelTest {
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
             courseRepository = courseRepository,
-            videoUrlManager = videoUrlManager
+            videoUrlManager = videoUrlManager,
+            quizRepository = quizRepository
         )
 
         assertFalse(viewModel.isFullscreen.value)
@@ -388,7 +399,8 @@ class PlayerViewModelTest {
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
             courseRepository = courseRepository,
-            videoUrlManager = videoUrlManager
+            videoUrlManager = videoUrlManager,
+            quizRepository = quizRepository
         )
 
         viewModel.toggleFullscreen()
@@ -412,7 +424,8 @@ class PlayerViewModelTest {
             lessonRepository = lessonRepository,
             progressRepository = progressRepository,
             courseRepository = courseRepository,
-            videoUrlManager = videoUrlManager
+            videoUrlManager = videoUrlManager,
+            quizRepository = quizRepository
         )
 
         assertTrue(viewModel.isFullscreen.value)
