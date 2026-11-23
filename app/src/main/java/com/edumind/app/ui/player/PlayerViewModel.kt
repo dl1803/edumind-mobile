@@ -20,6 +20,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import com.edumind.app.BuildConfig
 import com.edumind.app.data.model.response.LessonDetail
 import com.edumind.app.data.model.response.PlayerChapter
+import com.edumind.app.data.model.response.QuizMarker
 import com.edumind.app.data.model.response.toPlayerChapters
 import com.edumind.app.data.remote.VideoUrlManager
 import com.edumind.app.repository.CourseRepository
@@ -27,16 +28,22 @@ import com.edumind.app.repository.LessonAccessDeniedException
 import com.edumind.app.repository.LessonNotFoundException
 import com.edumind.app.repository.LessonRepository
 import com.edumind.app.repository.ProgressRepository
+import com.edumind.app.repository.QuizRepository
 import com.edumind.app.repository.VideoProcessingException
 import com.edumind.app.ui.navigation.Screen
 import com.edumind.app.util.Constants
+import com.edumind.app.util.quiz.QuizTriggerManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -65,7 +72,8 @@ class PlayerViewModel @Inject constructor(
     private val lessonRepository: LessonRepository,
     private val progressRepository: ProgressRepository,
     private val courseRepository: CourseRepository,
-    private val videoUrlManager: VideoUrlManager
+    private val videoUrlManager: VideoUrlManager,
+    private val quizRepository: QuizRepository
 ) : ViewModel() {
 
     val exoPlayer: ExoPlayer = ExoPlayer.Builder(context)
@@ -95,6 +103,14 @@ class PlayerViewModel @Inject constructor(
 
     private val _userMessage = MutableStateFlow<String?>(null)
     val userMessage: StateFlow<String?> = _userMessage.asStateFlow()
+
+    private val quizTriggerManager = QuizTriggerManager()
+
+    private val _quizEvent = MutableSharedFlow<QuizMarker>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val quizEvent: SharedFlow<QuizMarker> = _quizEvent.asSharedFlow()
 
     val isFullscreen: StateFlow<Boolean> = savedStateHandle.getStateFlow(KEY_IS_FULLSCREEN, false)
 
@@ -208,6 +224,14 @@ class PlayerViewModel @Inject constructor(
                 seekTo(candidatePositionMs)
             }
             exoPlayer.play()
+        }
+
+        viewModelScope.launch {
+            quizRepository.getLessonQuizMarkers(lesson.id).onSuccess { markers ->
+                if (currentLessonId == lesson.id) {
+                    quizTriggerManager.load(markers)
+                }
+            }
         }
 
         // Nạp danh sách phân đoạn mốc thời gian hoặc cấu trúc bài học
@@ -531,6 +555,7 @@ class PlayerViewModel @Inject constructor(
         saveCurrentProgress()
         exoPlayer.stop()
         exoPlayer.clearMediaItems()
+        quizTriggerManager.reset()
         currentLessonId = newLessonId
         currentStreamUrl = null
         _resumePromptPositionMs.value = null
@@ -585,6 +610,12 @@ class PlayerViewModel @Inject constructor(
                     )
                 }
                 updateCurrentChapterIndex(currentPos)
+                quizTriggerManager.onPositionChanged(currentPos)?.let { marker ->
+                    _quizEvent.tryEmit(marker)
+                    if (BuildConfig.DEBUG) {
+                        Log.d(TAG, "Quiz trigger: ${marker.quizId} at ${currentPos}ms")
+                    }
+                }
                 tickCount++
                 if (tickCount % 75 == 0) { // Mỗi 15 giây lưu 1 lần (75 * 200ms = 15s)
                     saveCurrentProgress()
