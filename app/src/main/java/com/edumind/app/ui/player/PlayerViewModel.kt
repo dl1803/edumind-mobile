@@ -563,6 +563,14 @@ class PlayerViewModel @Inject constructor(
         fetchLesson(newLessonId)
     }
 
+    fun onQuizClosed(quizId: String, answered: Boolean) {
+        if (answered) {
+            quizTriggerManager.markAnswered(quizId)
+        } else {
+            quizTriggerManager.markSkipped(quizId)
+        }
+    }
+
     fun clearUserMessage() {
         _userMessage.value = null
     }
