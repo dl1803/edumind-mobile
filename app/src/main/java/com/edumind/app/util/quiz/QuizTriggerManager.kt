@@ -53,6 +53,12 @@ class QuizTriggerManager {
         skippedIds.remove(quizId)
     }
 
+    fun markSkipped(quizId: String) {
+        if (quizId !in answeredIds) {
+            skippedIds.add(quizId)
+        }
+    }
+
     fun reset() {
         markers = emptyList()
         answeredIds.clear()

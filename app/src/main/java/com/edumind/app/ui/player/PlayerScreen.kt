@@ -106,6 +106,9 @@ import com.edumind.app.ui.player.notes.NotesViewModel
 import com.edumind.app.ui.player.notes.NotesUiState
 import com.edumind.app.ui.player.pip.PipHost
 import com.edumind.app.ui.player.pip.PipPlayerController
+import com.edumind.app.ui.quiz.QuizOverlay
+import com.edumind.app.ui.quiz.QuizUiState
+import com.edumind.app.ui.quiz.QuizViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
@@ -116,7 +119,8 @@ fun PlayerScreen(
     notesViewModel: NotesViewModel = hiltViewModel(),
     subtitleViewModel: SubtitleViewModel = hiltViewModel(),
     chatViewModel: ChatAIViewModel = hiltViewModel(),
-    summaryViewModel: SummaryViewModel = hiltViewModel()
+    summaryViewModel: SummaryViewModel = hiltViewModel(),
+    quizViewModel: QuizViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val loadState by viewModel.loadState.collectAsState()
@@ -130,6 +134,7 @@ fun PlayerScreen(
     val subtitleState by subtitleViewModel.uiState.collectAsState()
     val chatState by chatViewModel.uiState.collectAsState()
     val summaryState by summaryViewModel.uiState.collectAsState()
+    val quizState by quizViewModel.uiState.collectAsState()
     var isQualitySheetVisible by remember { mutableStateOf(false) }
     var isSubtitleSettingsVisible by remember { mutableStateOf(false) }
     var isChapterSheetVisible by rememberSaveable { mutableStateOf(false) }
@@ -147,6 +152,7 @@ fun PlayerScreen(
     val isInPipMode by pipModeFlow.collectAsState()
 
     LaunchedEffect(loadState) {
+        quizViewModel.reset()
         if (loadState is LessonLoadState.Ready) {
             val lesson = (loadState as LessonLoadState.Ready).lesson
             notesViewModel.initLessonId(lesson.id)
@@ -181,6 +187,30 @@ fun PlayerScreen(
 
     BackHandler(enabled = isFullscreen) {
         viewModel.exitFullscreen()
+    }
+
+    LaunchedEffect(viewModel, quizViewModel) {
+        viewModel.quizEvent.collect { marker ->
+            viewModel.pause()
+            quizViewModel.onQuizTriggered(marker)
+        }
+    }
+
+    LaunchedEffect(viewModel, quizViewModel) {
+        quizViewModel.events.collect { event ->
+            viewModel.onQuizClosed(event.quizId, event.answered)
+            event.message?.let { Toast.makeText(context, it, Toast.LENGTH_SHORT).show() }
+            if (lifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                viewModel.exoPlayer.play()
+            }
+        }
+    }
+
+    val isQuizVisible = quizState !is QuizUiState.Hidden
+    LaunchedEffect(isQuizVisible, state.isPlaying) {
+        if (isQuizVisible && state.isPlaying) {
+            viewModel.exoPlayer.pause()
+        }
     }
 
     LaunchedEffect(state.positionMs, isInPipMode) {
@@ -347,6 +377,21 @@ fun PlayerScreen(
                             }
                         )
                     }
+                },
+                quizOverlay = {
+                    QuizOverlay(
+                        state = quizState,
+                        onSelectAnswer = quizViewModel::selectAnswer,
+                        onSubmit = quizViewModel::submit,
+                        onNext = quizViewModel::next,
+                        onFinish = quizViewModel::finish,
+                        onBack = quizViewModel::onBack,
+                        onErrorShown = quizViewModel::onErrorShown,
+                        onRewindTheory = {
+                            viewModel.seekRelative(-20_000L)
+                            quizViewModel.rewind()
+                        }
+                    )
                 },
                 videoSurface = {
                     if (loadState is LessonLoadState.Loading) {
@@ -628,7 +673,8 @@ fun PlayerScreenContent(
     subtitleEnabled: Boolean = true,
     onSubtitleClick: () -> Unit = {},
     videoSurface: @Composable () -> Unit = {},
-    errorOverlay: @Composable () -> Unit = {}
+    errorOverlay: @Composable () -> Unit = {},
+    quizOverlay: @Composable () -> Unit = {}
 ) {
     var selectedMainTab by remember { mutableIntStateOf(0) }
     var selectedSubTab by remember { mutableIntStateOf(0) }
@@ -670,6 +716,7 @@ fun PlayerScreenContent(
                 )
 
                 errorOverlay()
+                quizOverlay()
             }
         }
     } else {
@@ -976,6 +1023,8 @@ fun PlayerScreenContent(
                 modifier = Modifier.size(24.dp)
             )
         }
+
+        quizOverlay()
     }
 }
 }
