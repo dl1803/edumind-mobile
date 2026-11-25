@@ -389,7 +389,7 @@ fun PlayerScreen(
                         onErrorShown = quizViewModel::onErrorShown,
                         onRewindTheory = {
                             viewModel.seekRelative(-20_000L)
-                            quizViewModel.onBack()
+                            quizViewModel.rewind()
                         }
                     )
                 },
