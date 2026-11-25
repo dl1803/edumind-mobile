@@ -362,36 +362,26 @@ private fun QuizHeader(state: QuizUiState.Active) {
             }
         }
 
-        val (badgeText, badgeBg, badgeTextColor) = when (state) {
-            is QuizUiState.Feedback -> {
-                if (state.result.correct) {
-                    Triple("Chính xác", Success100, Success700)
-                } else {
-                    Triple("Chưa chính xác", Error100, Error700)
-                }
+        if (state is QuizUiState.Feedback) {
+            val (badgeText, badgeBg, badgeTextColor) = if (state.result.correct) {
+                Triple("Chính xác", Success100, Success700)
+            } else {
+                Triple("Chưa chính xác", Error100, Error700)
             }
-            is QuizUiState.Submitting -> Triple("Đang gửi...", Primary100, Primary700)
-            is QuizUiState.Question -> {
-                if (state.selectedKey != null) {
-                    Triple("Đã chọn đáp án", Primary100, Primary700)
-                } else {
-                    Triple("Tự động dừng video", Primary100, Primary700)
-                }
-            }
-        }
 
-        Box(
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(badgeBg)
-                .padding(horizontal = 8.dp, vertical = 3.dp)
-        ) {
-            Text(
-                text = badgeText,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                color = badgeTextColor
-            )
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(badgeBg)
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = badgeText,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = badgeTextColor
+                )
+            }
         }
     }
 }
