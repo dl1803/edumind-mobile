@@ -111,6 +111,11 @@ class QuizViewModel @Inject constructor(
         close(answered = true)
     }
 
+    fun rewind() {
+        if (_uiState.value !is QuizUiState.Feedback) return
+        close(answered = false)
+    }
+
     fun onBack() {
         when (val state = _uiState.value) {
             QuizUiState.Hidden, is QuizUiState.Submitting -> Unit
