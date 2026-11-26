@@ -27,6 +27,9 @@ sealed class Screen(val route: String) {
     data object VideoPlayer : Screen("video_player/{$ARG_LESSON_ID}") {
         fun createRoute(lessonId: String): String = "video_player/$lessonId"
     }
+    data object Exercise : Screen("exercise/{$ARG_EXERCISE_ID}") {
+        fun createRoute(exerciseId: String): String = "exercise/$exerciseId"
+    }
     data object PlayerPoc : Screen("player_poc")
     data object CourseProgressDetail : Screen("course_progress_detail/{$ARG_COURSE_ID}") {
         fun createRoute(courseId: String): String = "course_progress_detail/$courseId"
@@ -38,5 +41,6 @@ sealed class Screen(val route: String) {
     companion object {
         const val ARG_COURSE_ID = "courseId"
         const val ARG_LESSON_ID = "lessonId"
+        const val ARG_EXERCISE_ID = "exerciseId"
     }
 }
