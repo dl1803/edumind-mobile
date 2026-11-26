@@ -5,7 +5,9 @@ import com.edumind.app.repository.AuthRepository
 import com.edumind.app.repository.AuthRepositoryImpl
 import com.edumind.app.repository.CourseRepository
 import com.edumind.app.repository.CourseRepositoryImpl
+import com.edumind.app.repository.ExerciseRepository
 import com.edumind.app.repository.FakeAIRepository
+import com.edumind.app.repository.FakeExerciseRepository
 import com.edumind.app.repository.FakeHomeRepository
 import com.edumind.app.repository.FakeProfileRepository
 import com.edumind.app.repository.FakeSummaryRepository
@@ -89,4 +91,10 @@ abstract class RepositoryModule {
     abstract fun bindSummaryRepository(
         fakeSummaryRepository: FakeSummaryRepository
     ): SummaryRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindExerciseRepository(
+        fakeExerciseRepository: FakeExerciseRepository
+    ): ExerciseRepository
 }
