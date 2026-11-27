@@ -14,8 +14,22 @@ class FakeExerciseRepository @Inject constructor() : ExerciseRepository {
 
     override suspend fun getLessonExercise(lessonId: String): Result<ExerciseEntry?> {
         delay(NETWORK_DELAY_MS)
-        val exercise = EXERCISES.getOrNull(lessonId.hashCode().mod(BUCKET_COUNT))
-        return Result.success(exercise?.let { ExerciseEntry(exerciseId = it.id, title = it.title) })
+        val bucket = lessonId.hashCode().mod(BUCKET_COUNT)
+        val exercise = when (bucket) {
+            0 -> EXERCISES[1]
+            1 -> EXERCISES[2]
+            2 -> EXERCISES[0]
+            else -> null
+        }
+        return Result.success(
+            exercise?.let {
+                ExerciseEntry(
+                    exerciseId = it.id,
+                    title = it.title,
+                    questionCount = it.questions.size
+                )
+            }
+        )
     }
 
     override suspend fun getExercise(exerciseId: String): Result<ExerciseDto> {

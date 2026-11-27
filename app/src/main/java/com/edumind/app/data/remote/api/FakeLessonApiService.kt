@@ -2,6 +2,7 @@ package com.edumind.app.data.remote.api
 
 import com.edumind.app.data.model.response.LessonDetailResponseDto
 import com.edumind.app.data.model.response.TranscriptSegmentDto
+import com.edumind.app.data.model.response.VideoChapterDto
 import com.edumind.app.util.Constants
 import retrofit2.Response
 
@@ -15,6 +16,12 @@ class FakeLessonApiService : LessonApiService {
                 courseId = "fake_course",
                 hlsStreamUrl = Constants.SAMPLE_HLS_URL,
                 duration = 765,
+                chapters = listOf(
+                    VideoChapterDto(title = "1. Giới thiệu tổng quan bài học", startTime = 0f),
+                    VideoChapterDto(title = "2. Quy tắc khai báo biến chuẩn PEP 8", startTime = 135f),
+                    VideoChapterDto(title = "3. Kiểu số nguyên int & số thực float", startTime = 255f),
+                    VideoChapterDto(title = "4. Chuỗi ký tự (str) & Kiểu Logic (bool)", startTime = 380f)
+                ),
                 transcript = listOf(
                     TranscriptSegmentDto(start = 0f, end = 6f, text = "Chào mừng bạn đến với bài giảng mẫu của EduMind."),
                     TranscriptSegmentDto(start = 6f, end = 15f, text = "Hệ thống hỗ trợ phát video định dạng HLS mượt mà và tối ưu."),
