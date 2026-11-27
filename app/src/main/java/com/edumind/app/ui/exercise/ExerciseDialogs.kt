@@ -241,7 +241,7 @@ internal fun ExerciseTimeOutCard(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Hệ thống đã tự động lưu lại kết quả làm bài của bạn.",
+            text = "Đã hết thời gian, bài đã được nộp tự động.",
             fontFamily = EduMindFontFamily,
             fontSize = 13.sp,
             lineHeight = 18.sp,

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -20,12 +21,19 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,6 +50,7 @@ import com.edumind.app.data.model.response.ExerciseQuestionDto
 import com.edumind.app.data.model.response.ExerciseQuestionType
 import com.edumind.app.data.model.response.QuizOptionDto
 import com.edumind.app.ui.common.ErrorView
+import com.edumind.app.ui.common.LoadingOverlay
 import com.edumind.app.ui.common.SkeletonBox
 import com.edumind.app.ui.common.SkeletonLines
 import com.edumind.app.ui.theme.EduMindFontFamily
@@ -51,15 +60,21 @@ import com.edumind.app.ui.theme.Neutral50
 import com.edumind.app.ui.theme.Neutral500
 import com.edumind.app.ui.theme.Neutral600
 import com.edumind.app.ui.theme.Neutral700
+import com.edumind.app.ui.theme.Neutral800
 import com.edumind.app.ui.theme.Neutral950
+import com.edumind.app.ui.theme.Primary300
 import com.edumind.app.ui.theme.Primary700
+
+private val ExerciseSnackbarBottomOffset = 88.dp
 
 @Composable
 fun ExerciseScreen(
     onBackClick: () -> Unit,
+    onViewResult: (String) -> Unit = {},
     viewModel: ExerciseViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val remainingSeconds by viewModel.remainingSeconds.collectAsState()
 
     ExerciseScreenContent(
         state = state,
@@ -71,7 +86,12 @@ fun ExerciseScreen(
         onEssayChange = viewModel::updateEssay,
         onPrevious = viewModel::previous,
         onNext = viewModel::next,
-        onGoTo = viewModel::goTo
+        onGoTo = viewModel::goTo,
+        remainingSeconds = remainingSeconds,
+        onViewResult = onViewResult,
+        onSubmit = { viewModel.submit() },
+        onRetrySubmit = viewModel::retrySubmit,
+        onSubmitErrorShown = viewModel::onSubmitErrorShown
     )
 }
 
@@ -86,63 +106,130 @@ fun ExerciseScreenContent(
     onEssayChange: (String, String) -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
-    onGoTo: (Int) -> Unit
+    onGoTo: (Int) -> Unit,
+    remainingSeconds: Int? = null,
+    onViewResult: (String) -> Unit = {},
+    onSubmit: () -> Unit = {},
+    onRetrySubmit: () -> Unit = {},
+    onSubmitErrorShown: () -> Unit = {}
 ) {
     var isLeaveDialogVisible by rememberSaveable { mutableStateOf(false) }
     var isSubmitConfirmDialogVisible by rememberSaveable { mutableStateOf(false) }
-    var isTimeOutDialogVisible by rememberSaveable { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     val inProgressState = state as? ExerciseUiState.InProgress
     val isInProgress = inProgressState != null
+    val isLocked = inProgressState?.isLocked == true
+    val isBackLocked = inProgressState?.isBackLocked == true
+    val submitPhase = inProgressState?.submitPhase
+    val submitError = inProgressState?.submitError
 
     BackHandler(enabled = isInProgress) {
-        isLeaveDialogVisible = true
+        if (!isBackLocked) isLeaveDialogVisible = true
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Neutral50)
-    ) {
-        ExerciseTopBar(
-            title = inProgressState?.exercise?.headerTitle(),
-            subtitle = inProgressState?.exercise?.summaryText(),
-            showDivider = isInProgress,
-            containerColor = if (isInProgress) Color.White else Neutral50,
-            onBackClick = if (isInProgress) {
-                { isLeaveDialogVisible = true }
+    LaunchedEffect(isLocked) {
+        if (isLocked) isSubmitConfirmDialogVisible = false
+    }
+
+    LaunchedEffect(isBackLocked) {
+        if (isBackLocked) isLeaveDialogVisible = false
+    }
+
+    LaunchedEffect(submitPhase) {
+        if (submitPhase is ExerciseSubmitPhase.Submitted && !submitPhase.isAuto) {
+            onViewResult(submitPhase.exerciseId)
+        }
+    }
+
+    LaunchedEffect(submitError) {
+        if (submitError != null) {
+            val result = snackbarHostState.showSnackbar(
+                message = submitError.message,
+                actionLabel = "Thử lại",
+                withDismissAction = true,
+                duration = SnackbarDuration.Indefinite
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                onRetrySubmit()
             } else {
-                onBackClick
+                onSubmitErrorShown()
             }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Neutral50)
+        ) {
+            ExerciseTopBar(
+                title = inProgressState?.exercise?.headerTitle(),
+                subtitle = inProgressState?.exercise?.summaryText(),
+                showDivider = isInProgress,
+                containerColor = if (isInProgress) Color.White else Neutral50,
+                remainingSeconds = if (isInProgress) remainingSeconds else null,
+                onBackClick = if (isInProgress) {
+                    { if (!isBackLocked) isLeaveDialogVisible = true }
+                } else {
+                    onBackClick
+                }
+            )
+
+            when (state) {
+                ExerciseUiState.Loading -> ExerciseLoadingContent(modifier = Modifier.weight(1f))
+
+                is ExerciseUiState.Error -> ErrorView(
+                    message = state.message,
+                    onRetry = onRetry,
+                    onClose = onBackClick,
+                    modifier = Modifier.weight(1f)
+                )
+
+                is ExerciseUiState.Intro -> ExerciseIntroContent(
+                    exercise = state.exercise,
+                    isOutOfAttempts = state.isOutOfAttempts,
+                    onStart = onStart,
+                    modifier = Modifier.weight(1f)
+                )
+
+                is ExerciseUiState.InProgress -> if (state.submitPhase is ExerciseSubmitPhase.Submitted && !state.submitPhase.isAuto) {
+                    ExerciseLoadingContent(modifier = Modifier.weight(1f))
+                } else {
+                    ExerciseQuestionContent(
+                        state = state,
+                        onSelectSingle = onSelectSingle,
+                        onToggleMultiple = onToggleMultiple,
+                        onEssayChange = onEssayChange,
+                        onPrevious = onPrevious,
+                        onNext = onNext,
+                        onGoTo = onGoTo,
+                        onSubmitClick = { isSubmitConfirmDialogVisible = true },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+
+        LoadingOverlay(
+            visible = submitPhase is ExerciseSubmitPhase.Submitting,
+            message = "Đang nộp bài..."
         )
 
-        when (state) {
-            ExerciseUiState.Loading -> ExerciseLoadingContent(modifier = Modifier.weight(1f))
-
-            is ExerciseUiState.Error -> ErrorView(
-                message = state.message,
-                onRetry = onRetry,
-                onClose = onBackClick,
-                modifier = Modifier.weight(1f)
-            )
-
-            is ExerciseUiState.Intro -> ExerciseIntroContent(
-                exercise = state.exercise,
-                isOutOfAttempts = state.isOutOfAttempts,
-                onStart = onStart,
-                modifier = Modifier.weight(1f)
-            )
-
-            is ExerciseUiState.InProgress -> ExerciseQuestionContent(
-                state = state,
-                onSelectSingle = onSelectSingle,
-                onToggleMultiple = onToggleMultiple,
-                onEssayChange = onEssayChange,
-                onPrevious = onPrevious,
-                onNext = onNext,
-                onGoTo = onGoTo,
-                onSubmitClick = { isSubmitConfirmDialogVisible = true },
-                modifier = Modifier.weight(1f)
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = ExerciseSnackbarBottomOffset)
+        ) { data ->
+            Snackbar(
+                snackbarData = data,
+                shape = RoundedCornerShape(8.dp),
+                containerColor = Neutral800,
+                contentColor = Color.White,
+                actionColor = Primary300
             )
         }
     }
@@ -171,17 +258,20 @@ fun ExerciseScreenContent(
             unansweredListText = unansweredListText,
             onConfirm = {
                 isSubmitConfirmDialogVisible = false
-                onBackClick()
+                onSubmit()
             },
             onDismiss = { isSubmitConfirmDialogVisible = false }
         )
     }
 
-    if (isTimeOutDialogVisible) {
+    if (submitPhase is ExerciseSubmitPhase.Submitted && submitPhase.isAuto) {
+        var isNavigating by remember(submitPhase) { mutableStateOf(false) }
         ExerciseTimeOutDialog(
             onViewResult = {
-                isTimeOutDialogVisible = false
-                onBackClick()
+                if (!isNavigating) {
+                    isNavigating = true
+                    onViewResult(submitPhase.exerciseId)
+                }
             }
         )
     }
@@ -193,6 +283,7 @@ private fun ExerciseTopBar(
     subtitle: String?,
     showDivider: Boolean,
     containerColor: Color,
+    remainingSeconds: Int?,
     onBackClick: () -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(containerColor)) {
@@ -244,6 +335,9 @@ private fun ExerciseTopBar(
                         )
                     }
                 }
+            }
+            if (remainingSeconds != null) {
+                ExerciseTimerBadge(remainingSeconds = remainingSeconds)
             }
         }
         if (showDivider) {
