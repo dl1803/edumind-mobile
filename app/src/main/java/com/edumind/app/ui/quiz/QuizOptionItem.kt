@@ -68,7 +68,8 @@ fun QuizOptionItem(
     state: QuizOptionState,
     enabled: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    role: Role = Role.RadioButton
 ) {
     val isSelectedWrong = state == QuizOptionState.Wrong
     val shakeProgress = remember { Animatable(0f) }
@@ -135,8 +136,8 @@ fun QuizOptionItem(
         QuizOptionState.Selected, QuizOptionState.Correct, QuizOptionState.Wrong -> FontWeight.Bold
     }
 
-    val shape = RoundedCornerShape(12.dp)
-    val badgeShape = RoundedCornerShape(8.dp)
+    val shape = RoundedCornerShape(16.dp)
+    val badgeShape = RoundedCornerShape(10.dp)
 
     Row(
         modifier = modifier
@@ -151,23 +152,23 @@ fun QuizOptionItem(
                     10f * decay * osc * density
                 } else 0f
             }
-            .heightIn(min = 48.dp)
+            .heightIn(min = 54.dp)
             .clip(shape)
             .background(rowColor)
-            .border(1.5.dp, borderColor, shape)
+            .border(2.dp, borderColor, shape)
             .selectable(
                 selected = state == QuizOptionState.Selected,
                 enabled = enabled,
-                role = Role.RadioButton,
+                role = role,
                 onClick = onClick
             )
-            .padding(12.dp),
+            .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         Box(
             modifier = Modifier
-                .size(24.dp)
+                .size(28.dp)
                 .clip(badgeShape)
                 .background(badgeColor)
                 .then(
@@ -181,7 +182,7 @@ fun QuizOptionItem(
         ) {
             Text(
                 text = optionKey,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
                 color = badgeTextColor
@@ -189,7 +190,8 @@ fun QuizOptionItem(
         }
         Text(
             text = content,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
+            lineHeight = 20.sp,
             fontWeight = contentFontWeight,
             color = contentTextColor,
             modifier = Modifier.weight(1f)
@@ -199,7 +201,7 @@ fun QuizOptionItem(
                 imageVector = Icons.Filled.CheckCircle,
                 contentDescription = null,
                 tint = Primary600,
-                modifier = Modifier.size(18.dp)
+                modifier = Modifier.size(20.dp)
             )
             QuizOptionState.Correct -> Icon(
                 imageVector = Icons.Filled.Check,

@@ -7,6 +7,7 @@ import androidx.security.crypto.MasterKey
 import com.edumind.app.BuildConfig
 import com.edumind.app.data.remote.api.AuthApiService
 import com.edumind.app.data.remote.api.CourseApiService
+import com.edumind.app.data.remote.api.ExerciseApiService
 import com.edumind.app.data.remote.api.FakeLessonApiService
 import com.edumind.app.data.remote.api.LessonApiService
 import com.edumind.app.data.remote.api.NoteApiService
@@ -162,6 +163,12 @@ object NetworkModule {
     @Singleton
     fun provideQuizApiService(retrofit: Retrofit): QuizApiService {
         return retrofit.create(QuizApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideExerciseApiService(retrofit: Retrofit): ExerciseApiService {
+        return retrofit.create(ExerciseApiService::class.java)
     }
 
     @Provides
