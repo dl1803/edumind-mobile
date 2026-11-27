@@ -16,6 +16,11 @@ data class ExerciseReviewItem(
 
 data class ExerciseResultContent(
     val exerciseId: String,
+    val exerciseTitle: String,
+    val mcqAnsweredCount: Int,
+    val mcqTotalCount: Int,
+    val essayAnsweredCount: Int,
+    val essayTotalCount: Int,
     val outcome: ExerciseOutcome,
     val scorePercent: Int?,
     val passingScore: Int,

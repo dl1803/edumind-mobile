@@ -68,8 +68,18 @@ internal fun ExerciseSubmission.toResultContent(exerciseId: String): ExerciseRes
         else -> ExerciseOutcome.FAILED
     }
 
+    val mcqQuestions = exercise.questions.filter { it.type != ExerciseQuestionType.ESSAY }
+    val essayQuestions = exercise.questions.filter { it.type == ExerciseQuestionType.ESSAY }
+    val mcqAnsweredCount = mcqQuestions.count { answers[it.id]?.isAnswered(it.type) == true }
+    val essayAnsweredCount = essayQuestions.count { answers[it.id]?.isAnswered(it.type) == true }
+
     return ExerciseResultContent(
         exerciseId = exerciseId,
+        exerciseTitle = exercise.title,
+        mcqAnsweredCount = mcqAnsweredCount,
+        mcqTotalCount = mcqQuestions.size,
+        essayAnsweredCount = essayAnsweredCount,
+        essayTotalCount = essayQuestions.size,
         outcome = outcome,
         scorePercent = result.score?.roundToInt()?.coerceIn(0, 100),
         passingScore = exercise.passingScore,
