@@ -173,6 +173,7 @@ private fun ExerciseProgressHeader(
     val totalText = total.toString().padStart(2, '0')
     val titleSuffix = if (isEssay) " (Tự luận)" else ""
     val percent = if (total > 0) (answeredCount * 100) / total else 0
+    val progressFraction = if (total > 0) (answeredCount.toFloat() / total).coerceIn(0f, 1f) else 0f
     val isCompleted = percent == 100
 
     Column(
@@ -210,13 +211,15 @@ private fun ExerciseProgressHeader(
                     .clip(RoundedCornerShape(8.dp))
                     .background(Neutral200)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(fraction = currentNumber.toFloat() / total)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(NebulaBrush)
-                )
+                if (progressFraction > 0f) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(fraction = progressFraction)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(NebulaBrush)
+                    )
+                }
             }
         }
         HorizontalDivider(color = Neutral200)
@@ -261,12 +264,18 @@ private fun ExerciseQuestionBody(
                     color = if (isEssay) Info600 else Primary800
                 )
             }
+            val isEssayReady = essayText.trim().length >= ESSAY_MIN_LENGTH
             Text(
                 text = question.type.hint(),
                 fontFamily = EduMindFontFamily,
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
-                color = Neutral500
+                fontWeight = if (isEssay) FontWeight.Medium else FontWeight.Normal,
+                color = if (isEssay) {
+                    if (isEssayReady) Success600 else Error600
+                } else {
+                    Neutral500
+                }
             )
         }
 
@@ -362,7 +371,7 @@ private fun ExerciseEssayInput(
         ) {
             if (value.isEmpty()) {
                 Text(
-                    text = "Nhập câu trả lời chi tiết của bạn tại đây (tối thiểu $ESSAY_MIN_LENGTH ký tự, tối đa $ESSAY_MAX_LENGTH ký tự)...",
+                    text = "Nhập câu trả lời chi tiết của bạn tại đây...",
                     fontFamily = EduMindFontFamily,
                     fontSize = 14.sp,
                     lineHeight = 22.sp,
@@ -392,16 +401,9 @@ private fun ExerciseEssayInput(
                 .fillMaxWidth()
                 .background(Neutral50)
                 .padding(horizontal = 14.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = if (belowMinimum) "Độ dài tối thiểu: $ESSAY_MIN_LENGTH ký tự" else "Đủ độ dài tối thiểu",
-                fontFamily = EduMindFontFamily,
-                fontSize = 11.sp,
-                lineHeight = 16.sp,
-                color = if (isTooShort) Error600 else Neutral500
-            )
             Text(
                 text = "${value.length} / $ESSAY_MAX_LENGTH",
                 fontFamily = FontFamily.Monospace,

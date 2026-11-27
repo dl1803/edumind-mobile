@@ -72,13 +72,16 @@ fun EduMindButton(
                 onClick = onClick
             )
             .semantics { if (loading) stateDescription = "Đang tải" }
+            .then(
+                if (enabled && isPressed && (style == EduMindButtonStyle.Primary || style == EduMindButtonStyle.Destructive)) {
+                    Modifier.background(Color.Black.copy(alpha = 0.12f))
+                } else {
+                    Modifier
+                }
+            )
             .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center
     ) {
-        if (enabled && isPressed && (style == EduMindButtonStyle.Primary || style == EduMindButtonStyle.Destructive)) {
-            Box(modifier = Modifier.matchParentSize().background(Color.Black.copy(alpha = 0.12f)))
-        }
-
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,

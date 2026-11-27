@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -185,7 +186,6 @@ internal fun ExerciseIntroContent(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White)
                 .navigationBarsPadding()
                 .padding(horizontal = 20.dp, vertical = 14.dp)
         ) {
@@ -193,7 +193,20 @@ internal fun ExerciseIntroContent(
                 text = "Bắt đầu",
                 onClick = onStart,
                 enabled = !isOutOfAttempts,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (!isOutOfAttempts) {
+                            Modifier.shadow(
+                                elevation = 8.dp,
+                                shape = RoundedCornerShape(12.dp),
+                                ambientColor = Primary700.copy(alpha = 0.25f),
+                                spotColor = Primary700.copy(alpha = 0.25f)
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
             )
         }
     }

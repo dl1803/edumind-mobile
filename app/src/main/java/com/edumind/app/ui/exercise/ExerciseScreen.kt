@@ -17,13 +17,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,8 +53,6 @@ import com.edumind.app.ui.theme.Neutral600
 import com.edumind.app.ui.theme.Neutral700
 import com.edumind.app.ui.theme.Neutral950
 import com.edumind.app.ui.theme.Primary700
-
-private const val DEFAULT_TITLE = "Bài tập cuối bài"
 
 @Composable
 fun ExerciseScreen(
@@ -109,8 +105,10 @@ fun ExerciseScreenContent(
             .background(Neutral50)
     ) {
         ExerciseTopBar(
-            title = inProgressState?.exercise?.title ?: DEFAULT_TITLE,
+            title = inProgressState?.exercise?.headerTitle(),
             subtitle = inProgressState?.exercise?.summaryText(),
+            showDivider = isInProgress,
+            containerColor = if (isInProgress) Color.White else Neutral50,
             onBackClick = if (isInProgress) {
                 { isLeaveDialogVisible = true }
             } else {
@@ -150,51 +148,12 @@ fun ExerciseScreenContent(
     }
 
     if (isLeaveDialogVisible && isInProgress) {
-        AlertDialog(
-            onDismissRequest = { isLeaveDialogVisible = false },
-            containerColor = Color.White,
-            title = {
-                Text(
-                    text = "Bạn muốn thoát?",
-                    fontFamily = EduMindFontFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Neutral950
-                )
+        ExerciseLeaveConfirmDialog(
+            onConfirmLeave = {
+                isLeaveDialogVisible = false
+                onBackClick()
             },
-            text = {
-                Text(
-                    text = "Bài làm sẽ không được lưu.",
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 14.sp,
-                    color = Neutral600
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        isLeaveDialogVisible = false
-                        onBackClick()
-                    }
-                ) {
-                    Text(
-                        text = "Thoát",
-                        fontFamily = EduMindFontFamily,
-                        fontWeight = FontWeight.Bold,
-                        color = Error600
-                    )
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { isLeaveDialogVisible = false }) {
-                    Text(
-                        text = "Tiếp tục làm bài",
-                        fontFamily = EduMindFontFamily,
-                        fontWeight = FontWeight.Bold,
-                        color = Primary700
-                    )
-                }
-            }
+            onDismiss = { isLeaveDialogVisible = false }
         )
     }
 
@@ -230,11 +189,13 @@ fun ExerciseScreenContent(
 
 @Composable
 private fun ExerciseTopBar(
-    title: String,
+    title: String?,
     subtitle: String?,
+    showDivider: Boolean,
+    containerColor: Color,
     onBackClick: () -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
+    Column(modifier = Modifier.fillMaxWidth().background(containerColor)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -254,36 +215,40 @@ private fun ExerciseTopBar(
                     modifier = Modifier.size(22.dp)
                 )
             }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = title,
-                    fontFamily = EduMindFontFamily,
-                    fontSize = 16.sp,
-                    lineHeight = 22.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Neutral950,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                if (subtitle != null) {
-                    Spacer(modifier = Modifier.height(2.dp))
+            if (!title.isNullOrBlank()) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
-                        text = subtitle,
+                        text = title,
                         fontFamily = EduMindFontFamily,
-                        fontSize = 12.sp,
-                        lineHeight = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Neutral500,
+                        fontSize = 16.sp,
+                        lineHeight = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Neutral950,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    if (subtitle != null) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = subtitle,
+                            fontFamily = EduMindFontFamily,
+                            fontSize = 12.sp,
+                            lineHeight = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Neutral500,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
         }
-        HorizontalDivider(color = Neutral100)
+        if (showDivider) {
+            HorizontalDivider(color = Neutral100)
+        }
     }
 }
 
@@ -303,6 +268,19 @@ private fun ExerciseLoadingContent(modifier: Modifier = Modifier) {
 
 internal fun formatTimeLimit(timeLimitSeconds: Int): String =
     if (timeLimitSeconds <= 0) "Không giới hạn" else "${(timeLimitSeconds + 59) / 60} phút"
+
+private fun ExerciseDto.headerTitle(): String {
+    val trimmed = title.trimStart()
+    val detail = if (trimmed.startsWith("Bài tập cuối bài", ignoreCase = true)) {
+        trimmed.drop("Bài tập cuối bài".length)
+            .trimStart()
+            .removePrefix(":")
+            .trim()
+    } else {
+        title.trim()
+    }
+    return detail.ifEmpty { title }
+}
 
 private fun ExerciseDto.summaryText(): String {
     val count = "${questions.size} câu"
@@ -516,6 +494,42 @@ private fun ExerciseTimeOutDialogPreview() {
         ) {
             ExerciseTimeOutCard(
                 onViewResult = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 412, heightDp = 890)
+@Composable
+private fun ExerciseLeaveConfirmDialogPreview() {
+    Box(modifier = Modifier.fillMaxSize()) {
+        ExerciseScreenContent(
+            state = ExerciseUiState.InProgress(
+                exercise = previewExercise,
+                currentIndex = 0,
+                answers = mapOf("q1" to ExerciseAnswer(selectedKeys = setOf("B"))),
+                startedAtMs = 0L
+            ),
+            onBackClick = {},
+            onRetry = {},
+            onStart = {},
+            onSelectSingle = { _, _ -> },
+            onToggleMultiple = { _, _ -> },
+            onEssayChange = { _, _ -> },
+            onPrevious = {},
+            onNext = {},
+            onGoTo = {}
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.45f))
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            ExerciseLeaveConfirmCard(
+                onConfirmLeave = {},
+                onDismiss = {}
             )
         }
     }
