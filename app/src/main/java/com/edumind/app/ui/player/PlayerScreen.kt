@@ -109,18 +109,22 @@ import com.edumind.app.ui.player.pip.PipPlayerController
 import com.edumind.app.ui.quiz.QuizOverlay
 import com.edumind.app.ui.quiz.QuizUiState
 import com.edumind.app.ui.quiz.QuizViewModel
+import com.edumind.app.ui.exercise.ExerciseEntryCard
+import com.edumind.app.ui.exercise.ExerciseEntryViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun PlayerScreen(
     onBackClick: () -> Unit,
+    onExerciseClick: (String) -> Unit = {},
     viewModel: PlayerViewModel = hiltViewModel(),
     notesViewModel: NotesViewModel = hiltViewModel(),
     subtitleViewModel: SubtitleViewModel = hiltViewModel(),
     chatViewModel: ChatAIViewModel = hiltViewModel(),
     summaryViewModel: SummaryViewModel = hiltViewModel(),
-    quizViewModel: QuizViewModel = hiltViewModel()
+    quizViewModel: QuizViewModel = hiltViewModel(),
+    exerciseEntryViewModel: ExerciseEntryViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
     val loadState by viewModel.loadState.collectAsState()
@@ -135,6 +139,25 @@ fun PlayerScreen(
     val chatState by chatViewModel.uiState.collectAsState()
     val summaryState by summaryViewModel.uiState.collectAsState()
     val quizState by quizViewModel.uiState.collectAsState()
+    val exerciseEntry by exerciseEntryViewModel.entry.collectAsState()
+    val readyLesson = (loadState as? LessonLoadState.Ready)?.lesson
+    val currentLessonCompleted = remember(chapters, readyLesson) {
+        chapters.any { it.isCurrent && it.isCompleted } ||
+            (readyLesson != null && readyLesson.durationMs > 0L &&
+                readyLesson.lastPositionMs >= (readyLesson.durationMs * 0.9f).toLong())
+    }
+    val effectiveDurationMs = if (state.durationMs > 0L) {
+        state.durationMs
+    } else {
+        readyLesson?.durationMs ?: 0L
+    }
+    val reachedNinetyPercent = effectiveDurationMs > 0L &&
+        state.positionMs >= (effectiveDurationMs * 0.9f).toLong()
+    var hasUnlockedExercise by rememberSaveable(readyLesson?.id) { mutableStateOf(false) }
+    if (currentLessonCompleted || reachedNinetyPercent) {
+        hasUnlockedExercise = true
+    }
+    val isExerciseLocked = !hasUnlockedExercise
     var isQualitySheetVisible by remember { mutableStateOf(false) }
     var isSubtitleSettingsVisible by remember { mutableStateOf(false) }
     var isChapterSheetVisible by rememberSaveable { mutableStateOf(false) }
@@ -159,6 +182,7 @@ fun PlayerScreen(
             subtitleViewModel.initLessonId(lesson.id)
             chatViewModel.initLessonId(lesson.id)
             summaryViewModel.initLessonId(lesson.id)
+            exerciseEntryViewModel.initLessonId(lesson.id)
         }
     }
 
@@ -391,6 +415,13 @@ fun PlayerScreen(
                             viewModel.seekRelative(-20_000L)
                             quizViewModel.rewind()
                         }
+                    )
+                },
+                exerciseEntryContent = {
+                    ExerciseEntryCard(
+                        entry = exerciseEntry,
+                        isLocked = isExerciseLocked,
+                        onClick = onExerciseClick
                     )
                 },
                 videoSurface = {
@@ -674,7 +705,8 @@ fun PlayerScreenContent(
     onSubtitleClick: () -> Unit = {},
     videoSurface: @Composable () -> Unit = {},
     errorOverlay: @Composable () -> Unit = {},
-    quizOverlay: @Composable () -> Unit = {}
+    quizOverlay: @Composable () -> Unit = {},
+    exerciseEntryContent: @Composable () -> Unit = {}
 ) {
     var selectedMainTab by remember { mutableIntStateOf(0) }
     var selectedSubTab by remember { mutableIntStateOf(0) }
@@ -993,7 +1025,8 @@ fun PlayerScreenContent(
                         0 -> LessonContentTab(
                             chapters = chapters,
                             currentIndex = currentChapterIndex,
-                            onChapterSelect = onChapterSelect
+                            onChapterSelect = onChapterSelect,
+                            exerciseEntryContent = exerciseEntryContent
                         )
                         1 -> LessonOverviewTab()
                         else -> transcriptContent()
@@ -1033,7 +1066,8 @@ fun PlayerScreenContent(
 private fun LessonContentTab(
     chapters: List<PlayerChapter>,
     currentIndex: Int,
-    onChapterSelect: (PlayerChapter) -> Unit
+    onChapterSelect: (PlayerChapter) -> Unit,
+    exerciseEntryContent: @Composable () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -1080,9 +1114,14 @@ private fun LessonContentTab(
                     color = Neutral500
                 )
             }
+            exerciseEntryContent()
         } else {
+            val isCourseLessonList = chapters.none { it.isTimestampMarker }
+            val hasCurrentLessonItem = isCourseLessonList && chapters.any { it.isCurrent }
+            var insertedAfterCurrent = false
+
             chapters.forEachIndexed { index, chapter ->
-                val isCurrent = index == currentIndex
+                val isCurrent = if (isCourseLessonList) chapter.isCurrent else index == currentIndex
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1151,10 +1190,19 @@ private fun LessonContentTab(
                         )
                     }
                 }
+
+                if (hasCurrentLessonItem && chapter.isCurrent && !insertedAfterCurrent) {
+                    insertedAfterCurrent = true
+                    exerciseEntryContent()
+                }
+            }
+
+            if (!insertedAfterCurrent) {
+                exerciseEntryContent()
             }
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(96.dp))
     }
 }
 
