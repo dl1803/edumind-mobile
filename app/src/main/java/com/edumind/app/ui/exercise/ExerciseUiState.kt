@@ -19,6 +19,14 @@ data class ExerciseAnswer(
     }
 }
 
+sealed interface ExerciseSubmitPhase {
+    data object Idle : ExerciseSubmitPhase
+    data class Submitting(val isAuto: Boolean) : ExerciseSubmitPhase
+    data class Submitted(val exerciseId: String, val isAuto: Boolean) : ExerciseSubmitPhase
+}
+
+data class ExerciseSubmitError(val message: String, val isAuto: Boolean)
+
 sealed interface ExerciseUiState {
 
     data object Loading : ExerciseUiState
@@ -34,8 +42,20 @@ sealed interface ExerciseUiState {
         val exercise: ExerciseDto,
         val currentIndex: Int,
         val answers: Map<String, ExerciseAnswer>,
-        val startedAtMs: Long
+        val startedAtMs: Long,
+        val submitPhase: ExerciseSubmitPhase = ExerciseSubmitPhase.Idle,
+        val submitError: ExerciseSubmitError? = null,
+        val isTimeUp: Boolean = false
     ) : ExerciseUiState {
+
+        val expiresAtMs: Long?
+            get() = if (exercise.timeLimit > 0) startedAtMs + exercise.timeLimit * 1000L else null
+
+        val isLocked: Boolean
+            get() = submitPhase != ExerciseSubmitPhase.Idle || isTimeUp
+
+        val isBackLocked: Boolean
+            get() = submitPhase !is ExerciseSubmitPhase.Idle
 
         val questions: List<ExerciseQuestionDto>
             get() = exercise.questions
