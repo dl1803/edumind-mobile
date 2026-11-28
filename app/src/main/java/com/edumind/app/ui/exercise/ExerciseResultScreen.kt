@@ -87,6 +87,7 @@ import com.edumind.app.ui.theme.Neutral600
 import com.edumind.app.ui.theme.Neutral700
 import com.edumind.app.ui.theme.Neutral800
 import com.edumind.app.ui.theme.Neutral950
+import com.edumind.app.ui.theme.Primary100
 import com.edumind.app.ui.theme.Primary700
 import com.edumind.app.ui.theme.Success100
 import com.edumind.app.ui.theme.Success600
@@ -256,21 +257,25 @@ private fun ExerciseSubmissionSuccessContent(
         ) {
             SubmissionDetailRow(
                 label = "Bài tập:",
-                value = content.exerciseTitle,
+                value = formatExerciseSubmissionTitle(content.exerciseTitle),
                 valueColor = Neutral950
             )
-            HorizontalDivider(color = Neutral100)
-            SubmissionDetailRow(
-                label = "Số câu trắc nghiệm:",
-                value = "${content.mcqAnsweredCount} / ${content.mcqTotalCount} câu",
-                valueColor = Primary700
-            )
-            HorizontalDivider(color = Neutral100)
-            SubmissionDetailRow(
-                label = "Số câu tự luận:",
-                value = "${content.essayAnsweredCount} / ${content.essayTotalCount} câu",
-                valueColor = Primary700
-            )
+            if (content.mcqTotalCount > 0) {
+                HorizontalDivider(color = Neutral100)
+                SubmissionDetailRow(
+                    label = "Số câu trắc nghiệm:",
+                    value = "${content.mcqAnsweredCount} / ${content.mcqTotalCount} câu",
+                    valueColor = Primary700
+                )
+            }
+            if (content.essayTotalCount > 0) {
+                HorizontalDivider(color = Neutral100)
+                SubmissionDetailRow(
+                    label = "Số câu tự luận:",
+                    value = "${content.essayAnsweredCount} / ${content.essayTotalCount} câu",
+                    valueColor = Primary700
+                )
+            }
             HorizontalDivider(color = Neutral100)
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -367,6 +372,8 @@ private fun ExerciseResultBody(
     onRetryClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var hasAnimatedScoreRing by rememberSaveable { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier
@@ -375,33 +382,26 @@ private fun ExerciseResultBody(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            item(key = "hero") { ExerciseResultHero(content = content) }
+            item(key = "hero") {
+                ExerciseResultHero(
+                    content = content,
+                    shouldAnimateScoreRing = !hasAnimatedScoreRing,
+                    onScoreRingAnimationStarted = { hasAnimatedScoreRing = true }
+                )
+            }
             if (content.reviewItems.isNotEmpty()) {
                 item(key = "review-title") {
-                    Row(
+                    Text(
+                        text = "Chi tiết bài làm",
+                        fontFamily = EduMindFontFamily,
+                        fontSize = 16.sp,
+                        lineHeight = 22.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Neutral950,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Chi tiết bài làm (${content.reviewItems.size} câu)",
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 16.sp,
-                            lineHeight = 22.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Neutral950
-                        )
-                        Text(
-                            text = "Tất cả",
-                            fontFamily = EduMindFontFamily,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Primary700
-                        )
-                    }
+                            .padding(top = 8.dp)
+                    )
                 }
                 items(content.reviewItems, key = { it.id }) { item ->
                     ExerciseReviewCard(item = item)
@@ -477,7 +477,11 @@ private fun SecondaryActionButton(
 }
 
 @Composable
-private fun ExerciseResultHero(content: ExerciseResultContent) {
+private fun ExerciseResultHero(
+    content: ExerciseResultContent,
+    shouldAnimateScoreRing: Boolean = true,
+    onScoreRingAnimationStarted: () -> Unit = {}
+) {
     val shape = RoundedCornerShape(24.dp)
     val borderColor = when (content.outcome) {
         ExerciseOutcome.PASSED -> Neutral200
@@ -524,7 +528,11 @@ private fun ExerciseResultHero(content: ExerciseResultContent) {
             if (content.outcome == ExerciseOutcome.PENDING) {
                 ExercisePendingHeader()
             } else {
-                ExerciseScoredHeader(content = content)
+                ExerciseScoredHeader(
+                    content = content,
+                    shouldAnimateScoreRing = shouldAnimateScoreRing,
+                    onScoreRingAnimationStarted = onScoreRingAnimationStarted
+                )
             }
             HorizontalDivider(color = Neutral100)
             ExerciseResultStats(content = content)
@@ -533,7 +541,11 @@ private fun ExerciseResultHero(content: ExerciseResultContent) {
 }
 
 @Composable
-private fun ExerciseScoredHeader(content: ExerciseResultContent) {
+private fun ExerciseScoredHeader(
+    content: ExerciseResultContent,
+    shouldAnimateScoreRing: Boolean = true,
+    onScoreRingAnimationStarted: () -> Unit = {}
+) {
     val isPassed = content.outcome == ExerciseOutcome.PASSED
     val ringColor = if (isPassed) Success600 else Error600
     val trackColor = if (isPassed) Neutral200 else Error100
@@ -545,7 +557,9 @@ private fun ExerciseScoredHeader(content: ExerciseResultContent) {
         scorePercent = content.scorePercent ?: 0,
         color = ringColor,
         trackColor = trackColor,
-        scoreColor = scoreColor
+        scoreColor = scoreColor,
+        shouldAnimate = shouldAnimateScoreRing,
+        onAnimationStarted = onScoreRingAnimationStarted
     )
 
     Row(
@@ -649,20 +663,25 @@ private fun ExerciseScoreRing(
     color: Color,
     trackColor: Color,
     scoreColor: Color,
+    shouldAnimate: Boolean = true,
+    onAnimationStarted: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val target = scorePercent.coerceIn(0, 100) / 100f
     val isInspection = LocalInspectionMode.current
     val progress = remember(target, isInspection) {
-        Animatable(if (isInspection) target else 0f)
+        Animatable(if (isInspection || !shouldAnimate) target else 0f)
     }
 
     LaunchedEffect(target, isInspection) {
-        if (!isInspection) {
+        if (!isInspection && shouldAnimate) {
+            onAnimationStarted()
             progress.animateTo(
                 targetValue = target,
                 animationSpec = tween(durationMillis = 1200, easing = FastOutSlowInEasing)
             )
+        } else {
+            progress.snapTo(target)
         }
     }
 
@@ -732,7 +751,7 @@ private fun ExerciseResultStats(content: ExerciseResultContent) {
                 modifier = Modifier.weight(1f)
             )
             ExerciseStatCell(
-                label = "Bỏ qua",
+                label = "Chưa làm",
                 value = "${content.skippedCount} câu",
                 valueColor = Neutral600,
                 modifier = Modifier.weight(1f)
@@ -759,7 +778,7 @@ private fun ExerciseResultStats(content: ExerciseResultContent) {
             )
             if (content.skippedCount > 0) {
                 ExerciseStatCell(
-                    label = "Bỏ qua",
+                    label = "Chưa làm",
                     value = "${content.skippedCount} câu",
                     valueColor = Neutral600,
                     modifier = Modifier.weight(1f)
@@ -852,7 +871,7 @@ private fun ExerciseReviewCard(item: ExerciseReviewItem) {
             ) {
                 Icon(
                     imageVector = item.verdict.icon(),
-                    contentDescription = null,
+                    contentDescription = item.verdict.label(),
                     tint = verdictColor,
                     modifier = Modifier.size(16.dp)
                 )
@@ -867,14 +886,6 @@ private fun ExerciseReviewCard(item: ExerciseReviewItem) {
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = item.verdict.label(),
-                fontFamily = EduMindFontFamily,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = verdictColor
             )
             Icon(
                 imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
@@ -950,7 +961,7 @@ private fun ExerciseReviewCard(item: ExerciseReviewItem) {
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp))
-                            .background(Neutral50)
+                            .background(Primary100)
                             .padding(12.dp)
                     ) {
                         Text(
@@ -958,7 +969,7 @@ private fun ExerciseReviewCard(item: ExerciseReviewItem) {
                                 withStyle(SpanStyle(color = Primary700, fontWeight = FontWeight.SemiBold)) {
                                     append("Giải thích: ")
                                 }
-                                withStyle(SpanStyle(color = Neutral600)) {
+                                withStyle(SpanStyle(color = Neutral700)) {
                                     append(item.explanation)
                                 }
                             },
@@ -1027,6 +1038,17 @@ private fun ExerciseAnswerHighlightBox(
     }
 }
 
+private fun formatExerciseSubmissionTitle(rawTitle: String): String {
+    val trimmed = rawTitle.trim()
+    if (!trimmed.startsWith("Bài tập cuối bài", ignoreCase = true)) {
+        return trimmed
+    }
+    return trimmed
+        .drop("Bài tập cuối bài".length)
+        .trimStart { it == ':' || it == '-' || it == '–' || it.isWhitespace() }
+        .ifEmpty { trimmed }
+}
+
 private fun formatDurationText(totalSeconds: Int): String {
     val safe = totalSeconds.coerceAtLeast(0)
     val minutes = safe / 60
@@ -1037,7 +1059,7 @@ private fun formatDurationText(totalSeconds: Int): String {
 private fun ExerciseVerdict.label(): String = when (this) {
     ExerciseVerdict.CORRECT -> "Đúng"
     ExerciseVerdict.WRONG -> "Sai"
-    ExerciseVerdict.SKIPPED -> "Bỏ qua"
+    ExerciseVerdict.SKIPPED -> "Chưa làm"
     ExerciseVerdict.UNGRADED -> "Chờ chấm"
 }
 
