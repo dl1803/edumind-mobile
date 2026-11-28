@@ -34,6 +34,7 @@ import com.edumind.app.ui.auth.forgot.ForgotPasswordScreen
 import com.edumind.app.ui.auth.login.LoginScreen
 import com.edumind.app.ui.auth.register.RegisterScreen
 import com.edumind.app.ui.course.CourseDetailScreen
+import com.edumind.app.ui.exercise.ExerciseResultScreen
 import com.edumind.app.ui.exercise.ExerciseScreen
 import com.edumind.app.ui.explore.ExploreScreen
 import com.edumind.app.ui.home.HomeScreen
@@ -387,7 +388,40 @@ fun AppNavGraph(
                     }
                 ) {
                     ExerciseScreen(
-                        onBackClick = { navController.popBackStack() }
+                        onBackClick = { navController.popBackStack() },
+                        onViewResult = { exerciseId ->
+                            navController.navigate(Screen.ExerciseResult.createRoute(exerciseId)) {
+                                popUpTo(Screen.Exercise.route) { inclusive = true }
+                            }
+                        }
+                    )
+                }
+
+                composable(
+                    route = Screen.ExerciseResult.route,
+                    arguments = listOf(
+                        navArgument(Screen.ARG_EXERCISE_ID) { type = NavType.StringType }
+                    ),
+                    enterTransition = {
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(250)
+                        )
+                    },
+                    popExitTransition = {
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(200)
+                        )
+                    }
+                ) {
+                    ExerciseResultScreen(
+                        onBackClick = { navController.popBackStack() },
+                        onRetryClick = { exerciseId ->
+                            navController.navigate(Screen.Exercise.createRoute(exerciseId)) {
+                                popUpTo(Screen.ExerciseResult.route) { inclusive = true }
+                            }
+                        }
                     )
                 }
 
