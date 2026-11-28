@@ -37,6 +37,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -97,6 +98,10 @@ internal fun ExerciseQuestionContent(
     val total = state.questions.size
     val index = state.currentIndex
 
+    LaunchedEffect(state.isLocked) {
+        if (state.isLocked) isGridVisible = false
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -131,7 +136,8 @@ internal fun ExerciseQuestionContent(
                 essayText = state.answerOf(question).essayText,
                 onSelectSingle = { key -> onSelectSingle(question.id, key) },
                 onToggleMultiple = { key -> onToggleMultiple(question.id, key) },
-                onEssayChange = { text -> onEssayChange(question.id, text) }
+                onEssayChange = { text -> onEssayChange(question.id, text) },
+                enabled = !state.isLocked
             )
         }
 
@@ -141,7 +147,8 @@ internal fun ExerciseQuestionContent(
             onPrevious = onPrevious,
             onOpenGrid = { isGridVisible = true },
             onNext = onNext,
-            onSubmit = onSubmitClick
+            onSubmit = onSubmitClick,
+            enabled = !state.isLocked
         )
     }
 
@@ -233,7 +240,8 @@ private fun ExerciseQuestionBody(
     essayText: String,
     onSelectSingle: (String) -> Unit,
     onToggleMultiple: (String) -> Unit,
-    onEssayChange: (String) -> Unit
+    onEssayChange: (String) -> Unit,
+    enabled: Boolean = true
 ) {
     val isEssay = question.type == ExerciseQuestionType.ESSAY
 
@@ -289,7 +297,11 @@ private fun ExerciseQuestionBody(
         )
 
         if (isEssay) {
-            ExerciseEssayInput(value = essayText, onValueChange = onEssayChange)
+            ExerciseEssayInput(
+                value = essayText,
+                onValueChange = onEssayChange,
+                enabled = enabled
+            )
         } else {
             val isMultiple = question.type == ExerciseQuestionType.MULTIPLE_CHOICE
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -302,7 +314,7 @@ private fun ExerciseQuestionBody(
                         } else {
                             QuizOptionState.Default
                         },
-                        enabled = true,
+                        enabled = enabled,
                         onClick = {
                             if (isMultiple) onToggleMultiple(option.key) else onSelectSingle(option.key)
                         },
@@ -317,7 +329,8 @@ private fun ExerciseQuestionBody(
 @Composable
 private fun ExerciseEssayInput(
     value: String,
-    onValueChange: (String) -> Unit
+    onValueChange: (String) -> Unit,
+    enabled: Boolean = true
 ) {
     val belowMinimum = value.trim().length < ESSAY_MIN_LENGTH
     val isTooShort = value.isNotEmpty() && belowMinimum
@@ -381,6 +394,7 @@ private fun ExerciseEssayInput(
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
+                readOnly = !enabled,
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 162.dp),
@@ -423,7 +437,8 @@ private fun ExerciseBottomBar(
     onPrevious: () -> Unit,
     onOpenGrid: () -> Unit,
     onNext: () -> Unit,
-    onSubmit: () -> Unit
+    onSubmit: () -> Unit,
+    enabled: Boolean = true
 ) {
     Column(modifier = Modifier.fillMaxWidth().background(Color.White)) {
         HorizontalDivider(color = Neutral200)
@@ -439,7 +454,7 @@ private fun ExerciseBottomBar(
                 text = "Câu trước",
                 onClick = onPrevious,
                 style = EduMindButtonStyle.Outlined,
-                enabled = !isFirst,
+                enabled = !isFirst && enabled,
                 modifier = Modifier.weight(1f)
             )
             Box(
@@ -449,6 +464,7 @@ private fun ExerciseBottomBar(
                     .background(Primary50)
                     .border(1.dp, Primary200, RoundedCornerShape(12.dp))
                     .clickable(
+                        enabled = enabled,
                         onClickLabel = "Bảng danh sách câu hỏi",
                         role = Role.Button,
                         onClick = onOpenGrid
@@ -466,12 +482,14 @@ private fun ExerciseBottomBar(
                 EduMindButton(
                     text = "Nộp bài",
                     onClick = onSubmit,
+                    enabled = enabled,
                     modifier = Modifier.weight(1f)
                 )
             } else {
                 EduMindButton(
                     text = "Câu tiếp",
                     onClick = onNext,
+                    enabled = enabled,
                     modifier = Modifier.weight(1f)
                 )
             }

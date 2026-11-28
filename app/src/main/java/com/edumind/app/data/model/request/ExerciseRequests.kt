@@ -11,3 +11,16 @@ data class SubmitExerciseRequest(
     @SerializedName("answers") val answers: List<ExerciseAnswerRequest>,
     @SerializedName("time_spent") val timeSpent: Int? = null
 )
+
+object ExerciseAnswerFormat {
+    private const val DELIMITER = ","
+
+    fun encode(keys: Set<String>): String = keys.sorted().joinToString(DELIMITER)
+
+    fun decode(raw: String?): Set<String> =
+        raw.orEmpty()
+            .split(DELIMITER)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+}

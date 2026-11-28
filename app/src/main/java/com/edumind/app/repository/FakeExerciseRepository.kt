@@ -1,9 +1,14 @@
 package com.edumind.app.repository
 
+import com.edumind.app.data.model.request.ExerciseAnswerFormat
+import com.edumind.app.data.model.request.SubmitExerciseRequest
+import com.edumind.app.data.model.response.ExerciseAnswerResultDto
 import com.edumind.app.data.model.response.ExerciseDto
 import com.edumind.app.data.model.response.ExerciseEntry
 import com.edumind.app.data.model.response.ExerciseQuestionDto
 import com.edumind.app.data.model.response.ExerciseQuestionType
+import com.edumind.app.data.model.response.ExerciseResultDto
+import com.edumind.app.data.model.response.ExerciseSubmitStatus
 import com.edumind.app.data.model.response.QuizOptionDto
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -11,6 +16,9 @@ import javax.inject.Singleton
 
 @Singleton
 class FakeExerciseRepository @Inject constructor() : ExerciseRepository {
+
+    private val attemptsUsedById = mutableMapOf<String, Int>()
+    private var submissionCounter = 0
 
     override suspend fun getLessonExercise(lessonId: String): Result<ExerciseEntry?> {
         delay(NETWORK_DELAY_MS)
@@ -36,7 +44,64 @@ class FakeExerciseRepository @Inject constructor() : ExerciseRepository {
         delay(NETWORK_DELAY_MS)
         val exercise = EXERCISES.firstOrNull { it.id == exerciseId }
             ?: return Result.failure(NoSuchElementException("Không tìm thấy bài tập $exerciseId"))
-        return Result.success(exercise)
+        return Result.success(
+            exercise.copy(attemptsUsed = attemptsUsedById[exerciseId] ?: exercise.attemptsUsed)
+        )
+    }
+
+    override suspend fun submitExercise(
+        exerciseId: String,
+        request: SubmitExerciseRequest
+    ): Result<ExerciseResultDto> {
+        delay(NETWORK_DELAY_MS)
+        val exercise = EXERCISES.firstOrNull { it.id == exerciseId }
+            ?: return Result.failure(NoSuchElementException("Không tìm thấy bài tập $exerciseId"))
+
+        val attemptsUsed = (attemptsUsedById[exerciseId] ?: exercise.attemptsUsed) + 1
+        attemptsUsedById[exerciseId] = attemptsUsed
+        submissionCounter += 1
+        val submissionId = "submission-mock-$submissionCounter"
+        val attemptsRemaining = if (exercise.maxAttempts > 0) {
+            (exercise.maxAttempts - attemptsUsed).coerceAtLeast(0)
+        } else {
+            0
+        }
+
+        if (exercise.questions.any { it.type == ExerciseQuestionType.ESSAY }) {
+            return Result.success(
+                ExerciseResultDto(
+                    submissionId = submissionId,
+                    score = null,
+                    passed = null,
+                    status = ExerciseSubmitStatus.PENDING_GRADING,
+                    attemptsRemaining = attemptsRemaining,
+                    details = null
+                )
+            )
+        }
+
+        val givenByQuestion = request.answers.associate { it.questionId to it.answer }
+        val details = exercise.questions.map { question ->
+            val (correctAnswer, explanation) = ANSWER_KEYS.getValue(question.id)
+            val given = ExerciseAnswerFormat.decode(givenByQuestion[question.id])
+            ExerciseAnswerResultDto(
+                questionId = question.id,
+                correct = given.isNotEmpty() && given == ExerciseAnswerFormat.decode(correctAnswer),
+                correctAnswer = correctAnswer,
+                explanation = explanation
+            )
+        }
+        val score = details.count { it.correct == true } * 100f / details.size
+        return Result.success(
+            ExerciseResultDto(
+                submissionId = submissionId,
+                score = score,
+                passed = score >= exercise.passingScore,
+                status = ExerciseSubmitStatus.GRADED,
+                attemptsRemaining = attemptsRemaining,
+                details = details
+            )
+        )
     }
 
     private companion object {
@@ -149,6 +214,18 @@ class FakeExerciseRepository @Inject constructor() : ExerciseRepository {
                     )
                 )
             )
+        )
+
+        val ANSWER_KEYS: Map<String, Pair<String, String>> = mapOf(
+            "ex1-q1" to ("B" to "Tuple là kiểu dữ liệu bất biến; list, dict và set đều có thể thay đổi sau khi tạo."),
+            "ex1-q2" to ("A,C,D" to "List, Dict và Set đều có thể thay đổi nội dung; Tuple thì không."),
+            "ex1-q3" to ("B" to "Chuỗi str là bất biến nên không thể gán lại từng ký tự bằng chỉ số."),
+            "ex1-q4" to ("B" to "Hàm len() trả về số phần tử của danh sách."),
+            "ex2-q1" to ("A" to "elif là từ khóa thêm nhánh điều kiện thay thế sau if."),
+            "ex2-q2" to ("A" to "Python dùng thụt lề để xác định khối lệnh."),
+            "ex2-q3" to ("A,C" to "3 > 2 và not False đều có giá trị True."),
+            "ex3-q1" to ("A" to "for dùng để duyệt qua tập phần tử đã biết."),
+            "ex3-q2" to ("B" to "break dừng hẳn vòng lặp hiện tại.")
         )
 
         fun options(vararg contents: String): List<QuizOptionDto> =
